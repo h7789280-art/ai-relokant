@@ -24,8 +24,25 @@ export default function HomePage() {
   const [eventsFilter, setEventsFilter] = useState('today');
   const [showCurrSettings, setShowCurrSettings] = useState(false);
   const [availableCurrencies, setAvailableCurrencies] = useState([]);
+  const [turkeyDateTime, setTurkeyDateTime] = useState('');
 
   const tip = TIPS[new Date().getDate() % TIPS.length];
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const date = now.toLocaleDateString('ru-RU', {
+        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul',
+      });
+      const time = now.toLocaleTimeString('ru-RU', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul',
+      });
+      setTurkeyDateTime(`${date.charAt(0).toUpperCase() + date.slice(1)} · ${time}`);
+    };
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     supabaseGet('currency_cache', { order: 'code.asc' }).then(setRates).catch(() => {});
@@ -70,6 +87,7 @@ export default function HomePage() {
       <div className="hero">
         <div className="hero-overlay" />
         <div className="hero-content">
+          <div className="hero-datetime">{turkeyDateTime}</div>
           <h1>Добро пожаловать в {city?.name || 'Турцию'}!</h1>
           <p>Ваш AI-гид по жизни в Турции</p>
         </div>
