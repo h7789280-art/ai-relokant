@@ -99,9 +99,9 @@ export default function HomePage() {
             <div key={r.id} className="currency-card">
               <span className="currency-code">{r.flag} {r.code}</span>
               <span className="currency-rate">{Number(r.rate_to_try).toFixed(2)} ₺</span>
-              {r.change_pct != null && (
-                <span className={`currency-change ${r.change_pct >= 0 ? 'up' : 'down'}`}>
-                  {r.change_pct >= 0 ? '+' : ''}{Number(r.change_pct).toFixed(2)}%
+              {r.change_pct != null && r.change_pct !== '' && (
+                <span className={`currency-change ${String(r.change_pct).startsWith('-') ? 'down' : 'up'}`}>
+                  {r.change_pct}
                 </span>
               )}
             </div>
@@ -157,7 +157,11 @@ export default function HomePage() {
           <div key={ev.id} className="event-card">
             <div className="event-date">
               <Calendar size={14} />
-              <span>{ev.date_start}</span>
+              <span>
+                {new Date(ev.date_start).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                {' '}
+                {new Date(ev.date_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
             <h3>{ev.icon} {ev.title}</h3>
             <p>{ev.description}</p>
