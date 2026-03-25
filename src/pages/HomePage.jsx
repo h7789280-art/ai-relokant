@@ -28,35 +28,34 @@ export default function HomePage() {
   const tip = TIPS[new Date().getDate() % TIPS.length];
 
   useEffect(() => {
-    supabaseGet('currency_cache', { order: 'id.asc' }).then(setRates).catch(() => {});
-    supabaseGet('categories', { order: 'name.asc', limit: '8' }).then(setCategories).catch(() => {});
+    supabaseGet('currency_cache', { order: 'code.asc' }).then(setRates).catch(() => {});
+    supabaseGet('categories', { order: 'sort_order.asc', limit: '8' }).then(setCategories).catch(() => {});
     supabaseGet('guides', { order: 'created_at.desc' }).then(setGuides).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (rates.length) {
-      const codes = rates.map((r) => r.currency_code || r.code).filter(Boolean);
+      const codes = rates.map((r) => r.code).filter(Boolean);
       setAvailableCurrencies(codes);
     }
   }, [rates]);
 
   useEffect(() => {
-    const params = { order: 'date.asc' };
+    const params = { order: 'date_start.asc', is_active: 'eq.true' };
     const today = new Date().toISOString().slice(0, 10);
     if (eventsFilter === 'today') {
-      params['date'] = `eq.${today}`;
+      params['date_start'] = `eq.${today}`;
     } else {
       const week = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-      params['date'] = `gte.${today}`;
-      params['date'] = `lte.${week}`;
+      params['date_start'] = `gte.${today}`;
+      params['date_start'] = `lte.${week}`;
     }
     if (city?.id) params['city_id'] = `eq.${city.id}`;
     supabaseGet('events', params).then(setEvents).catch(() => {});
   }, [eventsFilter, city]);
 
   const displayRates = rates.filter((r) => {
-    const code = r.currency_code || r.code;
-    return code === 'USD' || code === 'EUR' || extraCurrencies.includes(code);
+    return r.code === 'USD' || r.code === 'EUR' || extraCurrencies.includes(r.code);
   });
 
   const toggleCurrency = (code) => {
@@ -98,8 +97,13 @@ export default function HomePage() {
         <div className="currency-row">
           {displayRates.length > 0 ? displayRates.map((r) => (
             <div key={r.id} className="currency-card">
-              <span className="currency-code">{r.currency_code || r.code}</span>
-              <span className="currency-rate">{Number(r.rate).toFixed(2)} ₺</span>
+              <span className="currency-code">{r.flag} {r.code}</span>
+              <span className="currency-rate">{Number(r.rate_to_try).toFixed(2)} ₺</span>
+              {r.change_pct != null && (
+                <span className={`currency-change ${r.change_pct >= 0 ? 'up' : 'down'}`}>
+                  {r.change_pct >= 0 ? '+' : ''}{Number(r.change_pct).toFixed(2)}%
+                </span>
+              )}
             </div>
           )) : (
             <div className="empty-state">Нет данных о курсах</div>
@@ -153,10 +157,12 @@ export default function HomePage() {
           <div key={ev.id} className="event-card">
             <div className="event-date">
               <Calendar size={14} />
-              <span>{ev.date}</span>
+              <span>{ev.date_start}</span>
             </div>
-            <h3>{ev.title}</h3>
+            <h3>{ev.icon} {ev.title}</h3>
             <p>{ev.description}</p>
+            {ev.location && <div className="event-location">{ev.location}</div>}
+            {ev.price && <div className="event-price">{ev.price}</div>}
             <FavButton type="event" id={ev.id} />
           </div>
         )) : (
@@ -180,7 +186,7 @@ export default function HomePage() {
               onClick={() => navigate(`/catalog/${cat.id}`)}
             >
               <span className="category-icon">{cat.icon || '📁'}</span>
-              <span className="category-name">{cat.name}</span>
+              <span className="category-name">{cat.label}</span>
             </button>
           ))}
         </div>
@@ -195,9 +201,9 @@ export default function HomePage() {
         <div className="guides-scroll">
           {guides.length > 0 ? guides.map((g) => (
             <div key={g.id} className="guide-card">
-              {g.image_url && <img src={g.image_url} alt={g.title} />}
               <h3>{g.title}</h3>
-              <p>{g.summary || g.description}</p>
+              <p>{g.description}</p>
+              {g.read_time && <span className="guide-time">{g.read_time} мин</span>}
               <FavButton type="guide" id={g.id} />
             </div>
           )) : (

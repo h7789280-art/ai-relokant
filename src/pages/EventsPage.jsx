@@ -24,15 +24,16 @@ export default function EventsPage() {
       : `${year}-${String(selectedMonth + 2).padStart(2, '0')}-01`;
 
     const params = {
-      'date': `gte.${start}`,
-      order: 'date.asc',
+      'date_start': `gte.${start}`,
+      order: 'date_start.asc',
+      is_active: 'eq.true',
     };
     if (city?.id) params.city_id = `eq.${city.id}`;
 
     setLoading(true);
     supabaseGet('events', params)
       .then((data) => {
-        setEvents(data.filter((e) => e.date < end));
+        setEvents(data.filter((e) => e.date_start < end));
       })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
@@ -64,11 +65,12 @@ export default function EventsPage() {
             <div key={ev.id} className="event-card">
               <div className="event-date">
                 <Calendar size={14} />
-                <span>{ev.date}</span>
+                <span>{ev.date_start}</span>
               </div>
-              <h3>{ev.title}</h3>
+              <h3>{ev.icon} {ev.title}</h3>
               <p>{ev.description}</p>
               {ev.location && <div className="event-location">{ev.location}</div>}
+              {ev.price && <div className="event-price">{ev.price}</div>}
               <FavButton type="event" id={ev.id} />
             </div>
           ))}

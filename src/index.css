@@ -642,6 +642,26 @@ html, body, #root {
 .currency-toggle:hover { background: var(--bg); }
 .currency-toggle input { accent-color: var(--accent); }
 
+/* Currency change */
+.currency-change { display: block; font-size: 11px; margin-top: 4px; }
+.currency-change.up { color: #22c55e; }
+.currency-change.down { color: #ef4444; }
+
+/* Event price */
+.event-price { font-size: 13px; color: var(--warning); margin-top: 6px; font-weight: 600; }
+
+/* Ad price */
+.ad-price { font-size: 14px; color: var(--warning); margin-top: 6px; font-weight: 600; }
+
+/* Place extras */
+.place-rating { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--warning); margin-bottom: 6px; }
+.place-hours { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+.place-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.tag { font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 10px; color: var(--text-secondary); }
+
+/* Guide time */
+.guide-time { display: block; font-size: 11px; color: var(--text-secondary); padding: 0 12px 10px; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

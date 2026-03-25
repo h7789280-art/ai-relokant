@@ -17,7 +17,7 @@ export default function AdsPage() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    const params = { order: 'created_at.desc' };
+    const params = { order: 'created_at.desc', is_active: 'eq.true' };
     if (city?.id) params.city_id = `eq.${city.id}`;
     if (filter !== 'all') params.type = `eq.${filter}`;
 
@@ -29,8 +29,7 @@ export default function AdsPage() {
   }, [filter, city]);
 
   const renderText = (text) => {
-    if (!text) return null;
-    // Make @username and t.me links clickable
+    if (!text) return '';
     return text.replace(
       /@(\w+)/g,
       '<a href="https://t.me/$1" target="_blank" rel="noopener noreferrer">@$1</a>'
@@ -70,10 +69,13 @@ export default function AdsPage() {
               </div>
               <h3>{ad.title}</h3>
               <p dangerouslySetInnerHTML={{ __html: renderText(ad.description) }} />
-              {ad.telegram_link && (
+              {ad.price && <div className="ad-price">{ad.price}</div>}
+              {ad.contact_telegram && (
                 <a
                   className="ad-tg-link"
-                  href={ad.telegram_link.startsWith('http') ? ad.telegram_link : `https://t.me/${ad.telegram_link.replace('@', '')}`}
+                  href={ad.contact_telegram.startsWith('http')
+                    ? ad.contact_telegram
+                    : `https://t.me/${ad.contact_telegram.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

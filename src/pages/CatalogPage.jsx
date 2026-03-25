@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Phone, MapPin, Clock, Star } from 'lucide-react';
 import { supabaseGet } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import FavButton from '../components/FavButton';
@@ -15,10 +15,11 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     if (!categoryId) {
-      supabaseGet('categories', { order: 'name.asc' }).then(setCategories).finally(() => setLoading(false));
+      supabaseGet('categories', { order: 'sort_order.asc' }).then(setCategories).finally(() => setLoading(false));
     } else if (!subcategoryId) {
-      supabaseGet('subcategories', { category_id: `eq.${categoryId}`, order: 'name.asc' })
+      supabaseGet('subcategories', { category_id: `eq.${categoryId}`, order: 'label.asc' })
         .then(setSubcategories).finally(() => setLoading(false));
     } else {
       const params = { subcategory_id: `eq.${subcategoryId}`, order: 'name.asc' };
@@ -46,10 +47,17 @@ export default function CatalogPage() {
                 <FavButton type="place" id={p.id} />
               </div>
               {p.description && <p>{p.description}</p>}
+              {p.rating && (
+                <div className="place-rating">
+                  <Star size={13} fill="#fbbf24" stroke="#fbbf24" /> {p.rating}
+                </div>
+              )}
               {p.address && (
                 <a
                   className="place-link"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address)}`}
+                  href={p.lat && p.lng
+                    ? `https://www.google.com/maps?q=${p.lat},${p.lng}`
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -60,6 +68,16 @@ export default function CatalogPage() {
                 <a className="place-link" href={`tel:${p.phone}`}>
                   <Phone size={14} /> {p.phone}
                 </a>
+              )}
+              {p.hours && (
+                <div className="place-hours">
+                  <Clock size={14} /> {p.hours}
+                </div>
+              )}
+              {p.tags && p.tags.length > 0 && (
+                <div className="place-tags">
+                  {p.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+                </div>
               )}
             </div>
           ))}
@@ -84,8 +102,7 @@ export default function CatalogPage() {
               className="category-card"
               onClick={() => navigate(`/catalog/${categoryId}/${sub.id}`)}
             >
-              <span className="category-icon">{sub.icon || '📂'}</span>
-              <span className="category-name">{sub.name}</span>
+              <span className="category-name">{sub.label}</span>
             </button>
           ))}
         </div>
@@ -105,7 +122,7 @@ export default function CatalogPage() {
             onClick={() => navigate(`/catalog/${cat.id}`)}
           >
             <span className="category-icon">{cat.icon || '📁'}</span>
-            <span className="category-name">{cat.name}</span>
+            <span className="category-name">{cat.label}</span>
           </button>
         ))}
       </div>
