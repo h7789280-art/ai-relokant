@@ -34,10 +34,18 @@ export function publicContentQuery(table, cityId, { columns = '*' } = {}) {
 
 /**
  * Fetch approved content rows for the active city.
+ * @param {object} [opts]
+ * @param {string} [opts.columns]
+ * @param {number} [opts.limit]
+ * @param {{ column: string, ascending?: boolean }} [opts.order]
  * @returns {Promise<Array>} rows (throws on error)
  */
-export async function fetchContent(table, cityId, { columns = '*', limit } = {}) {
+export async function fetchContent(table, cityId, { columns = '*', limit, order } = {}) {
   let query = publicContentQuery(table, cityId, { columns })
+  if (order) {
+    // nullsFirst:false keeps undated rows out of the way of the freshest items.
+    query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })
+  }
   if (limit) query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error
@@ -89,6 +97,21 @@ export async function fetchCountries() {
     .order('name', { ascending: true })
   if (error) throw error
   return data ?? []
+}
+
+/**
+ * Fetch a single city row by id (needed for its coordinates — the persisted
+ * selection only stores ids/names, not lat/lon). Returns null when not found.
+ */
+export async function fetchCity(cityId) {
+  if (!cityId) return null
+  const { data, error } = await supabase
+    .from('cities')
+    .select('*')
+    .eq('id', cityId)
+    .maybeSingle()
+  if (error) throw error
+  return data
 }
 
 /** Cities for a country, ordered for the welcome-screen selector. */

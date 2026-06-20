@@ -7,7 +7,45 @@
   "home": {
     "tagline": "Ваш местный друг в новом городе.",
     "skeletonNotice": "Чистый каркас — экраны скоро появятся.",
-    "askPlaceholder": "Спроси CityMate…"
+    "askPlaceholder": "Спроси CityMate…",
+    "notifications": "Уведомления",
+    "changeCity": "Сменить город",
+    "quickQuestions": [
+      "Где обменять валюту?",
+      "Ближайшая аптека",
+      "Купить местную SIM",
+      "Вид на жительство"
+    ],
+    "empty": "Пока пусто.",
+    "weather": {
+      "title": "Погода",
+      "water": "Вода",
+      "unavailable": "Погода недоступна",
+      "codes": {
+        "clear": "Ясно",
+        "mainlyClear": "Малооблачно",
+        "cloudy": "Облачно",
+        "fog": "Туман",
+        "drizzle": "Морось",
+        "rain": "Дождь",
+        "snow": "Снег",
+        "showers": "Ливень",
+        "thunderstorm": "Гроза"
+      }
+    },
+    "currency": {
+      "title": "Курс валют",
+      "unavailable": "Курс недоступен"
+    },
+    "news": {
+      "title": "Новости сегодня"
+    },
+    "markets": {
+      "title": "Рынки сегодня"
+    },
+    "events": {
+      "title": "Афиша сегодня"
+    }
   },
   "nav": {
     "home": "Главная",

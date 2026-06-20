@@ -7,7 +7,45 @@
   "home": {
     "tagline": "Your local friend in a new city.",
     "skeletonNotice": "Clean skeleton — screens coming soon.",
-    "askPlaceholder": "Ask CityMate…"
+    "askPlaceholder": "Ask CityMate…",
+    "notifications": "Notifications",
+    "changeCity": "Change city",
+    "quickQuestions": [
+      "Where to exchange money?",
+      "Nearest pharmacy",
+      "Get a local SIM",
+      "Residence permit"
+    ],
+    "empty": "Nothing here yet.",
+    "weather": {
+      "title": "Weather",
+      "water": "Water",
+      "unavailable": "Weather unavailable",
+      "codes": {
+        "clear": "Clear",
+        "mainlyClear": "Mainly clear",
+        "cloudy": "Cloudy",
+        "fog": "Fog",
+        "drizzle": "Drizzle",
+        "rain": "Rain",
+        "snow": "Snow",
+        "showers": "Showers",
+        "thunderstorm": "Thunderstorm"
+      }
+    },
+    "currency": {
+      "title": "Exchange rate",
+      "unavailable": "Rates unavailable"
+    },
+    "news": {
+      "title": "News today"
+    },
+    "markets": {
+      "title": "Markets today"
+    },
+    "events": {
+      "title": "What's on today"
+    }
   },
   "nav": {
     "home": "Home",
