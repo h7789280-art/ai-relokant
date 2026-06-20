@@ -27,7 +27,6 @@ import {
   Newspaper,
   Store,
   CalendarDays,
-  FileText,
   ArrowLeftRight,
   Pill,
   Smartphone,
@@ -54,16 +53,17 @@ const WEATHER_ICONS = {
   thunderstorm: CloudLightning,
 }
 
-// Quick chips: a meaningful lucide icon + an i18n label key. `to` routes either
-// to the AI chat (seeded with the chip's label as the question) or to a catalog
-// section (§4 — "lead to the chat / the matching section for now").
+// Quick chips: a meaningful lucide icon + an i18n key. Every chip opens the AI
+// chat ("Ask CityMate") seeded with a ready-made question for its topic (§4 —
+// "ask & solve, not a directory"). The short visible label comes from
+// `home.chips.<key>`; the seeded question from `home.chipQuestions.<key>`.
 const CHIPS = [
-  { key: 'exchange', icon: ArrowLeftRight, to: 'chat' },
-  { key: 'pharmacy', icon: Pill, to: '/catalog/pharmacies' },
-  { key: 'sim', icon: Smartphone, to: 'chat' },
-  { key: 'shops', icon: ShoppingBag, to: '/catalog/shops' },
-  { key: 'rent', icon: KeyRound, to: 'chat' },
-  { key: 'transport', icon: Bus, to: 'chat' },
+  { key: 'exchange', icon: ArrowLeftRight },
+  { key: 'pharmacy', icon: Pill },
+  { key: 'sim', icon: Smartphone },
+  { key: 'shops', icon: ShoppingBag },
+  { key: 'rent', icon: KeyRound },
+  { key: 'transport', icon: Bus },
 ]
 
 // Feed query options. Module-scoped so their identity is stable across renders
@@ -166,10 +166,9 @@ export default function Home() {
     navigate('/chat', question ? { state: { question } } : undefined)
   }
 
-  // A chip either seeds the chat with its label or jumps to a catalog section.
+  // Every chip seeds the chat with a ready-made question for its topic (§4).
   function onChip(chip) {
-    if (chip.to === 'chat') openChat(t(`home.chips.${chip.key}`))
-    else navigate(chip.to)
+    openChat(t(`home.chipQuestions.${chip.key}`))
   }
 
   const WeatherIcon = weather.data ? WEATHER_ICONS[weatherCodeKey(weather.data.code)] : Cloud
@@ -347,19 +346,6 @@ export default function Home() {
           />
         )}
       />
-
-      {/* "Documents & life" entry — guides + checklists (§4 screen 4). No room
-          in the 5-tab bar, so the section is reached from this Home link. */}
-      <button type="button" className="home__guides" onClick={() => navigate('/guides')}>
-        <span className="home__guides-icon" aria-hidden="true">
-          <FileText size={22} strokeWidth={1.9} />
-        </span>
-        <span className="home__guides-body">
-          <span className="home__guides-title">{t('guides.title')}</span>
-          <span className="home__guides-sub">{t('guides.subtitle')}</span>
-        </span>
-        <ChevronRight className="home__guides-chevron" size={18} aria-hidden="true" />
-      </button>
     </main>
   )
 }

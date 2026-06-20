@@ -50,6 +50,14 @@
       "shops": "Shops",
       "rent": "Rent a home",
       "transport": "Transport"
+    },
+    "chipQuestions": {
+      "exchange": "Where can I exchange money at a good rate in Alanya?",
+      "pharmacy": "Where is the nearest pharmacy?",
+      "sim": "How do I buy a local SIM card?",
+      "shops": "Where can I buy groceries and home goods?",
+      "rent": "How do I rent a home in Alanya?",
+      "transport": "What transport is there in Alanya and how do I use it?"
     }
   },
   "catalog": {
