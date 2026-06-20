@@ -189,6 +189,19 @@ function StatusField({ value, onChange }) {
   )
 }
 
+// Turn a Supabase / PostgREST error into a readable banner string. Supabase
+// errors carry the human message in `.message`, but the actionable bit is often
+// in `.details` / `.hint` / `.code` (e.g. an RLS denial is code 42501). Surface
+// all of it so a failed save is never opaque — no silent or vague failures (§7).
+function describeError(err) {
+  if (!err) return ''
+  if (typeof err === 'string') return err
+  const parts = [err.message, err.details, err.hint].filter(Boolean)
+  let msg = parts.join(' — ')
+  if (err.code) msg += msg ? ` (${err.code})` : `(${err.code})`
+  return msg.trim()
+}
+
 // The error / success banner shared by every form.
 function FormBanners({ error, success }) {
   return (
@@ -289,7 +302,11 @@ function useContentSection(table) {
 
   // Save a built payload. Returns true on success so the caller can reset.
   async function save({ payload, isEdit, id, name }) {
-    if (saving || !cityId) return false
+    if (saving) return false
+    if (!cityId) {
+      setError(t('admin.form.error'))
+      return false
+    }
     setSaving(true)
     setError('')
     setSuccess('')
@@ -300,7 +317,7 @@ function useContentSection(table) {
       reload()
       return true
     } catch (err) {
-      setError(err?.message || t('admin.form.error'))
+      setError(describeError(err) || t('admin.form.error'))
       return false
     } finally {
       setSaving(false)
@@ -312,7 +329,7 @@ function useContentSection(table) {
       await updateContent(table, id, changes)
       reload()
     } catch (err) {
-      setError(err?.message || t('admin.form.error'))
+      setError(describeError(err) || t('admin.form.error'))
     }
   }
 
@@ -501,7 +518,10 @@ function PlacesSection() {
       setError(t('admin.form.nameRequired'))
       return
     }
-    if (!cityId) return
+    if (!cityId) {
+      setError(t('admin.form.error'))
+      return
+    }
 
     const payload = {
       city_id: cityId,
@@ -535,7 +555,7 @@ function PlacesSection() {
       setSuccess(t(wasEditing ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       loadPlaces()
     } catch (err) {
-      setError(err?.message || t('admin.form.error'))
+      setError(describeError(err) || t('admin.form.error'))
     } finally {
       setSaving(false)
     }
@@ -546,7 +566,7 @@ function PlacesSection() {
       await updatePlace(place.id, changes)
       loadPlaces()
     } catch (err) {
-      setError(err?.message || t('admin.form.error'))
+      setError(describeError(err) || t('admin.form.error'))
     }
   }
 
