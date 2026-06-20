@@ -19,9 +19,15 @@ const GREETINGS = SUPPORTED_LANGUAGES.map(
   (code) => i18n.getResource(code, 'translation', 'welcome.greeting') || 'Welcome',
 )
 
-// Keep in sync with the `welcome-word-out` animation duration in global.css:
-// each greeting blooms in letter-by-letter, holds, then dissolves over this span.
-const GREETING_INTERVAL_MS = 2600
+// --- greeting animation timings (the two knobs to tweak the pacing) ---------
+// GREETING_INTERVAL_MS is the full per-word cycle: the greeting blooms in
+// letter-by-letter, holds calmly, then dissolves before the next one swaps in.
+// It drives both the swap timer here and the `welcome-word-out` fade duration
+// in global.css (fed through the --welcome-greeting-ms custom property below).
+const GREETING_INTERVAL_MS = 4800
+// Per-letter delay for the "writing on" stagger. With the welcome-letter-in
+// duration in global.css, a ~7-letter word finishes writing in ~1.3s.
+const LETTER_STAGGER_MS = 75
 
 function nativeName(code) {
   return i18n.getResource(code, 'translation', 'languageName') || code
@@ -144,13 +150,14 @@ export default function Welcome() {
           <span
             key={greetingIndex}
             className="welcome__greeting-word"
+            style={{ '--welcome-greeting-ms': `${GREETING_INTERVAL_MS}ms` }}
             aria-hidden="true"
           >
             {Array.from(GREETINGS[greetingIndex]).map((ch, i) => (
               <span
                 key={i}
                 className="welcome__greeting-letter"
-                style={{ animationDelay: `${i * 45}ms` }}
+                style={{ animationDelay: `${i * LETTER_STAGGER_MS}ms` }}
               >
                 {ch === ' ' ? ' ' : ch}
               </span>

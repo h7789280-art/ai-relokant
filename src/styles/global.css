@@ -310,7 +310,9 @@ button {
 .welcome__greeting-word {
   display: inline-block;
   white-space: nowrap;
-  animation: welcome-word-out 2600ms ease-in-out both;
+  /* Duration is fed from GREETING_INTERVAL_MS in Welcome.jsx so the hold +
+     dissolve cycle stays in one place; the fallback matches that constant. */
+  animation: welcome-word-out var(--welcome-greeting-ms, 4800ms) ease-in-out both;
 }
 
 /* Each letter blooms in, staggered (delay set inline), for a hand-written feel.
@@ -319,7 +321,7 @@ button {
   display: inline-block;
   white-space: pre;
   opacity: 0;
-  animation: welcome-letter-in 620ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation: welcome-letter-in 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 .welcome__subtitle {
