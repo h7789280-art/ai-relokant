@@ -1,0 +1,147 @@
+// Events / what's on (CLAUDE.md §4, screen 5). City-scoped, approved-only feed
+// (Stage-2 helpers), grouped by date so the list reads as an agenda. Reached
+// from Home ("What's on today → See all") and direct navigation. Each card
+// shows title, date/time, location, photo and a short description. Empty →
+// a tidy "nothing yet" placeholder.
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, CalendarDays, MapPin, Clock } from 'lucide-react'
+import { useApp } from '../context/appContext.js'
+import { fetchContent, withTranslations } from '../lib/content.js'
+import i18n from '../i18n/index.js'
+
+// Oldest-first by start date keeps the agenda reading top-to-bottom; undated
+// rows sink to the end (nullsFirst:false in fetchContent).
+const EVENTS_OPTS = { order: { column: 'starts_at', ascending: true } }
+
+// Sentinel for "no day grouped yet" — distinct from every real key (a Y-M-D
+// string) and from null (which undated rows produce).
+const NO_DAY = 'init'
+
+// Local Y-M-D key so events on the same calendar day share one header.
+function dayKey(value) {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+function formatDay(value) {
+  const d = new Date(value)
+  return new Intl.DateTimeFormat(i18n.language, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(d)
+}
+
+function formatTime(value) {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return new Intl.DateTimeFormat(i18n.language, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
+}
+
+export default function Events() {
+  const { t, i18n: i18nInstance } = useTranslation()
+  const navigate = useNavigate()
+  const { cityId } = useApp()
+  const [state, setState] = useState({ status: 'loading', rows: [] })
+
+  useEffect(() => {
+    if (!cityId) return
+    let active = true
+    fetchContent('events', cityId, EVENTS_OPTS)
+      .then((rows) => withTranslations('events', rows, i18nInstance.language))
+      .then((rows) => active && setState({ status: 'ready', rows }))
+      .catch(() => active && setState({ status: 'ready', rows: [] }))
+    return () => {
+      active = false
+    }
+  }, [cityId, i18nInstance.language])
+
+  return (
+    <main className="app-shell listing">
+      <header className="catalog__header">
+        <button type="button" className="catalog__back" onClick={() => navigate('/')}>
+          <ArrowLeft size={18} aria-hidden="true" />
+          {t('nav.home')}
+        </button>
+        <h1 className="catalog__title">{t('events.title')}</h1>
+        <p className="catalog__subtitle">{t('events.subtitle')}</p>
+      </header>
+
+      {state.status === 'loading' ? (
+        <div className="listing__group">
+          <div className="catalog__skeleton catalog__skeleton--row" />
+          <div className="catalog__skeleton catalog__skeleton--row" />
+        </div>
+      ) : state.rows.length === 0 ? (
+        <p className="catalog__empty">{t('events.empty')}</p>
+      ) : (
+        <div className="listing__groups">{renderGroups(state.rows, t)}</div>
+      )}
+    </main>
+  )
+}
+
+// Walk the (already date-sorted) rows, emitting a day header whenever the day
+// changes, then the event cards beneath it.
+function renderGroups(rows, t) {
+  const out = []
+  let currentKey = NO_DAY
+  let group = null
+  for (const row of rows) {
+    const key = dayKey(row.starts_at)
+    if (key !== currentKey) {
+      currentKey = key
+      group = []
+      out.push(
+        <section className="listing__group" key={`g-${row.id}`}>
+          <h2 className="listing__day">
+            {row.starts_at ? formatDay(row.starts_at) : t('events.undated')}
+          </h2>
+          <div className="listing__cards">{group}</div>
+        </section>,
+      )
+    }
+    group.push(<EventCard key={row.id} event={row} />)
+  }
+  return out
+}
+
+function EventCard({ event }) {
+  const time = formatTime(event.starts_at)
+  return (
+    <article className="event-card">
+      {event.image_url ? (
+        <img className="event-card__photo" src={event.image_url} alt="" loading="lazy" />
+      ) : (
+        <span className="event-card__photo event-card__photo--ph" aria-hidden="true">
+          <CalendarDays size={22} />
+        </span>
+      )}
+      <div className="event-card__body">
+        <h3 className="event-card__title">{event.title}</h3>
+        <div className="event-card__meta">
+          {time && (
+            <span className="event-card__meta-item">
+              <Clock size={14} aria-hidden="true" />
+              {time}
+            </span>
+          )}
+          {event.location && (
+            <span className="event-card__meta-item">
+              <MapPin size={14} aria-hidden="true" />
+              {event.location}
+            </span>
+          )}
+        </div>
+        {event.description && <p className="event-card__desc">{event.description}</p>}
+      </div>
+    </article>
+  )
+}

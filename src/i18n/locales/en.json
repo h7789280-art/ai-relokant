@@ -144,6 +144,30 @@
     "languages": "Languages spoken",
     "notFound": "Place not found."
   },
+  "events": {
+    "title": "What's on",
+    "subtitle": "Events in your city, by date",
+    "empty": "No events yet.",
+    "undated": "Date to be announced"
+  },
+  "news": {
+    "title": "City news",
+    "subtitle": "Short, verifiable updates for your city",
+    "empty": "No news yet.",
+    "source": "Source",
+    "readMore": "Read in full",
+    "notFound": "Article not found."
+  },
+  "guides": {
+    "title": "Documents & life",
+    "subtitle": "Step-by-step guides and checklists",
+    "empty": "No guides yet.",
+    "checklist": "Checklist",
+    "disclaimer": "This information is for reference only. Before acting, check the current rules with official sources or a qualified specialist.",
+    "source": "Source",
+    "verifiedAt": "Last checked",
+    "notFound": "Guide not found."
+  },
   "nav": {
     "home": "Home",
     "catalog": "Catalog",

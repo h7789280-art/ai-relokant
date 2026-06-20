@@ -202,6 +202,40 @@ export async function fetchPlace(placeId) {
   return data
 }
 
+// ---- Single content rows for the detail screens (§4) -----------------------
+
+/**
+ * A single approved news item by id (for the news article page). The approved
+ * filter is also enforced by RLS; kept explicit here. Returns null when missing.
+ */
+export async function fetchNewsItem(newsId) {
+  if (!newsId) return null
+  const { data, error } = await supabase
+    .from('news')
+    .select('*')
+    .eq('id', newsId)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * A single approved guide by id (for the "Documents & life" guide page).
+ * Returns null when not found.
+ */
+export async function fetchGuide(guideId) {
+  if (!guideId) return null
+  const { data, error } = await supabase
+    .from('guides')
+    .select('*')
+    .eq('id', guideId)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 // ---- Reference data (read in full; inactive shown as "(soon)" in UI, §4) ----
 
 /** Countries ordered for the welcome-screen selector. */

@@ -27,6 +27,7 @@ import {
   Newspaper,
   Store,
   CalendarDays,
+  FileText,
   ArrowLeftRight,
   Pill,
   Smartphone,
@@ -298,7 +299,7 @@ export default function Home() {
         title={t('home.news.title')}
         feed={news}
         empty={t('home.empty')}
-        onSeeAll={() => openChat(t('home.news.title'))}
+        onSeeAll={() => navigate('/news')}
         renderItem={(row) => (
           <FeedCard
             key={row.id}
@@ -306,7 +307,7 @@ export default function Home() {
             phIcon={Newspaper}
             title={row.title}
             meta={formatDateTime(row.published_at)}
-            onClick={() => openChat(row.title)}
+            onClick={() => navigate(`/news/${row.id}`)}
           />
         )}
       />
@@ -334,7 +335,7 @@ export default function Home() {
         title={t('home.events.title')}
         feed={events}
         empty={t('home.empty')}
-        onSeeAll={() => openChat(t('home.events.title'))}
+        onSeeAll={() => navigate('/events')}
         renderItem={(row) => (
           <FeedCard
             key={row.id}
@@ -342,10 +343,23 @@ export default function Home() {
             phIcon={CalendarDays}
             title={row.title}
             meta={formatDateTime(row.starts_at) || row.location}
-            onClick={() => openChat(row.title)}
+            onClick={() => navigate('/events')}
           />
         )}
       />
+
+      {/* "Documents & life" entry — guides + checklists (§4 screen 4). No room
+          in the 5-tab bar, so the section is reached from this Home link. */}
+      <button type="button" className="home__guides" onClick={() => navigate('/guides')}>
+        <span className="home__guides-icon" aria-hidden="true">
+          <FileText size={22} strokeWidth={1.9} />
+        </span>
+        <span className="home__guides-body">
+          <span className="home__guides-title">{t('guides.title')}</span>
+          <span className="home__guides-sub">{t('guides.subtitle')}</span>
+        </span>
+        <ChevronRight className="home__guides-chevron" size={18} aria-hidden="true" />
+      </button>
     </main>
   )
 }
