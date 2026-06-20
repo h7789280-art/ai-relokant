@@ -6,8 +6,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, MapPin, BadgeCheck, Megaphone } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
+import PlaceRow from '../components/PlaceRow.jsx'
 import {
   fetchCategoryBySlug,
   fetchSubcategories,
@@ -97,7 +98,7 @@ export default function CatalogCategory() {
               className={`catalog__filter${activeSub === sub.id ? ' is-active' : ''}`}
               onClick={() => setActiveSub(sub.id)}
             >
-              {sub.name}
+              {t(`catalog.subcategories.${sub.slug}`, sub.name)}
             </button>
           ))}
         </div>
@@ -114,42 +115,7 @@ export default function CatalogCategory() {
         <ul className="place-list">
           {places.rows.map((place) => (
             <li key={place.id}>
-              <button
-                type="button"
-                className="place-row"
-                onClick={() => navigate(`/catalog/place/${place.id}`)}
-              >
-                {place.photos?.[0] ? (
-                  <img className="place-row__photo" src={place.photos[0]} alt="" loading="lazy" />
-                ) : (
-                  <span className="place-row__photo place-row__photo--ph" aria-hidden="true">
-                    <MapPin size={20} />
-                  </span>
-                )}
-                <span className="place-row__body">
-                  <span className="place-row__name">{place.name}</span>
-                  {place.address && (
-                    <span className="place-row__address">{place.address}</span>
-                  )}
-                  {(place.is_promoted || place.is_verified) && (
-                    <span className="place-row__badges">
-                      {place.is_promoted && (
-                        <span className="badge badge--promoted">
-                          <Megaphone size={12} aria-hidden="true" />
-                          {t('catalog.promoted')}
-                        </span>
-                      )}
-                      {place.is_verified && (
-                        <span className="badge badge--verified">
-                          <BadgeCheck size={12} aria-hidden="true" />
-                          {t('catalog.verified')}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </span>
-                <ChevronRight className="place-row__chevron" size={18} aria-hidden="true" />
-              </button>
+              <PlaceRow place={place} />
             </li>
           ))}
         </ul>

@@ -127,6 +127,46 @@ export async function fetchSubcategories(categoryId) {
 }
 
 /**
+ * All active subcategories across categories (for catalog-wide search, where we
+ * match a subcategory by its localized label client-side and link to its parent
+ * category). Carries `category_id` so the caller can resolve the parent slug.
+ */
+export async function fetchAllSubcategories() {
+  const { data, error } = await supabase
+    .from('subcategories')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Free-text search over approved places in the active city (the plain catalog
+ * search — NOT the AI assistant, §4/§6). Matches the base name/address with a
+ * case-insensitive LIKE; promoted placements lead, then by name.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {string} query   user text (empty/whitespace → no results)
+ * @param {{ columns?: string, limit?: number }} [opts]
+ */
+export async function searchPlaces(cityId, query, { columns = '*', limit = 30 } = {}) {
+  const q = query?.trim()
+  if (!cityId || !q) return []
+  // The PostgREST .or() filter treats commas/parentheses as syntax, so strip
+  // them (and the LIKE wildcards) from user input before interpolating.
+  const safe = q.replace(/[,()%*]/g, ' ').trim()
+  if (!safe) return []
+  const { data, error } = await publicContentQuery('places', cityId, { columns })
+    .or(`name.ilike.%${safe}%,address.ilike.%${safe}%`)
+    .order('is_promoted', { ascending: false })
+    .order('name', { ascending: true })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+/**
  * Approved places for the active city, optionally narrowed to a category /
  * subcategory. Promoted (paid) placements come FIRST so the UI can list them on
  * top with an honest "promoted" label (§12); within each group, by name.

@@ -730,6 +730,103 @@ button {
   font-size: var(--text-sm);
 }
 
+/* --- Search bar (first element: finding beats browsing, §4) --- */
+.catalog__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.catalog__search-icon {
+  flex: 0 0 auto;
+  display: flex;
+  color: var(--color-text-subtle);
+}
+
+.catalog__search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  /* Drop the native search clear button — we render our own. */
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.catalog__search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.catalog__search-input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.catalog__search-input:focus {
+  outline: none;
+}
+
+.catalog__search-clear {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-subtle);
+  transition: color 150ms ease;
+}
+
+.catalog__search-clear:hover {
+  color: var(--color-text-muted);
+}
+
+/* --- Search results (category/subcategory chips + place rows) --- */
+.catalog__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.catalog__subchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cat-subchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.cat-subchip svg {
+  color: var(--color-accent);
+  transition: color 150ms ease;
+}
+
+.cat-subchip:hover {
+  background: var(--color-accent-soft);
+  border-color: transparent;
+  color: var(--color-accent);
+}
+
 /* --- Category grid --- */
 .catalog__grid {
   display: grid;
