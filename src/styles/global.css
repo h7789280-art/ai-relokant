@@ -1767,6 +1767,36 @@ button {
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--space-1);
 }
 
+/* --- Markdown inside bot bubbles (CLAUDE.md §9B) --- */
+.chat__bubble--bot .md__p {
+  margin: 0;
+}
+
+.chat__bubble--bot .md__p + .md__p,
+.chat__bubble--bot .md__p + .md__ul,
+.chat__bubble--bot .md__p + .md__ol,
+.chat__bubble--bot .md__ul + .md__p,
+.chat__bubble--bot .md__ol + .md__p {
+  margin-top: var(--space-2);
+}
+
+.chat__bubble--bot .md__ul,
+.chat__bubble--bot .md__ol {
+  margin: 0;
+  padding-left: 1.25em;
+}
+
+.chat__bubble--bot .md__ul li,
+.chat__bubble--bot .md__ol li {
+  margin: 2px 0;
+}
+
+/* The bubble keeps source newlines for plain text; Markdown blocks manage their
+   own spacing, so don't double up the whitespace there. */
+.chat__bubble--bot {
+  white-space: normal;
+}
+
 /* --- Typing indicator --- */
 .chat__typing {
   display: inline-flex;

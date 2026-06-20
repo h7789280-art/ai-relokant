@@ -7,10 +7,13 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import { Bot, ArrowUp } from 'lucide-react'
 import AuthGate from '../components/AuthGate.jsx'
+import { Markdown } from '../lib/markdown.jsx'
+import { useApp } from '../context/appContext.js'
 
 function ChatRoom() {
   const { t, i18n } = useTranslation()
   const location = useLocation()
+  const { cityId } = useApp()
 
   // A pre-filled question handed over from Home ("Ask CityMate" bar / chips)
   // lands in the input, ready to send (read once so re-renders don't refill it).
@@ -47,7 +50,8 @@ function ChatRoom() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, lang: i18n.language }),
+        // city_id scopes the answer to the active city's approved data (§6/§5).
+        body: JSON.stringify({ messages: history, lang: i18n.language, city_id: cityId }),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.reply) {
@@ -91,7 +95,7 @@ function ChatRoom() {
             key={i}
             className={`chat__bubble chat__bubble--${m.role === 'user' ? 'user' : 'bot'}`}
           >
-            {m.text}
+            {m.role === 'assistant' ? <Markdown text={m.text} /> : m.text}
           </div>
         ))}
 

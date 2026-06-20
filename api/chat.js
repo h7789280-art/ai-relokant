@@ -1,15 +1,18 @@
-// CityMate AI chat proxy (CLAUDE.md §6) — Vercel serverless function.
+// CityMate AI chat proxy (CLAUDE.md §6, §11, §12) — Vercel serverless function.
 // The model is called ONLY here, server-side: the Gemini key lives in
 // process.env.GEMINI_API_KEY and never reaches the client bundle.
 //
 // POST /api/chat
 //   body: { messages: [{ role: 'user' | 'assistant', text: string }, …],
-//           lang: 'ru' | 'en' | … }
+//           lang: 'ru' | 'en' | …,
+//           city_id: '<active city uuid>' }
 //   200:  { reply: string }
 //   4xx/5xx: { error: string, detail?: string }  ← always JSON, never a silent crash
 //
-// Stage 9A: a working Gemini chat. Grounding on Supabase city data and the
-// per-user daily limit are deliberately NOT here yet — they come next.
+// Stage 9B — grounding: before calling Gemini we pull the active city's
+// APPROVED places from Supabase and hand them to the model as the ONLY source.
+// The model must answer strictly from this list (no invented places / phones /
+// addresses, no general knowledge). The per-user daily limit comes next.
 
 // Gemini model. Flash tier (fast + free quota). One constant so it's trivial to
 // bump when Google ships a newer Flash. See https://ai.google.dev/gemini-api.
@@ -17,6 +20,10 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 
 const GEMINI_ENDPOINT = (model, key) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
+
+// Cap on how many places we hand to the model, to keep the prompt cheap (§6).
+// Promoted + verified are prioritised, so the most relevant rows survive the cap.
+const MAX_PLACES = 30
 
 // Language code → human name, so the model gets an unambiguous instruction
 // (CLAUDE.md §8 — the 13 start languages). Unknown codes fall back to the code.
@@ -36,18 +43,151 @@ const LANGUAGE_NAMES = {
   da: 'Danish',
 }
 
-// System persona (§6). Grounding on real city data is the next step.
-function systemInstruction(lang) {
-  const langName = LANGUAGE_NAMES[lang] || lang || 'English'
+// ---- Supabase grounding (server-side public read under RLS, §6/§9) ----------
+//
+// Reads the city's approved places via PostgREST. The anon key + URL are public
+// (RLS gates every read), so the VITE_-prefixed vars are reused here — no
+// separate server secret. Returns [] on any misconfiguration / error so chat
+// degrades to an honest "no verified info" rather than crashing.
+async function fetchApprovedPlaces(cityId) {
+  const url = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !anonKey || !cityId) return []
+
+  // Embed the category/subcategory names so the model can match a query like
+  // "стоматолог" to the Dentists subcategory. Promoted first, then verified.
+  const select =
+    'name,description,address,phone,whatsapp,hours,languages,is_promoted,is_verified,' +
+    'category:categories(name,slug),subcategory:subcategories(name,slug)'
+  const endpoint =
+    `${url.replace(/\/$/, '')}/rest/v1/places` +
+    `?city_id=eq.${encodeURIComponent(cityId)}` +
+    `&status=eq.approved` +
+    `&select=${encodeURIComponent(select)}` +
+    `&order=is_promoted.desc,is_verified.desc,name.asc` +
+    `&limit=120`
+
+  try {
+    const res = await fetch(endpoint, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    })
+    if (!res.ok) return []
+    const rows = await res.json().catch(() => null)
+    return Array.isArray(rows) ? rows : []
+  } catch {
+    return []
+  }
+}
+
+// Lowercase word tokens (≥3 chars) from the latest user turn, used for a light
+// relevance match. Deliberately simple (§6 — no over-engineering).
+function queryTokens(messages) {
+  const lastUser = [...messages].reverse().find((m) => m && m.role !== 'assistant')
+  const text = (lastUser?.text || '').toLowerCase()
+  return [...new Set(text.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3))]
+}
+
+// Searchable haystack for a place row (base English fields + category labels).
+function placeHaystack(p) {
   return [
+    p.name,
+    p.address,
+    p.description,
+    p.category?.name,
+    p.category?.slug,
+    p.subcategory?.name,
+    p.subcategory?.slug,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
+// Rank places by keyword relevance to the query, then promoted, then verified,
+// and keep the top MAX_PLACES. When nothing matches the query we still pass the
+// top promoted/verified rows so the model has city context (it will say there's
+// no verified match if none fits).
+function selectPlaces(places, tokens) {
+  const scored = places.map((p, i) => {
+    const hay = placeHaystack(p)
+    const matches = tokens.reduce((n, tok) => (hay.includes(tok) ? n + 1 : n), 0)
+    return { p, i, matches }
+  })
+  scored.sort((a, b) => {
+    if (b.matches !== a.matches) return b.matches - a.matches
+    const promo = Number(b.p.is_promoted) - Number(a.p.is_promoted)
+    if (promo) return promo
+    const ver = Number(b.p.is_verified) - Number(a.p.is_verified)
+    if (ver) return ver
+    return a.i - b.i // stable: keep the DB order (already promoted/verified/name)
+  })
+  return scored.slice(0, MAX_PLACES).map((s) => s.p)
+}
+
+// Render one place as a compact, unambiguous block for the model.
+function formatPlace(p, n) {
+  const lines = [`${n}. ${p.name || 'Unnamed'}`]
+  const cat = [p.category?.name, p.subcategory?.name].filter(Boolean).join(' › ')
+  if (cat) lines.push(`   Category: ${cat}`)
+  if (p.address) lines.push(`   Address: ${p.address}`)
+  if (p.phone) lines.push(`   Phone: ${p.phone}`)
+  if (p.whatsapp) lines.push(`   WhatsApp: ${p.whatsapp}`)
+  if (p.hours) {
+    const hours = typeof p.hours === 'string' ? p.hours : JSON.stringify(p.hours)
+    lines.push(`   Hours: ${hours}`)
+  }
+  if (Array.isArray(p.languages) && p.languages.length) {
+    lines.push(`   Languages: ${p.languages.join(', ')}`)
+  }
+  const flags = []
+  if (p.is_promoted) flags.push('PROMOTED (advertised)')
+  if (p.is_verified) flags.push('VERIFIED')
+  if (flags.length) lines.push(`   Flags: ${flags.join(', ')}`)
+  return lines.join('\n')
+}
+
+// Build the grounded system instruction: persona + the strict source-of-truth
+// rules (§6/§11) + the approved place list (or an explicit "empty" marker).
+function systemInstruction(lang, places) {
+  const langName = LANGUAGE_NAMES[lang] || lang || 'English'
+
+  const rules = [
     'You are CityMate — a warm, knowledgeable local friend who helps people',
     'live in a new city. The current city is Alanya, Turkey.',
-    'Answer briefly, in a natural human tone, and be genuinely useful for',
-    'everyday questions (places, services, documents, transport, daily life).',
-    `ALWAYS reply in the user's language: ${langName}.`,
-    'If you are unsure about a specific place or fact, say so honestly rather',
-    'than inventing details.',
-  ].join(' ')
+    '',
+    'STRICT GROUNDING RULES — follow them exactly:',
+    '- Answer ONLY from the verified CityMate places listed below. This list is',
+    '  your single source of truth.',
+    '- NEVER invent places, addresses, phone numbers, hours or any detail that is',
+    '  not in the list. Do NOT use general world knowledge to name businesses.',
+    '- If nothing in the list fits the question, say honestly — in the user\'s',
+    '  language — that there is no verified information for this request yet.',
+    '  Do not guess.',
+    '- Show PROMOTED places first and clearly label them as advertised /',
+    '  promoted (be transparent that it is a paid placement).',
+    '- Label VERIFIED places as verified — it is a trust signal, not an ad.',
+    '- Keep answers short and natural. When you list a place, include the details',
+    '  that are present (address, phone/WhatsApp, hours, languages).',
+    `- ALWAYS reply in the user's language: ${langName}.`,
+  ]
+
+  let source
+  if (places.length === 0) {
+    source = [
+      '',
+      'VERIFIED CITYMATE PLACES: (none available for this city right now)',
+      'Because the list is empty, tell the user there is no verified information',
+      'yet and avoid naming any specific business.',
+    ]
+  } else {
+    source = [
+      '',
+      `VERIFIED CITYMATE PLACES (${places.length}), already ordered by priority:`,
+      ...places.map((p, i) => formatPlace(p, i + 1)),
+    ]
+  }
+
+  return [...rules, ...source].join('\n')
 }
 
 // Read + JSON-parse the request body. Vercel usually pre-parses JSON into
@@ -96,6 +236,7 @@ export default async function handler(req, res) {
 
   const messages = Array.isArray(body.messages) ? body.messages : []
   const lang = typeof body.lang === 'string' ? body.lang : 'en'
+  const cityId = typeof body.city_id === 'string' ? body.city_id : ''
   const contents = toGeminiContents(messages)
 
   if (contents.length === 0) {
@@ -103,12 +244,16 @@ export default async function handler(req, res) {
     return
   }
 
+  // Ground the answer on the active city's approved places before calling Gemini.
+  const allPlaces = await fetchApprovedPlaces(cityId)
+  const places = selectPlaces(allPlaces, queryTokens(messages))
+
   try {
     const geminiRes = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL, apiKey), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction(lang) }] },
+        system_instruction: { parts: [{ text: systemInstruction(lang, places) }] },
         contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
       }),
