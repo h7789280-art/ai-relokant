@@ -140,7 +140,10 @@
     "address": "Address",
     "hours": "Opening hours",
     "languages": "Languages spoken",
-    "notFound": "Place not found."
+    "notFound": "Place not found.",
+    "instagram": "Instagram",
+    "telegram": "Telegram",
+    "website": "Website"
   },
   "events": {
     "title": "What's on",
@@ -208,7 +211,7 @@
     "subtitle": "Places in {{city}}",
     "form": {
       "addTitle": "Add a place",
-      "editTitle": "Edit place",
+      "editTitle": "Editing: {{name}}",
       "name": "Name",
       "namePlaceholder": "e.g. Smile Dental Clinic",
       "description": "Description",
@@ -241,7 +244,14 @@
       "error": "Couldn't save. Please try again.",
       "savedCreate": "Place “{{name}}” saved.",
       "savedEdit": "Changes to “{{name}}” saved.",
-      "nameRequired": "Please enter a name."
+      "nameRequired": "Please enter a name.",
+      "untitled": "untitled",
+      "instagram": "Instagram",
+      "instagramPlaceholder": "@username or link",
+      "telegram": "Telegram",
+      "telegramPlaceholder": "@username or link",
+      "website": "Website",
+      "websitePlaceholder": "https://…"
     },
     "list": {
       "title": "City places",

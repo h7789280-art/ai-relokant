@@ -44,6 +44,9 @@ const emptyForm = () => ({
   address: '',
   phone: '',
   whatsapp: '',
+  instagram: '',
+  telegram: '',
+  website: '',
   hours: '',
   languages: [],
   category_id: '',
@@ -63,6 +66,9 @@ function formFromPlace(p) {
     address: p.address ?? '',
     phone: p.phone ?? '',
     whatsapp: p.whatsapp ?? '',
+    instagram: p.instagram ?? '',
+    telegram: p.telegram ?? '',
+    website: p.website ?? '',
     hours: typeof p.hours === 'string' ? p.hours : p.hours ? JSON.stringify(p.hours) : '',
     languages: Array.isArray(p.languages) ? p.languages : [],
     category_id: p.category_id ?? '',
@@ -213,6 +219,9 @@ function AdminPanel() {
       address: form.address.trim() || null,
       phone: form.phone.trim() || null,
       whatsapp: form.whatsapp.trim() || null,
+      instagram: form.instagram.trim() || null,
+      telegram: form.telegram.trim() || null,
+      website: form.website.trim() || null,
       hours: form.hours.trim() || null,
       languages: form.languages,
       category_id: form.category_id || null,
@@ -278,7 +287,9 @@ function AdminPanel() {
       {/* ---- Add / edit form ---- */}
       <section className="card admin__form-card">
         <h2 className="admin__section-title">
-          {editing ? t('admin.form.editTitle') : t('admin.form.addTitle')}
+          {editing
+            ? t('admin.form.editTitle', { name: form.name || t('admin.form.untitled') })
+            : t('admin.form.addTitle')}
         </h2>
         <form className="admin-form" onSubmit={handleSubmit}>
           <label className="admin-field">
@@ -330,6 +341,42 @@ function AdminPanel() {
                 type="tel"
                 value={form.whatsapp}
                 onChange={(e) => setField('whatsapp', e.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Instagram is the key channel for most local businesses — give it a
+              prominent, full-width field of its own (§12). */}
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.instagram')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.instagram}
+              onChange={(e) => setField('instagram', e.target.value)}
+              placeholder={t('admin.form.instagramPlaceholder')}
+            />
+          </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.telegram')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                value={form.telegram}
+                onChange={(e) => setField('telegram', e.target.value)}
+                placeholder={t('admin.form.telegramPlaceholder')}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.website')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                value={form.website}
+                onChange={(e) => setField('website', e.target.value)}
+                placeholder={t('admin.form.websitePlaceholder')}
               />
             </label>
           </div>

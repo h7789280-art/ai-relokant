@@ -16,6 +16,9 @@ import {
   Languages,
   BadgeCheck,
   Megaphone,
+  Camera,
+  Send,
+  Globe,
 } from 'lucide-react'
 import { fetchPlace, withTranslations } from '../lib/content.js'
 import i18n from '../i18n/index.js'
@@ -35,6 +38,36 @@ function directionsLink(place) {
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address)}`
   }
   return null
+}
+
+// Social handles are stored verbatim as the admin typed them — an @handle, a
+// bare username, or a full link. Pull the handle out and rebuild a clean
+// profile URL so a link always lands on the right place.
+function instagramLink(value) {
+  const handle = String(value)
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^(www\.)?instagram\.com\//i, '')
+    .replace(/^@/, '')
+    .split(/[/?#]/)[0]
+  return handle ? `https://instagram.com/${handle}` : null
+}
+
+function telegramLink(value) {
+  const handle = String(value)
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^(www\.)?(t\.me|telegram\.me)\//i, '')
+    .replace(/^@/, '')
+    .split(/[/?#]/)[0]
+  return handle ? `https://t.me/${handle}` : null
+}
+
+// Website: use as entered, just ensure it carries a protocol so it's clickable.
+function websiteLink(value) {
+  const v = String(value).trim()
+  if (!v) return null
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`
 }
 
 // Hours are stored as free-form jsonb. Normalise to [{ label, value }] rows so a
@@ -103,6 +136,9 @@ export default function Place() {
   const wa = place.whatsapp ? whatsappLink(place.whatsapp) : null
   const route = directionsLink(place)
   const hours = hourRows(place.hours)
+  const instagram = place.instagram ? instagramLink(place.instagram) : null
+  const telegram = place.telegram ? telegramLink(place.telegram) : null
+  const website = place.website ? websiteLink(place.website) : null
 
   return (
     <main className="app-shell place">
@@ -157,6 +193,30 @@ export default function Place() {
           </a>
         )}
       </div>
+
+      {/* Social / web links — shown only when filled. */}
+      {(instagram || telegram || website) && (
+        <div className="place__actions place__socials">
+          {instagram && (
+            <a className="place-action" href={instagram} target="_blank" rel="noopener noreferrer">
+              <Camera size={20} aria-hidden="true" />
+              <span>{t('place.instagram')}</span>
+            </a>
+          )}
+          {telegram && (
+            <a className="place-action" href={telegram} target="_blank" rel="noopener noreferrer">
+              <Send size={20} aria-hidden="true" />
+              <span>{t('place.telegram')}</span>
+            </a>
+          )}
+          {website && (
+            <a className="place-action" href={website} target="_blank" rel="noopener noreferrer">
+              <Globe size={20} aria-hidden="true" />
+              <span>{t('place.website')}</span>
+            </a>
+          )}
+        </div>
+      )}
 
       {place.description && (
         <section className="place__section">
