@@ -335,3 +335,22 @@ where c.code = 'TR'
 on conflict (country_id, slug) do update
   set is_active = excluded.is_active, name = excluded.name,
       latitude = excluded.latitude, longitude = excluded.longitude;
+
+-- "Coming soon" reference data so the welcome screen can show inactive items
+-- marked "(soon)" (§4). Inactive countries/cities are NOT selectable in the UI.
+insert into public.countries (code, name, is_active, sort_order) values
+  ('AE', 'United Arab Emirates', false, 10),
+  ('ID', 'Indonesia',            false, 11),
+  ('TH', 'Thailand',             false, 12)
+on conflict (code) do nothing;
+
+-- A couple more (inactive) Turkish cities to demonstrate the "(soon)" state.
+insert into public.cities (country_id, slug, name, latitude, longitude, is_active, sort_order)
+select c.id, v.slug, v.name, v.lat, v.lon, false, v.sort_order
+from public.countries c
+cross join (values
+  ('antalya',  'Antalya',  36.8969, 30.7133, 1),
+  ('istanbul', 'Istanbul', 41.0082, 28.9784, 2)
+) as v(slug, name, lat, lon, sort_order)
+where c.code = 'TR'
+on conflict (country_id, slug) do nothing;

@@ -154,3 +154,127 @@ button {
   border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-3);
 }
+
+/* ==========================================================================
+   Welcome / onboarding screen (§4)
+   ========================================================================== */
+
+.welcome {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-4) var(--space-5);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.welcome__hero {
+  text-align: center;
+}
+
+.welcome__globe {
+  color: var(--color-accent);
+  animation: welcome-globe-in 600ms ease-out both;
+}
+
+.welcome__greeting {
+  margin: var(--space-4) 0 var(--space-2);
+  min-height: 1.2em; /* avoid layout shift as words swap */
+  font-size: var(--text-2xl);
+}
+
+/* Each word re-mounts (keyed by index) so this fade replays on every swap. */
+.welcome__greeting-word {
+  display: inline-block;
+  animation: welcome-greeting-swap 1800ms ease-in-out both;
+}
+
+.welcome__subtitle {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.welcome__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.welcome__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.welcome__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.welcome__select {
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+}
+
+.welcome__select:disabled {
+  color: var(--color-text-subtle);
+  opacity: 0.7;
+}
+
+.welcome__continue {
+  margin-top: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-4);
+  transition: background-color 150ms ease;
+}
+
+.welcome__continue:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.welcome__continue:disabled {
+  background: var(--color-border);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+@keyframes welcome-globe-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes welcome-greeting-swap {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}

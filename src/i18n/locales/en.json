@@ -1,6 +1,19 @@
 {
   "appName": "CityMate",
   "languageName": "English",
+  "welcome": {
+    "greeting": "Welcome",
+    "subtitle": "Your local friend in a new city",
+    "countryLabel": "Country",
+    "cityLabel": "City",
+    "languageLabel": "Language",
+    "countryPlaceholder": "Select a country",
+    "cityPlaceholder": "Select a city",
+    "soon": "(soon)",
+    "continue": "Continue",
+    "loading": "Loading…",
+    "loadError": "Couldn't load destinations. Check your connection and try again."
+  },
   "home": {
     "tagline": "Your local friend in a new city.",
     "skeletonNotice": "Clean skeleton — screens coming soon.",

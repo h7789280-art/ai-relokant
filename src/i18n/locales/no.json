@@ -1,6 +1,9 @@
 {
   "appName": "CityMate",
   "languageName": "Norsk",
+  "welcome": {
+    "greeting": "Velkommen"
+  },
   "home": {
     "tagline": "Your local friend in a new city.",
     "skeletonNotice": "Clean skeleton — screens coming soon.",
