@@ -1680,6 +1680,211 @@ button {
 }
 
 /* ==========================================================================
+   AI chat (§4 screen 2, §6) — message log + composer.
+   A scrolling column of bubbles (user right/accent, bot left/surface), an
+   empty-state welcome, a "typing…" indicator, and a pinned rounded composer.
+   Light, airy, iOS — consistent with the rest of the app.
+   ========================================================================== */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  /* Fill the viewport minus the tab bar so the composer sits just above it. */
+  min-height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--space-3);
+}
+
+.chat__log {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+  padding: var(--space-2) 0 var(--space-4);
+  scrollbar-width: none;
+}
+
+.chat__log::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Empty-state welcome --- */
+.chat__welcome {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.chat__welcome-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.chat__welcome-title {
+  margin: 0;
+}
+
+.chat__welcome-text {
+  margin: 0;
+  max-width: 320px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- Message bubbles --- */
+.chat__bubble {
+  max-width: 82%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat__bubble--user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--space-1) var(--radius-lg);
+}
+
+.chat__bubble--bot {
+  align-self: flex-start;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--space-1);
+}
+
+/* --- Typing indicator --- */
+.chat__typing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat__typing-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.chat__dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.chat__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-subtle);
+  animation: chat-blink 1.4s ease-in-out infinite both;
+}
+
+.chat__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes chat-blink {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.chat__error {
+  align-self: center;
+  margin: 0;
+  max-width: 90%;
+  text-align: center;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+/* --- Composer: rounded field + round send button --- */
+.chat__composer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.chat__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 132px;
+  border: none;
+  background: none;
+  resize: none;
+  font-family: inherit;
+  font-size: var(--text-base);
+  line-height: 1.4;
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-2);
+}
+
+.chat__input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.chat__input:focus {
+  outline: none;
+}
+
+.chat__send {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: #fff;
+  transition: filter 150ms ease, background 150ms ease;
+}
+
+.chat__send:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.chat__send:disabled {
+  background: var(--color-border);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat__dots span {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
    Layout + bottom tab bar (§4)
    Main screens sit in a column with a fixed iOS-style tab bar pinned to the
    bottom. The content gets bottom padding so the bar never covers it.

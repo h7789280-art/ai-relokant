@@ -176,6 +176,14 @@
     "verifiedAt": "Last checked",
     "notFound": "Guide not found."
   },
+  "chat": {
+    "welcomeTitle": "Ask CityMate",
+    "welcomeText": "Your local friend in Alanya. Ask about places, services, documents, transport — everyday life in the city.",
+    "inputPlaceholder": "Ask CityMate…",
+    "send": "Send",
+    "typing": "CityMate is typing…",
+    "error": "Couldn't get a reply. Please try again."
+  },
   "nav": {
     "home": "Home",
     "catalog": "Catalog",
