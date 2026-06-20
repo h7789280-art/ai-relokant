@@ -19,7 +19,9 @@ const GREETINGS = SUPPORTED_LANGUAGES.map(
   (code) => i18n.getResource(code, 'translation', 'welcome.greeting') || 'Welcome',
 )
 
-const GREETING_INTERVAL_MS = 1800
+// Keep in sync with the `welcome-word-out` animation duration in global.css:
+// each greeting blooms in letter-by-letter, holds, then dissolves over this span.
+const GREETING_INTERVAL_MS = 2600
 
 function nativeName(code) {
   return i18n.getResource(code, 'translation', 'languageName') || code
@@ -111,9 +113,14 @@ export default function Welcome() {
   return (
     <main className="welcome">
       <div className="welcome__hero">
-        {/* Globe hero: real image from public/welcome-globe.png; if it ever
-            fails to load we fall back to a soft sky gradient + glyph below. */}
+        {/* Globe hero floating in haze: a soft glow + tilted orbital ring sit
+            behind the globe (masked to a clean disc, see global.css), with a
+            blurred shadow beneath so it reads as airborne rather than pasted.
+            Image is public/welcome-globe.png; if it ever fails to load we fall
+            back to the Globe glyph over the same sky backdrop. */}
         <div className="welcome__hero-art">
+          <span className="welcome__glow" aria-hidden="true" />
+          <span className="welcome__ring" aria-hidden="true" />
           <img
             className="welcome__hero-img"
             src="/welcome-globe.png"
@@ -129,10 +136,25 @@ export default function Welcome() {
             strokeWidth={1.1}
             aria-hidden="true"
           />
+          <span className="welcome__globe-shadow" aria-hidden="true" />
         </div>
         <h1 className="welcome__greeting" aria-label="Welcome">
-          <span key={greetingIndex} className="welcome__greeting-word">
-            {GREETINGS[greetingIndex]}
+          {/* Re-keyed per index so the bloom-in replays; letters are staggered
+              for a gentle "writing on" effect (see welcome-letter-in). */}
+          <span
+            key={greetingIndex}
+            className="welcome__greeting-word"
+            aria-hidden="true"
+          >
+            {Array.from(GREETINGS[greetingIndex]).map((ch, i) => (
+              <span
+                key={i}
+                className="welcome__greeting-letter"
+                style={{ animationDelay: `${i * 45}ms` }}
+              >
+                {ch === ' ' ? ' ' : ch}
+              </span>
+            ))}
           </span>
         </h1>
         <p className="welcome__subtitle">
