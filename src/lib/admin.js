@@ -71,8 +71,70 @@ export async function updatePlace(id, patch) {
   return data
 }
 
+// ---- Generic moderated content (news / events / guides) — Stage 10 ----------
+// Same shape as the place helpers above, but for the other city-scoped content
+// tables. Every privileged read/write is gated by the RLS policies in
+// supabase/admin-content.sql (admins only). `city_id` is always set by the
+// caller from the active city (§5 — every content row is city-scoped).
+
+// Tables the admin moderation screen manages besides `places`.
+const ADMIN_CONTENT_TABLES = ['news', 'events', 'guides']
+
+function assertContentTable(table) {
+  if (!ADMIN_CONTENT_TABLES.includes(table)) {
+    throw new Error(`admin: "${table}" is not a moderated content table`)
+  }
+}
+
+/**
+ * All rows of a moderated content table for a city in ANY status (admins only —
+ * RLS returns approved-only to everyone else). Newest first, so freshly added /
+ * pending items surface at the top of the moderation queue.
+ *
+ * @param {('news'|'events'|'guides')} table
+ * @param {string} cityId  active city id (required)
+ */
+export async function fetchAdminContent(table, cityId) {
+  assertContentTable(table)
+  if (!cityId) return []
+  const { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .eq('city_id', cityId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+/** Create a content row. `city_id` is set by the caller. Returns the new row. */
+export async function createContent(table, payload) {
+  assertContentTable(table)
+  const { data, error } = await supabase
+    .from(table)
+    .insert(payload)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+/** Patch a content row (status changes, edits). Returns the updated row. */
+export async function updateContent(table, id, patch) {
+  assertContentTable(table)
+  if (!id) throw new Error('updateContent: id is required')
+  const { data, error } = await supabase
+    .from(table)
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
 // Public bucket for place images (created in supabase/storage.sql). Only admins
-// can write to it; reads are public, so the returned URL renders directly.
+// can write to it; reads are public, so the returned URL renders directly. The
+// news / events moderation screens reuse the same bucket for their images.
 const PLACE_PHOTOS_BUCKET = 'place-photos'
 
 /**

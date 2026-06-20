@@ -208,22 +208,35 @@
   "admin": {
     "link": "Admin panel",
     "title": "Moderation",
-    "subtitle": "Places in {{city}}",
+    "subtitle": "{{city}}",
+    "tabs": {
+      "places": "Places",
+      "news": "News",
+      "events": "Events",
+      "guides": "Guides"
+    },
     "form": {
       "addTitle": "Add a place",
       "editTitle": "Editing: {{name}}",
+      "untitled": "untitled",
       "name": "Name",
       "namePlaceholder": "e.g. Smile Dental Clinic",
       "description": "Description",
       "address": "Address",
       "phone": "Phone",
       "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "instagramPlaceholder": "@username or link",
+      "telegram": "Telegram",
+      "telegramPlaceholder": "@username or link",
+      "website": "Website",
+      "websitePlaceholder": "https://…",
       "hours": "Opening hours",
       "hoursPlaceholder": "e.g. Mon–Fri 09:00–18:00",
       "category": "Category",
       "subcategory": "Subcategory",
       "none": "—",
-      "photo": "Photo URL",
+      "photo": "Photo",
       "photoPlaceholder": "https://…",
       "photoUpload": "Upload image",
       "photoUploading": "Uploading…",
@@ -245,19 +258,14 @@
       "savedCreate": "Place “{{name}}” saved.",
       "savedEdit": "Changes to “{{name}}” saved.",
       "nameRequired": "Please enter a name.",
-      "untitled": "untitled",
-      "instagram": "Instagram",
-      "instagramPlaceholder": "@username or link",
-      "telegram": "Telegram",
-      "telegramPlaceholder": "@username or link",
-      "website": "Website",
-      "websitePlaceholder": "https://…"
+      "titleRequired": "Please enter a title.",
+      "verifiedAt": "Last checked"
     },
     "list": {
       "title": "City places",
-      "loading": "Loading places…",
-      "empty": "No places yet. Add the first one above.",
-      "error": "Couldn't load places."
+      "loading": "Loading…",
+      "empty": "Nothing yet. Add the first one above.",
+      "error": "Couldn't load. Please try again."
     },
     "status": {
       "pending": "Pending",
@@ -270,6 +278,44 @@
       "edit": "Edit",
       "promoted": "Promoted",
       "verified": "Verified"
+    },
+    "news": {
+      "addTitle": "Add news",
+      "listTitle": "City news",
+      "title": "Headline",
+      "titlePlaceholder": "e.g. New residence-permit rules from July",
+      "summary": "Summary (what happened)",
+      "summaryPlaceholder": "A short summary — what happened.",
+      "body": "Details (who it affects, what to do)",
+      "bodyPlaceholder": "Who it affects and what to do.",
+      "sourceName": "Source name",
+      "sourceUrl": "Source link",
+      "publishedAt": "Date",
+      "submitCreate": "Add news"
+    },
+    "events": {
+      "addTitle": "Add event",
+      "listTitle": "City events",
+      "title": "Title",
+      "titlePlaceholder": "e.g. Saturday food market",
+      "description": "Description",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "location": "Venue",
+      "locationPlaceholder": "e.g. Alanya Castle",
+      "url": "Link",
+      "submitCreate": "Add event"
+    },
+    "guides": {
+      "addTitle": "Add guide",
+      "listTitle": "City guides",
+      "title": "Title",
+      "titlePlaceholder": "e.g. How to apply for a residence permit",
+      "body": "Body (markdown)",
+      "bodyPlaceholder": "Write the instructions. Use # headings, - bullet lists and **bold**.",
+      "bodyHint": "Markdown: # headings, - bullet lists, **bold**.",
+      "sourceUrl": "Source link",
+      "submitCreate": "Add guide"
     }
   },
   "language": {

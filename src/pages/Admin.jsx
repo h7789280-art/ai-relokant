@@ -1,13 +1,17 @@
-// Admin moderation panel — places/services (CLAUDE.md §5, §7, §12) — Stage 10.
+// Admin moderation panel (CLAUDE.md §5, §7, §11, §12) — Stage 10.
 //
 // Closed route: only users present in the `admins` table reach it (the route in
-// App.jsx redirects everyone else to /profile). Two tools, both city-scoped to
-// the active city (Alanya at launch):
-//   1. A form to add / edit a place by the §5 fields.
-//   2. The city's place list with status + quick moderation actions (approve /
-//      reject / edit / toggle promoted / toggle verified).
-// Approving a place is all it takes for it to show up in the public Catalog and
-// to be picked up by the AI chat — both read the same approved, city-scoped base.
+// App.jsx redirects everyone else to /profile). Tabs across the top scope the
+// panel to one content type at a time, each city-scoped to the active city
+// (Alanya at launch):
+//   • Places   — companies / specialists (the original tool).
+//   • News     — short city news summaries (§4 screen 6, §11).
+//   • Events   — "what's on" listings (§4 screen 5).
+//   • Guides   — "Documents & life" instructions (§4 screen 4, §11).
+// Each tab is the same pattern: an add / edit form on top, then the city's list
+// with status + quick moderation actions (approve / reject / edit). Approving a
+// row is all it takes for it to show up in the matching public section — both
+// read the same approved, city-scoped base.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
@@ -27,6 +31,9 @@ import {
   fetchAdminPlaces,
   createPlace,
   updatePlace,
+  fetchAdminContent,
+  createContent,
+  updateContent,
   uploadPlacePhoto,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
@@ -35,9 +42,318 @@ import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 // its own config, but failing fast here gives a friendlier message).
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
-// Empty form (a new place defaults to approved so the owner's own additions go
-// live immediately — §7 lets the owner publish directly).
-const emptyForm = () => ({
+const TABS = ['places', 'news', 'events', 'guides']
+
+export default function Admin() {
+  const { t } = useTranslation()
+  const { isAdmin, loading: adminLoading } = useIsAdmin()
+
+  if (adminLoading) {
+    return (
+      <main className="app-shell">
+        <p className="muted">{t('common.loading')}</p>
+      </main>
+    )
+  }
+  // Closed route: non-admins never see the panel.
+  if (!isAdmin) return <Navigate to="/profile" replace />
+
+  return <AdminPanel />
+}
+
+function AdminPanel() {
+  const { t } = useTranslation()
+  const { selection } = useApp()
+  const [tab, setTab] = useState('places')
+
+  const sections = {
+    places: <PlacesSection />,
+    news: <NewsSection />,
+    events: <EventsSection />,
+    guides: <GuidesSection />,
+  }
+
+  return (
+    <main className="app-shell admin">
+      <header className="admin__header">
+        <span className="admin__badge" aria-hidden="true">
+          <ShieldCheck size={20} strokeWidth={1.75} />
+        </span>
+        <div>
+          <h1 className="admin__title">{t('admin.title')}</h1>
+          <p className="admin__subtitle muted">
+            {t('admin.subtitle', { city: selection?.cityName ?? '' })}
+          </p>
+        </div>
+      </header>
+
+      <nav className="admin-tabs" aria-label={t('admin.title')}>
+        {TABS.map((key) => (
+          <button
+            key={key}
+            type="button"
+            className={`admin-tab${tab === key ? ' is-active' : ''}`}
+            onClick={() => setTab(key)}
+          >
+            {t(`admin.tabs.${key}`)}
+          </button>
+        ))}
+      </nav>
+
+      {sections[tab]}
+    </main>
+  )
+}
+
+// ============================================================================
+// Shared building blocks
+// ============================================================================
+
+// A photo input that uploads to the place-photos bucket (reused across content
+// types) and writes the resulting public URL back via onChange, with a manual
+// URL field as a fallback. Mirrors the original places photo field.
+function PhotoField({ value, onChange }) {
+  const { t } = useTranslation()
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    // Let the user re-pick the same file later (onChange won't fire otherwise).
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError(t('admin.form.photoTypeError'))
+      return
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError(t('admin.form.photoSizeError'))
+      return
+    }
+    setUploading(true)
+    setError('')
+    try {
+      const url = await uploadPlacePhoto(file)
+      onChange(url)
+    } catch (err) {
+      setError(err?.message || t('admin.form.photoUploadError'))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="admin-field admin-photo">
+      <span className="admin-field__label">{t('admin.form.photo')}</span>
+      {value && <img className="admin-photo__preview" src={value} alt={t('admin.form.photoPreview')} />}
+      <div className="admin-photo__controls">
+        <label className="admin-btn admin-btn--ghost admin-photo__upload">
+          {uploading ? t('admin.form.photoUploading') : t('admin.form.photoUpload')}
+          <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} hidden />
+        </label>
+        {value && (
+          <button
+            type="button"
+            className="admin-btn admin-btn--ghost"
+            onClick={() => onChange('')}
+          >
+            {t('admin.form.photoRemove')}
+          </button>
+        )}
+      </div>
+      <input
+        className="admin-field__input"
+        type="url"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('admin.form.photoPlaceholder')}
+      />
+      {error && <span className="admin-field__hint admin-form__error">{error}</span>}
+      <span className="admin-field__hint muted">{t('admin.form.photoHint')}</span>
+    </div>
+  )
+}
+
+// The status <select> shared by every form.
+function StatusField({ value, onChange }) {
+  const { t } = useTranslation()
+  return (
+    <label className="admin-field">
+      <span className="admin-field__label">{t('admin.form.status')}</span>
+      <select className="admin-field__input" value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="approved">{t('admin.status.approved')}</option>
+        <option value="pending">{t('admin.status.pending')}</option>
+        <option value="rejected">{t('admin.status.rejected')}</option>
+      </select>
+    </label>
+  )
+}
+
+// The error / success banner shared by every form.
+function FormBanners({ error, success }) {
+  return (
+    <>
+      {error && <p className="admin-form__error">{error}</p>}
+      {success && (
+        <p className="admin-form__success" role="status">
+          <Check size={15} aria-hidden="true" />
+          {success}
+        </p>
+      )}
+    </>
+  )
+}
+
+// A generic moderation list: rows with a status badge and approve / reject /
+// edit actions. `titleOf` and `metaOf(row) -> string[]` adapt it per table.
+function ModerationList({ state, titleOf, metaOf, onApprove, onReject, onEdit }) {
+  const { t } = useTranslation()
+  if (state.status === 'loading') return <p className="muted">{t('admin.list.loading')}</p>
+  if (state.status === 'error') return <p className="admin-form__error">{t('admin.list.error')}</p>
+  if (state.rows.length === 0) return <p className="muted">{t('admin.list.empty')}</p>
+
+  return (
+    <ul className="admin-list">
+      {state.rows.map((row) => {
+        const metas = (metaOf?.(row) ?? []).filter(Boolean)
+        return (
+          <li key={row.id} className="admin-row">
+            <div className="admin-row__main">
+              <div className="admin-row__title-line">
+                <span className="admin-row__name">{titleOf(row) || t('admin.form.untitled')}</span>
+                <span className={`admin-status admin-status--${row.status}`}>
+                  {t(`admin.status.${row.status}`)}
+                </span>
+              </div>
+              {metas.map((m, i) => (
+                <span key={i} className="admin-row__meta">
+                  {m}
+                </span>
+              ))}
+            </div>
+            <div className="admin-row__actions">
+              {row.status !== 'approved' && (
+                <button
+                  type="button"
+                  className="admin-action admin-action--approve"
+                  onClick={() => onApprove(row.id)}
+                >
+                  <Check size={15} aria-hidden="true" />
+                  {t('admin.actions.approve')}
+                </button>
+              )}
+              {row.status !== 'rejected' && (
+                <button
+                  type="button"
+                  className="admin-action admin-action--reject"
+                  onClick={() => onReject(row.id)}
+                >
+                  <X size={15} aria-hidden="true" />
+                  {t('admin.actions.reject')}
+                </button>
+              )}
+              <button type="button" className="admin-action" onClick={() => onEdit(row)}>
+                <Pencil size={15} aria-hidden="true" />
+                {t('admin.actions.edit')}
+              </button>
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// Shared state + actions for a moderated content section (news / events /
+// guides). Owns the list, save (create / update), and the approve / reject
+// quick actions; the per-table form lives in the section component.
+function useContentSection(table) {
+  const { t } = useTranslation()
+  const { cityId } = useApp()
+  const [state, setState] = useState({ status: 'loading', rows: [] })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const reload = useCallback(() => {
+    if (!cityId) return
+    setState((s) => ({ ...s, status: 'loading' }))
+    fetchAdminContent(table, cityId)
+      .then((rows) => setState({ status: 'ready', rows }))
+      .catch(() => setState({ status: 'error', rows: [] }))
+  }, [table, cityId])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  // Save a built payload. Returns true on success so the caller can reset.
+  async function save({ payload, isEdit, id, name }) {
+    if (saving || !cityId) return false
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      if (isEdit) await updateContent(table, id, payload)
+      else await createContent(table, { ...payload, city_id: cityId })
+      setSuccess(t(isEdit ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
+      reload()
+      return true
+    } catch (err) {
+      setError(err?.message || t('admin.form.error'))
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function patch(id, changes) {
+    try {
+      await updateContent(table, id, changes)
+      reload()
+    } catch (err) {
+      setError(err?.message || t('admin.form.error'))
+    }
+  }
+
+  // Approving stamps the moderation check date (§5), like places.
+  const approve = (id) => patch(id, { status: 'approved', verified_at: new Date().toISOString() })
+  const reject = (id) => patch(id, { status: 'rejected' })
+
+  return { cityId, state, error, setError, success, setSuccess, saving, save, approve, reject }
+}
+
+// ---- date <-> input helpers ------------------------------------------------
+// `datetime-local` inputs read/write local "YYYY-MM-DDTHH:mm"; `date` inputs use
+// "YYYY-MM-DD". We store ISO timestamps, so convert at the edges.
+const pad = (n) => String(n).padStart(2, '0')
+
+function toDateTimeLocal(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function toDateInput(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+// Local-input value -> ISO timestamp (null when blank/invalid).
+function inputToISO(value) {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+// ============================================================================
+// Places (the original tool, unchanged in behaviour)
+// ============================================================================
+
+const emptyPlace = () => ({
   id: null,
   name: '',
   description: '',
@@ -57,7 +373,6 @@ const emptyForm = () => ({
   is_verified: false,
 })
 
-// Map a place row → form state for editing.
 function formFromPlace(p) {
   return {
     id: p.id,
@@ -80,31 +395,14 @@ function formFromPlace(p) {
   }
 }
 
-export default function Admin() {
+function PlacesSection() {
   const { t } = useTranslation()
-  const { isAdmin, loading: adminLoading } = useIsAdmin()
-
-  if (adminLoading) {
-    return (
-      <main className="app-shell">
-        <p className="muted">{t('common.loading')}</p>
-      </main>
-    )
-  }
-  // Closed route: non-admins never see the panel.
-  if (!isAdmin) return <Navigate to="/profile" replace />
-
-  return <AdminPanel />
-}
-
-function AdminPanel() {
-  const { t } = useTranslation()
-  const { cityId, selection } = useApp()
+  const { cityId } = useApp()
 
   const [cats, setCats] = useState([])
   const [subs, setSubs] = useState([])
   const [places, setPlaces] = useState({ status: 'loading', rows: [] })
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(emptyPlace)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -141,7 +439,6 @@ function AdminPanel() {
   const subLabel = (s) => t(`catalog.subcategories.${s.slug}`, s.name)
   const catById = useMemo(() => new Map(cats.map((c) => [c.id, c])), [cats])
 
-  // Subcategories of the currently selected category (for the dependent select).
   const formSubs = useMemo(
     () => subs.filter((s) => s.category_id === form.category_id),
     [subs, form.category_id],
@@ -149,7 +446,6 @@ function AdminPanel() {
 
   const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }))
 
-  // Picking a new category clears a now-mismatched subcategory.
   const onCategoryChange = (value) =>
     setForm((f) => ({ ...f, category_id: value, subcategory_id: '' }))
 
@@ -169,15 +465,12 @@ function AdminPanel() {
   }
 
   const resetForm = () => {
-    setForm(emptyForm())
+    setForm(emptyPlace())
     setError('')
   }
 
-  // Upload a picked image to Supabase Storage and drop its public URL into the
-  // same `photo` field the manual URL input writes to.
   async function handlePhotoFile(e) {
     const file = e.target.files?.[0]
-    // Let the user re-pick the same file later (onChange won't fire otherwise).
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) {
@@ -210,8 +503,6 @@ function AdminPanel() {
     }
     if (!cityId) return
 
-    // Build the row from the form. Empty optional fields are stored as null so
-    // we don't litter the table with empty strings; photo becomes a 1-item array.
     const payload = {
       city_id: cityId,
       name,
@@ -230,7 +521,6 @@ function AdminPanel() {
       status: form.status,
       is_promoted: form.is_promoted,
       is_verified: form.is_verified,
-      // Stamp the moderation check date whenever the owner publishes (§5).
       verified_at: form.status === 'approved' ? new Date().toISOString() : null,
     }
 
@@ -239,17 +529,10 @@ function AdminPanel() {
     setError('')
     setSuccess('')
     try {
-      if (wasEditing) {
-        await updatePlace(form.id, payload)
-      } else {
-        await createPlace(payload)
-      }
+      if (wasEditing) await updatePlace(form.id, payload)
+      else await createPlace(payload)
       resetForm()
-      // Confirm the save (named, so it's obvious what landed) and re-load the
-      // list. The form is now empty and ready for the next place.
-      setSuccess(
-        t(wasEditing ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }),
-      )
+      setSuccess(t(wasEditing ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       loadPlaces()
     } catch (err) {
       setError(err?.message || t('admin.form.error'))
@@ -258,7 +541,6 @@ function AdminPanel() {
     }
   }
 
-  // Quick actions on a list row — optimistic-free: just re-fetch after the write.
   async function patch(place, changes) {
     try {
       await updatePlace(place.id, changes)
@@ -271,20 +553,7 @@ function AdminPanel() {
   const editing = Boolean(form.id)
 
   return (
-    <main className="app-shell admin">
-      <header className="admin__header">
-        <span className="admin__badge" aria-hidden="true">
-          <ShieldCheck size={20} strokeWidth={1.75} />
-        </span>
-        <div>
-          <h1 className="admin__title">{t('admin.title')}</h1>
-          <p className="admin__subtitle muted">
-            {t('admin.subtitle', { city: selection?.cityName ?? '' })}
-          </p>
-        </div>
-      </header>
-
-      {/* ---- Add / edit form ---- */}
+    <>
       <section className="card admin__form-card">
         <h2 className="admin__section-title">
           {editing
@@ -345,8 +614,6 @@ function AdminPanel() {
             </label>
           </div>
 
-          {/* Instagram is the key channel for most local businesses — give it a
-              prominent, full-width field of its own (§12). */}
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.form.instagram')}</span>
             <input
@@ -482,18 +749,7 @@ function AdminPanel() {
             </div>
           </fieldset>
 
-          <label className="admin-field">
-            <span className="admin-field__label">{t('admin.form.status')}</span>
-            <select
-              className="admin-field__input"
-              value={form.status}
-              onChange={(e) => setField('status', e.target.value)}
-            >
-              <option value="approved">{t('admin.status.approved')}</option>
-              <option value="pending">{t('admin.status.pending')}</option>
-              <option value="rejected">{t('admin.status.rejected')}</option>
-            </select>
-          </label>
+          <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
           <div className="admin-toggles">
             <label className="admin-toggle">
@@ -516,13 +772,7 @@ function AdminPanel() {
             </label>
           </div>
 
-          {error && <p className="admin-form__error">{error}</p>}
-          {success && (
-            <p className="admin-form__success" role="status">
-              <Check size={15} aria-hidden="true" />
-              {success}
-            </p>
-          )}
+          <FormBanners error={error} success={success} />
 
           <div className="admin-form__actions">
             {editing && (
@@ -542,7 +792,6 @@ function AdminPanel() {
         </form>
       </section>
 
-      {/* ---- Places list ---- */}
       <section className="admin__list-section">
         <h2 className="admin__section-title">{t('admin.list.title')}</h2>
 
@@ -566,9 +815,7 @@ function AdminPanel() {
                       </span>
                     </div>
                     {cat && <span className="admin-row__meta">{catLabel(cat)}</span>}
-                    {place.address && (
-                      <span className="admin-row__meta">{place.address}</span>
-                    )}
+                    {place.address && <span className="admin-row__meta">{place.address}</span>}
                     {(place.is_promoted || place.is_verified) && (
                       <span className="admin-row__badges">
                         {place.is_promoted && (
@@ -613,11 +860,7 @@ function AdminPanel() {
                         {t('admin.actions.reject')}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className="admin-action"
-                      onClick={() => startEdit(place)}
-                    >
+                    <button type="button" className="admin-action" onClick={() => startEdit(place)}>
                       <Pencil size={15} aria-hidden="true" />
                       {t('admin.actions.edit')}
                     </button>
@@ -644,6 +887,548 @@ function AdminPanel() {
           </ul>
         )}
       </section>
-    </main>
+    </>
+  )
+}
+
+// ============================================================================
+// News
+// ============================================================================
+
+const emptyNews = () => ({
+  id: null,
+  title: '',
+  summary: '',
+  body: '',
+  source_name: '',
+  source_url: '',
+  image_url: '',
+  published_at: '',
+  verified_at: '',
+  status: 'approved',
+})
+
+function formFromNews(n) {
+  return {
+    id: n.id,
+    title: n.title ?? '',
+    summary: n.summary ?? '',
+    body: n.body ?? '',
+    source_name: n.source_name ?? '',
+    source_url: n.source_url ?? '',
+    image_url: n.image_url ?? '',
+    published_at: toDateInput(n.published_at),
+    verified_at: toDateInput(n.verified_at),
+    status: n.status ?? 'approved',
+  }
+}
+
+function NewsSection() {
+  const { t } = useTranslation()
+  const sec = useContentSection('news')
+  const [form, setForm] = useState(emptyNews)
+  const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
+  const editing = Boolean(form.id)
+
+  const startEdit = (row) => {
+    sec.setError('')
+    sec.setSuccess('')
+    setForm(formFromNews(row))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const resetForm = () => {
+    setForm(emptyNews())
+    sec.setError('')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const title = form.title.trim()
+    if (!title) {
+      sec.setError(t('admin.form.titleRequired'))
+      return
+    }
+    const payload = {
+      title,
+      summary: form.summary.trim() || null,
+      body: form.body.trim() || null,
+      source_name: form.source_name.trim() || null,
+      source_url: form.source_url.trim() || null,
+      image_url: form.image_url.trim() || null,
+      published_at: inputToISO(form.published_at),
+      // Respect an entered check date; otherwise stamp now when publishing (§5).
+      verified_at:
+        inputToISO(form.verified_at) ??
+        (form.status === 'approved' ? new Date().toISOString() : null),
+      status: form.status,
+    }
+    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (ok) resetForm()
+  }
+
+  return (
+    <>
+      <section className="card admin__form-card">
+        <h2 className="admin__section-title">
+          {editing
+            ? t('admin.form.editTitle', { name: form.title || t('admin.form.untitled') })
+            : t('admin.news.addTitle')}
+        </h2>
+        <form className="admin-form" onSubmit={handleSubmit}>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.news.title')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.title}
+              onChange={(e) => setField('title', e.target.value)}
+              placeholder={t('admin.news.titlePlaceholder')}
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.news.summary')}</span>
+            <textarea
+              className="admin-field__input admin-field__textarea"
+              rows={2}
+              value={form.summary}
+              onChange={(e) => setField('summary', e.target.value)}
+              placeholder={t('admin.news.summaryPlaceholder')}
+            />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.news.body')}</span>
+            <textarea
+              className="admin-field__input admin-field__textarea"
+              rows={4}
+              value={form.body}
+              onChange={(e) => setField('body', e.target.value)}
+              placeholder={t('admin.news.bodyPlaceholder')}
+            />
+          </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.news.sourceName')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                value={form.source_name}
+                onChange={(e) => setField('source_name', e.target.value)}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.news.sourceUrl')}</span>
+              <input
+                className="admin-field__input"
+                type="url"
+                value={form.source_url}
+                onChange={(e) => setField('source_url', e.target.value)}
+                placeholder={t('admin.form.websitePlaceholder')}
+              />
+            </label>
+          </div>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.news.publishedAt')}</span>
+              <input
+                className="admin-field__input"
+                type="date"
+                value={form.published_at}
+                onChange={(e) => setField('published_at', e.target.value)}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.verifiedAt')}</span>
+              <input
+                className="admin-field__input"
+                type="date"
+                value={form.verified_at}
+                onChange={(e) => setField('verified_at', e.target.value)}
+              />
+            </label>
+          </div>
+
+          <PhotoField value={form.image_url} onChange={(v) => setField('image_url', v)} />
+
+          <StatusField value={form.status} onChange={(v) => setField('status', v)} />
+
+          <FormBanners error={sec.error} success={sec.success} />
+
+          <div className="admin-form__actions">
+            {editing && (
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
+                {t('admin.form.cancel')}
+              </button>
+            )}
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
+              <Plus size={16} aria-hidden="true" />
+              {sec.saving
+                ? t('admin.form.saving')
+                : editing
+                  ? t('admin.form.submitSave')
+                  : t('admin.news.submitCreate')}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="admin__list-section">
+        <h2 className="admin__section-title">{t('admin.news.listTitle')}</h2>
+        <ModerationList
+          state={sec.state}
+          titleOf={(r) => r.title}
+          metaOf={(r) => [r.summary, r.source_name]}
+          onApprove={sec.approve}
+          onReject={sec.reject}
+          onEdit={startEdit}
+        />
+      </section>
+    </>
+  )
+}
+
+// ============================================================================
+// Events
+// ============================================================================
+
+const emptyEvent = () => ({
+  id: null,
+  title: '',
+  description: '',
+  starts_at: '',
+  ends_at: '',
+  location: '',
+  url: '',
+  image_url: '',
+  status: 'approved',
+})
+
+function formFromEvent(ev) {
+  return {
+    id: ev.id,
+    title: ev.title ?? '',
+    description: ev.description ?? '',
+    starts_at: toDateTimeLocal(ev.starts_at),
+    ends_at: toDateTimeLocal(ev.ends_at),
+    location: ev.location ?? '',
+    url: ev.url ?? '',
+    image_url: ev.image_url ?? '',
+    status: ev.status ?? 'approved',
+  }
+}
+
+function EventsSection() {
+  const { t } = useTranslation()
+  const sec = useContentSection('events')
+  const [form, setForm] = useState(emptyEvent)
+  const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
+  const editing = Boolean(form.id)
+
+  const startEdit = (row) => {
+    sec.setError('')
+    sec.setSuccess('')
+    setForm(formFromEvent(row))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const resetForm = () => {
+    setForm(emptyEvent())
+    sec.setError('')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const title = form.title.trim()
+    if (!title) {
+      sec.setError(t('admin.form.titleRequired'))
+      return
+    }
+    const payload = {
+      title,
+      description: form.description.trim() || null,
+      starts_at: inputToISO(form.starts_at),
+      ends_at: inputToISO(form.ends_at),
+      location: form.location.trim() || null,
+      url: form.url.trim() || null,
+      image_url: form.image_url.trim() || null,
+      status: form.status,
+      verified_at: form.status === 'approved' ? new Date().toISOString() : null,
+    }
+    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (ok) resetForm()
+  }
+
+  const fmtMeta = (ev) => {
+    const d = toDateTimeLocal(ev.starts_at)
+    return d ? d.replace('T', ' ') : null
+  }
+
+  return (
+    <>
+      <section className="card admin__form-card">
+        <h2 className="admin__section-title">
+          {editing
+            ? t('admin.form.editTitle', { name: form.title || t('admin.form.untitled') })
+            : t('admin.events.addTitle')}
+        </h2>
+        <form className="admin-form" onSubmit={handleSubmit}>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.events.title')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.title}
+              onChange={(e) => setField('title', e.target.value)}
+              placeholder={t('admin.events.titlePlaceholder')}
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.events.description')}</span>
+            <textarea
+              className="admin-field__input admin-field__textarea"
+              rows={3}
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+            />
+          </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.events.startsAt')}</span>
+              <input
+                className="admin-field__input"
+                type="datetime-local"
+                value={form.starts_at}
+                onChange={(e) => setField('starts_at', e.target.value)}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.events.endsAt')}</span>
+              <input
+                className="admin-field__input"
+                type="datetime-local"
+                value={form.ends_at}
+                onChange={(e) => setField('ends_at', e.target.value)}
+              />
+            </label>
+          </div>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.events.location')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.location}
+              onChange={(e) => setField('location', e.target.value)}
+              placeholder={t('admin.events.locationPlaceholder')}
+            />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.events.url')}</span>
+            <input
+              className="admin-field__input"
+              type="url"
+              value={form.url}
+              onChange={(e) => setField('url', e.target.value)}
+              placeholder={t('admin.form.websitePlaceholder')}
+            />
+          </label>
+
+          <PhotoField value={form.image_url} onChange={(v) => setField('image_url', v)} />
+
+          <StatusField value={form.status} onChange={(v) => setField('status', v)} />
+
+          <FormBanners error={sec.error} success={sec.success} />
+
+          <div className="admin-form__actions">
+            {editing && (
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
+                {t('admin.form.cancel')}
+              </button>
+            )}
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
+              <Plus size={16} aria-hidden="true" />
+              {sec.saving
+                ? t('admin.form.saving')
+                : editing
+                  ? t('admin.form.submitSave')
+                  : t('admin.events.submitCreate')}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="admin__list-section">
+        <h2 className="admin__section-title">{t('admin.events.listTitle')}</h2>
+        <ModerationList
+          state={sec.state}
+          titleOf={(r) => r.title}
+          metaOf={(r) => [fmtMeta(r), r.location]}
+          onApprove={sec.approve}
+          onReject={sec.reject}
+          onEdit={startEdit}
+        />
+      </section>
+    </>
+  )
+}
+
+// ============================================================================
+// Guides
+// ============================================================================
+
+const emptyGuide = () => ({
+  id: null,
+  title: '',
+  body: '',
+  source_url: '',
+  verified_at: '',
+  status: 'approved',
+})
+
+function formFromGuide(g) {
+  return {
+    id: g.id,
+    title: g.title ?? '',
+    body: g.body ?? '',
+    source_url: g.source_url ?? '',
+    verified_at: toDateInput(g.verified_at),
+    status: g.status ?? 'approved',
+  }
+}
+
+function GuidesSection() {
+  const { t } = useTranslation()
+  const sec = useContentSection('guides')
+  const [form, setForm] = useState(emptyGuide)
+  const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
+  const editing = Boolean(form.id)
+
+  const startEdit = (row) => {
+    sec.setError('')
+    sec.setSuccess('')
+    setForm(formFromGuide(row))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const resetForm = () => {
+    setForm(emptyGuide())
+    sec.setError('')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const title = form.title.trim()
+    if (!title) {
+      sec.setError(t('admin.form.titleRequired'))
+      return
+    }
+    const payload = {
+      title,
+      body: form.body.trim() || null,
+      source_url: form.source_url.trim() || null,
+      verified_at:
+        inputToISO(form.verified_at) ??
+        (form.status === 'approved' ? new Date().toISOString() : null),
+      status: form.status,
+    }
+    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (ok) resetForm()
+  }
+
+  return (
+    <>
+      <section className="card admin__form-card">
+        <h2 className="admin__section-title">
+          {editing
+            ? t('admin.form.editTitle', { name: form.title || t('admin.form.untitled') })
+            : t('admin.guides.addTitle')}
+        </h2>
+        <form className="admin-form" onSubmit={handleSubmit}>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.guides.title')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.title}
+              onChange={(e) => setField('title', e.target.value)}
+              placeholder={t('admin.guides.titlePlaceholder')}
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.guides.body')}</span>
+            <textarea
+              className="admin-field__input admin-field__textarea"
+              rows={10}
+              value={form.body}
+              onChange={(e) => setField('body', e.target.value)}
+              placeholder={t('admin.guides.bodyPlaceholder')}
+            />
+            <span className="admin-field__hint muted">{t('admin.guides.bodyHint')}</span>
+          </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.guides.sourceUrl')}</span>
+              <input
+                className="admin-field__input"
+                type="url"
+                value={form.source_url}
+                onChange={(e) => setField('source_url', e.target.value)}
+                placeholder={t('admin.form.websitePlaceholder')}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.verifiedAt')}</span>
+              <input
+                className="admin-field__input"
+                type="date"
+                value={form.verified_at}
+                onChange={(e) => setField('verified_at', e.target.value)}
+              />
+            </label>
+          </div>
+
+          <StatusField value={form.status} onChange={(v) => setField('status', v)} />
+
+          <FormBanners error={sec.error} success={sec.success} />
+
+          <div className="admin-form__actions">
+            {editing && (
+              <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
+                {t('admin.form.cancel')}
+              </button>
+            )}
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
+              <Plus size={16} aria-hidden="true" />
+              {sec.saving
+                ? t('admin.form.saving')
+                : editing
+                  ? t('admin.form.submitSave')
+                  : t('admin.guides.submitCreate')}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="admin__list-section">
+        <h2 className="admin__section-title">{t('admin.guides.listTitle')}</h2>
+        <ModerationList
+          state={sec.state}
+          titleOf={(r) => r.title}
+          metaOf={(r) => [r.body ? r.body.slice(0, 80) : null]}
+          onApprove={sec.approve}
+          onReject={sec.reject}
+          onEdit={startEdit}
+        />
+      </section>
+    </>
   )
 }
