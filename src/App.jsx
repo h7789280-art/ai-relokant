@@ -12,6 +12,7 @@ import Guide from './pages/Guide.jsx'
 import Favorites from './pages/Favorites.jsx'
 import Chat from './pages/Chat.jsx'
 import Profile from './pages/Profile.jsx'
+import Admin from './pages/Admin.jsx'
 import Welcome from './pages/Welcome.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import { useApp } from './context/appContext.js'
@@ -45,6 +46,8 @@ export default function App() {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
+          {/* Closed moderation panel — Admin itself redirects non-admins (§7). */}
+          <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       ) : (

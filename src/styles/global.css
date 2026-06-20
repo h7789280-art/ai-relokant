@@ -2710,3 +2710,290 @@ button {
     animation: none;
   }
 }
+
+/* --- Profile → admin link --- */
+.profile__admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+}
+
+/* ==========================================================================
+   Admin moderation panel (§5, §7, §12) — Stage 10
+   Closed route. Add/edit form + city place list with quick actions.
+   ========================================================================== */
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin__badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.admin__title {
+  margin: 0;
+}
+
+.admin__subtitle {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.admin__section-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+/* --- Form --- */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-form__row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.admin-form__row .admin-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-field__label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-subtle);
+}
+
+.admin-field__input {
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.admin-field__input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.admin-field__textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* Service-language checkbox grid. */
+.admin-langs__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.admin-lang,
+.admin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  cursor: pointer;
+}
+
+.admin-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-form__error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.admin-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid transparent;
+}
+
+.admin-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #2b9bff 0%, var(--color-accent) 100%);
+  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.28);
+}
+
+.admin-btn--primary:disabled {
+  background: var(--color-border);
+  color: var(--color-text-subtle);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.admin-btn--ghost {
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+/* --- Places list --- */
+.admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3) var(--space-4);
+}
+
+.admin-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-row__title-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-row__name {
+  font-weight: 600;
+}
+
+.admin-row__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-row__badges {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.admin-status {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.admin-status--approved {
+  color: #1c7a34;
+  background: #e4f7e9;
+}
+
+.admin-status--pending {
+  color: #9a6300;
+  background: #fff2da;
+}
+
+.admin-status--rejected {
+  color: #a3271f;
+  background: #ffe6e4;
+}
+
+.admin-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-separator);
+  padding-top: var(--space-2);
+}
+
+.admin-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+}
+
+.admin-action--on {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border-color: transparent;
+}
+
+.admin-action--approve {
+  color: #1c7a34;
+}
+
+.admin-action--reject {
+  color: var(--color-danger);
+}

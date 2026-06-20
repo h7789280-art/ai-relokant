@@ -1,13 +1,16 @@
 import { useTranslation } from 'react-i18next'
-import { LogOut, Mail, UserPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { LogOut, Mail, UserPlus, ShieldCheck } from 'lucide-react'
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
 import { useAuth } from '../context/authContext.js'
+import { useIsAdmin } from '../hooks/useIsAdmin.js'
 
 // Профиль пользователя (CLAUDE.md §4, §6). Вошёл → email + «Выйти»; не вошёл →
 // «Войти / Зарегистрироваться». Сюда позже переедут язык и выбор города.
 export default function Profile() {
   const { t } = useTranslation()
   const { isAuthed, user, loading, openAuth, signOut } = useAuth()
+  const { isAdmin } = useIsAdmin()
 
   return (
     <main className="app-shell">
@@ -30,7 +33,17 @@ export default function Profile() {
               {t('auth.signOut')}
             </button>
           </div>
-        ) : (
+        ) : null}
+
+        {/* Admin panel link — shown only to admins (CLAUDE.md §7). */}
+        {isAuthed && isAdmin && (
+          <Link to="/admin" className="profile__admin-link">
+            <ShieldCheck size={18} aria-hidden="true" />
+            {t('admin.link')}
+          </Link>
+        )}
+
+        {!loading && !isAuthed && (
           <div className="profile__guest">
             <p className="muted">{t('auth.guestNotice')}</p>
             <button type="button" className="profile__signin" onClick={openAuth}>
