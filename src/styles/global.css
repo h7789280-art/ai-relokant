@@ -482,6 +482,418 @@ button {
 }
 
 /* ==========================================================================
+   Catalog (§4.3, §5, §12)
+   Category grid → category screen (subcategory filters + place list) → place
+   card. Promoted placements lead the list with an honest label; "verified" is a
+   separate quality mark. Light, airy, rounded, soft-shadowed.
+   ========================================================================== */
+
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.catalog__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.catalog__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.catalog__subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Back link (category screen + place card). */
+.catalog__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.catalog__empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+}
+
+/* --- Category grid --- */
+.catalog__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.cat-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+  transition: box-shadow 150ms ease, transform 150ms ease;
+}
+
+.cat-tile:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.cat-tile:active {
+  transform: scale(0.99);
+}
+
+.cat-tile__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.cat-tile__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cat-tile__chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-subtle);
+}
+
+/* --- Subcategory filter chips --- */
+.catalog__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.catalog__filter {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.catalog__filter.is-active {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* --- Place list (rows) --- */
+.place-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+  transition: box-shadow 150ms ease;
+}
+
+.place-row:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.place-row__photo {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.place-row__photo--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  color: var(--color-text-subtle);
+}
+
+.place-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.place-row__name {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.place-row__address {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-row__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: 2px;
+}
+
+.place-row__chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-subtle);
+}
+
+/* --- Trust badges: promoted (paid, honest) vs verified (quality) --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.badge--promoted {
+  background: #fff4e5;
+  color: #b26a00;
+}
+
+.badge--verified {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Place card (§5, §11) — photo, name, trust marks, actions, details.
+   ========================================================================== */
+
+.place {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.place__hero {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+}
+
+.place__hero--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  color: var(--color-text-subtle);
+}
+
+.place__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.place__name {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.place__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* --- Action buttons: Call · WhatsApp · Route --- */
+.place__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.place-action {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: box-shadow 150ms ease;
+}
+
+.place-action:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* --- Detail sections --- */
+.place__section {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4);
+}
+
+.place__description {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  white-space: pre-line;
+}
+
+.place__detail {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.place__detail-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+.place__detail-label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.place__detail-value {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-base);
+}
+
+.place__hours {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.place__hours-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.place__hours-day {
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.place__hours-value {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.place__langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.place__lang {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Catalog/place loading skeletons (reuse the feed shimmer). */
+.catalog__skeleton {
+  height: 84px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-separator) 37%,
+    var(--color-surface-alt) 63%
+  );
+  background-size: 400% 100%;
+  animation: feed-shimmer 1.4s ease infinite;
+}
+
+.catalog__skeleton--row {
+  height: 80px;
+}
+
+.catalog__skeleton--hero {
+  height: 200px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog__skeleton {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
    Layout + bottom tab bar (§4)
    Main screens sit in a column with a fixed iOS-style tab bar pinned to the
    bottom. The content gets bottom padding so the bar never covers it.

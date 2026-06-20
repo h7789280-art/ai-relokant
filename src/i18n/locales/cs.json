@@ -47,6 +47,30 @@
       "title": "What's on today"
     }
   },
+  "catalog": {
+    "subtitle": "Find trusted places and specialists in your city",
+    "empty": "Nothing here yet.",
+    "all": "All",
+    "promoted": "Promoted",
+    "verified": "Verified",
+    "categories": {
+      "doctors": "Doctors",
+      "notaries": "Notaries",
+      "repair": "Repairs",
+      "shops": "Shops",
+      "pharmacies": "Pharmacies",
+      "government": "Government services"
+    }
+  },
+  "place": {
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "route": "Route",
+    "address": "Address",
+    "hours": "Opening hours",
+    "languages": "Languages spoken",
+    "notFound": "Place not found."
+  },
   "nav": {
     "home": "Home",
     "catalog": "Catalog",
@@ -63,6 +87,7 @@
     "retry": "Retry",
     "cancel": "Cancel",
     "save": "Save",
-    "search": "Search"
+    "search": "Search",
+    "back": "Back"
   }
 }

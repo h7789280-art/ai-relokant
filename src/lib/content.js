@@ -86,6 +86,82 @@ export async function withTranslations(entityType, rows, lang) {
   })
 }
 
+// ---- Catalog: categories, subcategories, places (§4.3, §5, §12) ------------
+
+/** Active categories ordered for the catalog grid (reference data, full read). */
+export async function fetchCategories() {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+/** A single category by its slug (for the category screen). Null if missing. */
+export async function fetchCategoryBySlug(slug) {
+  if (!slug) return null
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/** Active subcategories for a category, ordered for the filter chips. */
+export async function fetchSubcategories(categoryId) {
+  if (!categoryId) return []
+  const { data, error } = await supabase
+    .from('subcategories')
+    .select('*')
+    .eq('category_id', categoryId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Approved places for the active city, optionally narrowed to a category /
+ * subcategory. Promoted (paid) placements come FIRST so the UI can list them on
+ * top with an honest "promoted" label (§12); within each group, by name.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {{ categoryId?: string, subcategoryId?: string, columns?: string }} [opts]
+ */
+export async function fetchPlaces(cityId, { categoryId, subcategoryId, columns = '*' } = {}) {
+  let query = publicContentQuery('places', cityId, { columns })
+  if (categoryId) query = query.eq('category_id', categoryId)
+  if (subcategoryId) query = query.eq('subcategory_id', subcategoryId)
+  query = query
+    .order('is_promoted', { ascending: false })
+    .order('name', { ascending: true })
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * A single approved place by id (for the place card). The approved filter is
+ * also enforced by RLS, but we keep it explicit. Returns null when not found.
+ */
+export async function fetchPlace(placeId) {
+  if (!placeId) return null
+  const { data, error } = await supabase
+    .from('places')
+    .select('*')
+    .eq('id', placeId)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 // ---- Reference data (read in full; inactive shown as "(soon)" in UI, §4) ----
 
 /** Countries ordered for the welcome-screen selector. */
