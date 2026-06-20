@@ -5,7 +5,7 @@
 // takes effect across the rest of the app after "Continue".
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe } from 'lucide-react'
+import { ArrowRight, Building2, ChevronRight, Globe } from 'lucide-react'
 import i18n, { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 import { fetchCountries, fetchCities } from '../lib/content.js'
 import { useApp } from '../context/appContext.js'
@@ -111,13 +111,33 @@ export default function Welcome() {
   return (
     <main className="welcome">
       <div className="welcome__hero">
-        <Globe className="welcome__globe" size={88} strokeWidth={1.25} aria-hidden="true" />
+        {/* Globe hero: real image from public/welcome-globe.png; if it ever
+            fails to load we fall back to a soft sky gradient + glyph below. */}
+        <div className="welcome__hero-art">
+          <img
+            className="welcome__hero-img"
+            src="/welcome-globe.png"
+            alt=""
+            aria-hidden="true"
+            onError={(e) => {
+              e.currentTarget.classList.add('is-hidden')
+            }}
+          />
+          <Globe
+            className="welcome__hero-fallback"
+            size={120}
+            strokeWidth={1.1}
+            aria-hidden="true"
+          />
+        </div>
         <h1 className="welcome__greeting" aria-label="Welcome">
           <span key={greetingIndex} className="welcome__greeting-word">
             {GREETINGS[greetingIndex]}
           </span>
         </h1>
-        <p className="welcome__subtitle">{en('subtitle')}</p>
+        <p className="welcome__subtitle">
+          {en('subtitle')} <span aria-hidden="true">💙</span>
+        </p>
       </div>
 
       {status === 'error' ? (
@@ -125,63 +145,81 @@ export default function Welcome() {
           <p className="muted">{en('loadError')}</p>
         </div>
       ) : (
-        <div className="card welcome__card">
+        <div className="welcome__form">
           {/* Country */}
           <label className="welcome__field">
-            <span className="welcome__label">{en('countryLabel')}</span>
-            <select
-              className="welcome__select"
-              value={countryId}
-              disabled={status !== 'ready'}
-              onChange={(e) => setCountryId(e.target.value)}
-            >
-              <option value="" disabled>
-                {status === 'ready' ? en('countryPlaceholder') : en('loading')}
-              </option>
-              {countries.map((c) => (
-                <option key={c.id} value={c.id} disabled={!c.is_active}>
-                  {c.name}
-                  {c.is_active ? '' : ` ${en('soon')}`}
+            <span className="welcome__field-icon" aria-hidden="true">
+              <Globe size={22} strokeWidth={1.75} />
+            </span>
+            <span className="welcome__field-body">
+              <span className="welcome__label">{en('countryLabel')}</span>
+              <select
+                className="welcome__select"
+                value={countryId}
+                disabled={status !== 'ready'}
+                onChange={(e) => setCountryId(e.target.value)}
+              >
+                <option value="" disabled>
+                  {status === 'ready' ? en('countryPlaceholder') : en('loading')}
                 </option>
-              ))}
-            </select>
+                {countries.map((c) => (
+                  <option key={c.id} value={c.id} disabled={!c.is_active}>
+                    {c.name}
+                    {c.is_active ? '' : ` ${en('soon')}`}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
           </label>
 
           {/* City */}
           <label className="welcome__field">
-            <span className="welcome__label">{en('cityLabel')}</span>
-            <select
-              className="welcome__select"
-              value={cityId}
-              disabled={status !== 'ready' || !countryId}
-              onChange={(e) => setCityId(e.target.value)}
-            >
-              <option value="" disabled>
-                {en('cityPlaceholder')}
-              </option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id} disabled={!c.is_active}>
-                  {c.name}
-                  {c.is_active ? '' : ` ${en('soon')}`}
+            <span className="welcome__field-icon" aria-hidden="true">
+              <Building2 size={22} strokeWidth={1.75} />
+            </span>
+            <span className="welcome__field-body">
+              <span className="welcome__label">{en('cityLabel')}</span>
+              <select
+                className="welcome__select"
+                value={cityId}
+                disabled={status !== 'ready' || !countryId}
+                onChange={(e) => setCityId(e.target.value)}
+              >
+                <option value="" disabled>
+                  {en('cityPlaceholder')}
                 </option>
-              ))}
-            </select>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id} disabled={!c.is_active}>
+                    {c.name}
+                    {c.is_active ? '' : ` ${en('soon')}`}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
           </label>
 
           {/* Language */}
           <label className="welcome__field">
-            <span className="welcome__label">{en('languageLabel')}</span>
-            <select
-              className="welcome__select"
-              value={lang}
-              onChange={(e) => setLang(e.target.value)}
-            >
-              {SUPPORTED_LANGUAGES.map((code) => (
-                <option key={code} value={code}>
-                  {nativeName(code)}
-                </option>
-              ))}
-            </select>
+            <span className="welcome__field-icon welcome__field-icon--text" aria-hidden="true">
+              Aa
+            </span>
+            <span className="welcome__field-body">
+              <span className="welcome__label">{en('languageLabel')}</span>
+              <select
+                className="welcome__select"
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+              >
+                {SUPPORTED_LANGUAGES.map((code) => (
+                  <option key={code} value={code}>
+                    {nativeName(code)}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
           </label>
 
           <button
@@ -191,6 +229,7 @@ export default function Welcome() {
             onClick={handleContinue}
           >
             {en('continue')}
+            <ArrowRight size={20} aria-hidden="true" />
           </button>
         </div>
       )}
