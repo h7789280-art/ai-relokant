@@ -70,3 +70,33 @@ export async function updatePlace(id, patch) {
   if (error) throw error
   return data
 }
+
+// Public bucket for place images (created in supabase/storage.sql). Only admins
+// can write to it; reads are public, so the returned URL renders directly.
+const PLACE_PHOTOS_BUCKET = 'place-photos'
+
+/**
+ * Upload an image file to the place-photos bucket and return its public URL
+ * (the value to store in places.photos). The write is gated by the bucket's
+ * admin-only RLS policies — non-admins get an error from Supabase.
+ *
+ * @param {File} file  an image File from a file input
+ * @returns {Promise<string>} the public URL of the uploaded image
+ */
+export async function uploadPlacePhoto(file) {
+  if (!file) throw new Error('uploadPlacePhoto: file is required')
+
+  // A collision-resistant key without Date.now()/Math.random reliance: derive a
+  // unique-enough name from the browser's crypto when available, else a UUID v4
+  // via the SDK is overkill — randomUUID is in every supported browser.
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+  const key = `${crypto.randomUUID()}.${ext}`
+
+  const { error } = await supabase.storage
+    .from(PLACE_PHOTOS_BUCKET)
+    .upload(key, file, { contentType: file.type, upsert: false })
+  if (error) throw error
+
+  const { data } = supabase.storage.from(PLACE_PHOTOS_BUCKET).getPublicUrl(key)
+  return data.publicUrl
+}

@@ -23,8 +23,17 @@ import {
 import { useApp } from '../context/appContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
 import { fetchCategories, fetchAllSubcategories } from '../lib/content.js'
-import { fetchAdminPlaces, createPlace, updatePlace } from '../lib/admin.js'
+import {
+  fetchAdminPlaces,
+  createPlace,
+  updatePlace,
+  uploadPlacePhoto,
+} from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
+
+// Client-side guard on the photo upload (the bucket also enforces type/size via
+// its own config, but failing fast here gives a friendlier message).
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
 // Empty form (a new place defaults to approved so the owner's own additions go
 // live immediately — §7 lets the owner publish directly).
@@ -92,6 +101,8 @@ function AdminPanel() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   // Reference data for the category/subcategory selects.
   useEffect(() => {
@@ -146,6 +157,7 @@ function AdminPanel() {
 
   const startEdit = (place) => {
     setError('')
+    setSuccess('')
     setForm(formFromPlace(place))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -153,6 +165,33 @@ function AdminPanel() {
   const resetForm = () => {
     setForm(emptyForm())
     setError('')
+  }
+
+  // Upload a picked image to Supabase Storage and drop its public URL into the
+  // same `photo` field the manual URL input writes to.
+  async function handlePhotoFile(e) {
+    const file = e.target.files?.[0]
+    // Let the user re-pick the same file later (onChange won't fire otherwise).
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError(t('admin.form.photoTypeError'))
+      return
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError(t('admin.form.photoSizeError'))
+      return
+    }
+    setUploading(true)
+    setError('')
+    try {
+      const url = await uploadPlacePhoto(file)
+      setField('photo', url)
+    } catch (err) {
+      setError(err?.message || t('admin.form.photoUploadError'))
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleSubmit(e) {
@@ -186,15 +225,22 @@ function AdminPanel() {
       verified_at: form.status === 'approved' ? new Date().toISOString() : null,
     }
 
+    const wasEditing = Boolean(form.id)
     setSaving(true)
     setError('')
+    setSuccess('')
     try {
-      if (form.id) {
+      if (wasEditing) {
         await updatePlace(form.id, payload)
       } else {
         await createPlace(payload)
       }
       resetForm()
+      // Confirm the save (named, so it's obvious what landed) and re-load the
+      // list. The form is now empty and ready for the next place.
+      setSuccess(
+        t(wasEditing ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }),
+      )
       loadPlaces()
     } catch (err) {
       setError(err?.message || t('admin.form.error'))
@@ -333,8 +379,36 @@ function AdminPanel() {
             </label>
           </div>
 
-          <label className="admin-field">
+          <div className="admin-field admin-photo">
             <span className="admin-field__label">{t('admin.form.photo')}</span>
+            {form.photo && (
+              <img
+                className="admin-photo__preview"
+                src={form.photo}
+                alt={t('admin.form.photoPreview')}
+              />
+            )}
+            <div className="admin-photo__controls">
+              <label className="admin-btn admin-btn--ghost admin-photo__upload">
+                {uploading ? t('admin.form.photoUploading') : t('admin.form.photoUpload')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoFile}
+                  disabled={uploading}
+                  hidden
+                />
+              </label>
+              {form.photo && (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={() => setField('photo', '')}
+                >
+                  {t('admin.form.photoRemove')}
+                </button>
+              )}
+            </div>
             <input
               className="admin-field__input"
               type="url"
@@ -342,7 +416,8 @@ function AdminPanel() {
               onChange={(e) => setField('photo', e.target.value)}
               placeholder={t('admin.form.photoPlaceholder')}
             />
-          </label>
+            <span className="admin-field__hint muted">{t('admin.form.photoHint')}</span>
+          </div>
 
           <fieldset className="admin-field admin-langs">
             <legend className="admin-field__label">{t('admin.form.languages')}</legend>
@@ -395,6 +470,12 @@ function AdminPanel() {
           </div>
 
           {error && <p className="admin-form__error">{error}</p>}
+          {success && (
+            <p className="admin-form__success" role="status">
+              <Check size={15} aria-hidden="true" />
+              {success}
+            </p>
+          )}
 
           <div className="admin-form__actions">
             {editing && (

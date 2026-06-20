@@ -202,56 +202,66 @@
     "signOut": "Sign out",
     "guestNotice": "You're browsing as a guest. Sign in to save favorites and chat with CityMate."
   },
-    "admin": {
-      "link": "Admin panel",
-      "title": "Moderation",
-      "subtitle": "Places in {{city}}",
-      "form": {
-        "addTitle": "Add a place",
-        "editTitle": "Edit place",
-        "name": "Name",
-        "namePlaceholder": "e.g. Smile Dental Clinic",
-        "description": "Description",
-        "address": "Address",
-        "phone": "Phone",
-        "whatsapp": "WhatsApp",
-        "hours": "Opening hours",
-        "hoursPlaceholder": "e.g. Mon–Fri 09:00–18:00",
-        "category": "Category",
-        "subcategory": "Subcategory",
-        "none": "—",
-        "photo": "Photo URL",
-        "photoPlaceholder": "https://…",
-        "languages": "Service languages",
-        "status": "Status",
-        "promoted": "Promoted",
-        "verified": "Verified",
-        "submitCreate": "Add place",
-        "submitSave": "Save changes",
-        "saving": "Saving…",
-        "cancel": "Cancel",
-        "error": "Couldn't save. Please try again.",
-        "nameRequired": "Please enter a name."
-      },
-      "list": {
-        "title": "City places",
-        "loading": "Loading places…",
-        "empty": "No places yet. Add the first one above.",
-        "error": "Couldn't load places."
-      },
-      "status": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected"
-      },
-      "actions": {
-        "approve": "Approve",
-        "reject": "Reject",
-        "edit": "Edit",
-        "promoted": "Promoted",
-        "verified": "Verified"
-      }
+  "admin": {
+    "link": "Admin panel",
+    "title": "Moderation",
+    "subtitle": "Places in {{city}}",
+    "form": {
+      "addTitle": "Add a place",
+      "editTitle": "Edit place",
+      "name": "Name",
+      "namePlaceholder": "e.g. Smile Dental Clinic",
+      "description": "Description",
+      "address": "Address",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "hours": "Opening hours",
+      "hoursPlaceholder": "e.g. Mon–Fri 09:00–18:00",
+      "category": "Category",
+      "subcategory": "Subcategory",
+      "none": "—",
+      "photo": "Photo URL",
+      "photoPlaceholder": "https://…",
+      "photoUpload": "Upload image",
+      "photoUploading": "Uploading…",
+      "photoRemove": "Remove photo",
+      "photoPreview": "Photo preview",
+      "photoHint": "Upload an image, or paste a link instead.",
+      "photoTypeError": "Please choose an image file.",
+      "photoSizeError": "Image is too large (max 5 MB).",
+      "photoUploadError": "Couldn't upload the image. Please try again.",
+      "languages": "Service languages",
+      "status": "Status",
+      "promoted": "Promoted",
+      "verified": "Verified",
+      "submitCreate": "Add place",
+      "submitSave": "Save changes",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "error": "Couldn't save. Please try again.",
+      "savedCreate": "Place “{{name}}” saved.",
+      "savedEdit": "Changes to “{{name}}” saved.",
+      "nameRequired": "Please enter a name."
     },
+    "list": {
+      "title": "City places",
+      "loading": "Loading places…",
+      "empty": "No places yet. Add the first one above.",
+      "error": "Couldn't load places."
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "edit": "Edit",
+      "promoted": "Promoted",
+      "verified": "Verified"
+    }
+  },
   "language": {
     "label": "Language",
     "select": "Select language"
