@@ -173,6 +173,26 @@
     "chat": "AI Chat",
     "profile": "Profile"
   },
+  "auth": {
+    "signInTitle": "Sign in",
+    "registerTitle": "Create account",
+    "modalSubtitle": "Sign in to save favorites and chat with CityMate.",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "signInCta": "Sign in",
+    "registerCta": "Register",
+    "signInOrUp": "Sign in / Register",
+    "haveAccount": "Already have an account?",
+    "noAccount": "No account yet?",
+    "checkEmail": "We sent a confirmation link to {{email}}. Confirm it to finish signing up.",
+    "genericError": "Something went wrong. Please try again.",
+    "gateTitle": "Sign in to continue",
+    "gateChat": "Sign in to chat with CityMate. Browsing the city stays free — no account needed.",
+    "gateFavorites": "Sign in to save places to your favorites. Browsing the city stays free — no account needed.",
+    "signedInAs": "Signed in as",
+    "signOut": "Sign out",
+    "guestNotice": "You're browsing as a guest. Sign in to save favorites and chat with CityMate."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

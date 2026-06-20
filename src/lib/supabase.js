@@ -15,4 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
+// `persistSession` keeps the user signed in across app restarts (CLAUDE.md §3);
+// `autoRefreshToken` silently renews the access token before it expires. Both are
+// the library defaults, set explicitly so the auth intent is visible here.
+export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '', {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})

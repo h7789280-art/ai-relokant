@@ -13,12 +13,14 @@ import Favorites from './pages/Favorites.jsx'
 import Chat from './pages/Chat.jsx'
 import Profile from './pages/Profile.jsx'
 import Welcome from './pages/Welcome.jsx'
+import AuthModal from './components/AuthModal.jsx'
 import { useApp } from './context/appContext.js'
 
 export default function App() {
   const { isOnboarded } = useApp()
 
   return (
+    <>
     <Routes>
       {/* First run → welcome; afterwards it redirects straight to home (§4).
           Welcome lives outside the Layout, so the tab bar never shows on it. */}
@@ -49,5 +51,8 @@ export default function App() {
         <Route path="*" element={<Navigate to="/welcome" replace />} />
       )}
     </Routes>
+    {/* Shared sign-in / register modal — any gated surface opens it (§6, §12). */}
+    <AuthModal />
+    </>
   )
 }
