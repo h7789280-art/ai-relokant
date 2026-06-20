@@ -25,6 +25,11 @@ const GEMINI_ENDPOINT = (model, key) =>
 // Promoted + verified are prioritised, so the most relevant rows survive the cap.
 const MAX_PLACES = 30
 
+// Free-tier daily message budget per user (CLAUDE.md §6/§12). One constant so
+// it's trivial to change. Counted SERVER-SIDE in the ai_usage table (per UTC
+// day). Over the limit we don't call Gemini and return a soft refusal instead.
+const DAILY_LIMIT = 10
+
 // Language code → human name, so the model gets an unambiguous instruction
 // (CLAUDE.md §8 — the 13 start languages). Unknown codes fall back to the code.
 const LANGUAGE_NAMES = {
@@ -76,6 +81,97 @@ async function fetchApprovedPlaces(cityId) {
     return Array.isArray(rows) ? rows : []
   } catch {
     return []
+  }
+}
+
+// ---- Auth + per-user daily limit (CLAUDE.md §6) -----------------------------
+//
+// The client sends the user's Supabase access token in `Authorization: Bearer`.
+// We verify it against Supabase Auth and get a TRUSTED user id — the client
+// can't spoof it. Chat is gated behind sign-in, so a valid token always exists;
+// anything else is a 401.
+async function authenticatedUserId(req) {
+  const url = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !anonKey) return null
+
+  const header = req.headers?.authorization || req.headers?.Authorization || ''
+  const token = /^Bearer\s+(.+)$/i.exec(header)?.[1]?.trim()
+  if (!token) return null
+
+  try {
+    const res = await fetch(`${url.replace(/\/$/, '')}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const user = await res.json().catch(() => null)
+    return typeof user?.id === 'string' ? user.id : null
+  } catch {
+    return null
+  }
+}
+
+// Today's date as YYYY-MM-DD (UTC) — the usage bucket key.
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+// Base URL + service_role headers for server-only ai_usage access. The
+// service_role key bypasses RLS (CLAUDE.md §9) and must NEVER reach the client.
+function usageRest() {
+  const url = process.env.VITE_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceKey) return null
+  return {
+    base: `${url.replace(/\/$/, '')}/rest/v1/ai_usage`,
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+  }
+}
+
+// How many messages this user has sent today. Returns null on any failure so
+// callers can FAIL OPEN (never block the user because accounting is unavailable).
+async function todaysMessageCount(userId) {
+  const rest = usageRest()
+  if (!rest) return null
+  const endpoint =
+    `${rest.base}?select=message_count` +
+    `&user_id=eq.${encodeURIComponent(userId)}` +
+    `&usage_date=eq.${todayKey()}`
+  try {
+    const res = await fetch(endpoint, { headers: rest.headers })
+    if (!res.ok) return null
+    const rows = await res.json().catch(() => null)
+    if (!Array.isArray(rows)) return null
+    return rows.length ? Number(rows[0].message_count) || 0 : 0
+  } catch {
+    return null
+  }
+}
+
+// Record one more message for the user today. `current` is the count we already
+// read for the limit check, so we upsert current+1. Fail-open: errors are
+// swallowed (a missed increment must never break or block the chat).
+async function recordMessage(userId, current) {
+  const rest = usageRest()
+  if (!rest) return
+  const next = (Number.isFinite(current) ? current : 0) + 1
+  try {
+    await fetch(`${rest.base}?on_conflict=user_id,usage_date`, {
+      method: 'POST',
+      headers: { ...rest.headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        user_id: userId,
+        usage_date: todayKey(),
+        message_count: next,
+        updated_at: new Date().toISOString(),
+      }),
+    })
+  } catch {
+    // ignore — accounting is best-effort (fail-open).
   }
 }
 
@@ -244,6 +340,22 @@ export default async function handler(req, res) {
     return
   }
 
+  // Identify the user from their Supabase access token (chat is behind sign-in,
+  // so a valid token is always present). No token => 401.
+  const userId = await authenticatedUserId(req)
+  if (!userId) {
+    res.status(401).json({ error: 'Sign in to chat with CityMate.' })
+    return
+  }
+
+  // Enforce the daily limit BEFORE spending a Gemini call. `count` is null when
+  // accounting is unavailable — in that case we fail open and just let it through.
+  const count = await todaysMessageCount(userId)
+  if (count !== null && count >= DAILY_LIMIT) {
+    res.status(200).json({ limitReached: true })
+    return
+  }
+
   // Ground the answer on the active city's approved places before calling Gemini.
   const allPlaces = await fetchApprovedPlaces(cityId)
   const places = selectPlaces(allPlaces, queryTokens(messages))
@@ -282,6 +394,9 @@ export default async function handler(req, res) {
       res.status(502).json({ error: 'The AI returned no answer.', detail })
       return
     }
+
+    // Count this message against today's budget (best-effort, fail-open).
+    await recordMessage(userId, count)
 
     res.status(200).json({ reply })
   } catch (err) {

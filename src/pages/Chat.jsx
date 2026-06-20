@@ -9,6 +9,7 @@ import { Bot, ArrowUp } from 'lucide-react'
 import AuthGate from '../components/AuthGate.jsx'
 import { Markdown } from '../lib/markdown.jsx'
 import { useApp } from '../context/appContext.js'
+import { supabase } from '../lib/supabase.js'
 
 function ChatRoom() {
   const { t, i18n } = useTranslation()
@@ -47,13 +48,25 @@ function ChatRoom() {
     setSending(true)
 
     try {
+      // The proxy identifies the user from this token to count the daily limit (§6).
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
         // city_id scopes the answer to the active city's approved data (§6/§5).
         body: JSON.stringify({ messages: history, lang: i18n.language, city_id: cityId }),
       })
       const data = await res.json().catch(() => null)
+      // Daily free-tier limit reached — show a calm, friendly note, not an error (§6).
+      if (data?.limitReached) {
+        setMessages((prev) => [...prev, { role: 'assistant', text: t('chat.limitReached') }])
+        return
+      }
       if (!res.ok || !data?.reply) {
         // Show Gemini's own detail when the proxy passes it through (§6).
         setError(data?.detail || data?.error || t('chat.error'))
