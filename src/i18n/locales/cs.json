@@ -1,0 +1,27 @@
+{
+  "appName": "CityMate",
+  "languageName": "Čeština",
+  "home": {
+    "tagline": "Your local friend in a new city.",
+    "skeletonNotice": "Clean skeleton — screens coming soon.",
+    "askPlaceholder": "Ask CityMate…"
+  },
+  "nav": {
+    "home": "Home",
+    "catalog": "Catalog",
+    "favorites": "Favorites",
+    "chat": "AI Chat",
+    "profile": "Profile"
+  },
+  "language": {
+    "label": "Language",
+    "select": "Select language"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "search": "Search"
+  }
+}

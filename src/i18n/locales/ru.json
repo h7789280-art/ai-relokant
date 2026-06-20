@@ -1,0 +1,27 @@
+{
+  "appName": "CityMate",
+  "languageName": "Русский",
+  "home": {
+    "tagline": "Ваш местный друг в новом городе.",
+    "skeletonNotice": "Чистый каркас — экраны скоро появятся.",
+    "askPlaceholder": "Спроси CityMate…"
+  },
+  "nav": {
+    "home": "Главная",
+    "catalog": "Каталог",
+    "favorites": "Избранное",
+    "chat": "AI чат",
+    "profile": "Профиль"
+  },
+  "language": {
+    "label": "Язык",
+    "select": "Выберите язык"
+  },
+  "common": {
+    "loading": "Загрузка…",
+    "retry": "Повторить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "search": "Поиск"
+  }
+}
