@@ -166,8 +166,9 @@ button {
 
 /* ==========================================================================
    Home screen (§4, screen 1)
-   Header (brand + city + bell) · "Ask CityMate" bar + chips · weather/currency
-   cards · today feeds. Light, airy, rounded, soft-shadowed.
+   Full-bleed city hero (brand + city + bell) · overlapping "Ask CityMate" bar +
+   icon chips · weather/currency cards · today feeds as horizontal card rails.
+   Light, airy, rounded, soft-shadowed.
    ========================================================================== */
 
 .home {
@@ -180,7 +181,8 @@ button {
 /* Airy sky behind the home content: the same welcome-sky.png clouds (with a
    gradient sky as fallback), muted and feathered into the page so it reads as
    soft daylight rather than a flat grey field. Fixed + behind everything, so
-   the white content cards stay crisp and legible on top (§4). */
+   the white content cards stay crisp and legible on top (§4). The city hero
+   sits on top of it at the very top of the page. */
 .home::before {
   content: '';
   position: fixed;
@@ -198,7 +200,47 @@ button {
   pointer-events: none;
 }
 
-/* --- Header --- */
+/* --- City hero --- */
+/* Full-bleed: breaks out of the app-shell padding so the photo meets the
+   screen edges, then feathers into the page bg at its base (no hard card
+   edge). */
+.home__hero {
+  position: relative;
+  isolation: isolate;
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) 0;
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-7);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* City photo. Accepts .png today; swap the URL if a .jpg is added later. */
+.home__hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/alanya-hero.png') center 32% / cover no-repeat;
+  z-index: -2;
+}
+
+/* Darkened at the top so white header text reads; melts into the page bg at the
+   bottom so there's no hard edge. */
+.home__hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 28, 48, 0.46) 0%,
+    rgba(10, 28, 48, 0.16) 30%,
+    rgba(242, 243, 247, 0) 60%,
+    var(--color-bg) 100%
+  );
+  z-index: -1;
+}
+
+/* --- Header (over the hero photo) --- */
 .home__header {
   display: flex;
   align-items: flex-start;
@@ -213,9 +255,11 @@ button {
 .home__brand {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 600;
   letter-spacing: 0;
+  color: #fff;
+  text-shadow: 0 1px 12px rgba(8, 22, 40, 0.4);
 }
 
 .home__city {
@@ -226,13 +270,14 @@ button {
   padding: 0;
   border: none;
   background: none;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.92);
   font-size: var(--text-sm);
   font-weight: 600;
+  text-shadow: 0 1px 8px rgba(8, 22, 40, 0.4);
 }
 
 .home__city:hover {
-  color: var(--color-accent);
+  color: #fff;
 }
 
 .home__bell {
@@ -244,18 +289,23 @@ button {
   height: 42px;
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-text);
-  transition: box-shadow 150ms ease;
+  background: rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  transition: background 150ms ease;
 }
 
 .home__bell:hover {
-  box-shadow: var(--shadow-md);
+  background: rgba(255, 255, 255, 0.34);
 }
 
-/* --- "Ask CityMate…" bar --- */
+/* --- "Ask CityMate…" bar (overlaps the hero base) --- */
 .home__ask {
+  position: relative;
+  z-index: 2;
+  /* Pull up onto the hero — net overlap is this minus the .home column gap. */
+  margin-top: calc(-1 * var(--space-7));
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -264,13 +314,13 @@ button {
   border: none;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   text-align: left;
   transition: box-shadow 150ms ease, transform 150ms ease;
 }
 
 .home__ask:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 16px 38px rgba(17, 21, 28, 0.16);
 }
 
 .home__ask:active {
@@ -308,22 +358,41 @@ button {
   color: var(--color-accent);
 }
 
-/* --- Quick-question chips --- */
+/* --- Quick chips (icon + label, horizontal scroll) --- */
 .home__chips {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Bleed to the screen edges so the row scrolls full-width. */
+  margin: 0 calc(-1 * var(--space-4));
+  padding: var(--space-1) var(--space-4);
+}
+
+.home__chips::-webkit-scrollbar {
+  display: none;
 }
 
 .home__chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--text-sm);
-  font-weight: 500;
-  transition: background 150ms ease, border-color 150ms ease;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.home__chip-icon {
+  color: var(--color-accent);
+  transition: color 150ms ease;
 }
 
 .home__chip:hover {
@@ -361,6 +430,17 @@ button {
   font-size: var(--text-sm);
 }
 
+.home-card__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* --- Weather card --- */
 .weather-card__main {
   display: flex;
   align-items: center;
@@ -369,24 +449,45 @@ button {
 }
 
 .weather-card__temp {
-  font-size: var(--text-2xl);
+  font-size: 40px;
   font-weight: 700;
+  line-height: 1;
   color: var(--color-text);
 }
 
 .weather-card__cond {
   margin: var(--space-2) 0 0;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font-size: var(--text-sm);
+  font-weight: 600;
 }
 
+.weather-card__feels,
 .weather-card__water {
   display: flex;
   align-items: center;
   gap: 4px;
   margin: var(--space-1) 0 0;
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+.weather-card__feels svg,
+.weather-card__water svg {
+  color: var(--color-text-subtle);
+}
+
+/* --- Currency card --- */
+.currency-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.currency-card__head .home-card__title {
+  margin: 0;
 }
 
 .currency-card__list {
@@ -417,12 +518,12 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Today feeds (news / markets / events) --- */
+/* --- Today feeds (news / markets / events) as horizontal card rails --- */
 .feed {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: var(--space-4) var(--space-4) var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-4);
 }
 
 .feed__head {
@@ -430,47 +531,98 @@ button {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.feed__icon {
+  flex: 0 0 auto;
   color: var(--color-accent);
 }
 
 .feed__title {
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--font-serif);
   font-size: 21px;
   font-weight: 600;
   color: var(--color-text);
 }
 
-.feed__list {
-  list-style: none;
-  margin: 0;
+.feed__all {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
   padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Horizontal rail — bleeds to the card edges so cards can scroll past them. */
+.feed__rail {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--space-4));
+  padding: var(--space-1) var(--space-4);
+}
+
+.feed__rail::-webkit-scrollbar {
+  display: none;
+}
+
+.feed-card {
+  flex: 0 0 auto;
+  width: 168px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  scroll-snap-align: start;
 }
 
-.feed__item {
+.feed-card__photo {
+  width: 100%;
+  height: 110px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.feed-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 220ms ease;
+}
+
+.feed-card:hover .feed-card__photo img {
+  transform: scale(1.05);
+}
+
+.feed-card__photo--ph {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--color-separator);
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
 }
 
-.feed__item:first-child {
-  border-top: none;
-  padding-top: 0;
-}
-
-.feed__item-title {
+.feed-card__title {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text);
-}
-
-.feed__item-sub {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -478,18 +630,26 @@ button {
   -webkit-box-orient: vertical;
 }
 
+.feed-card__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .feed__empty {
   margin: 0;
-  padding: var(--space-2) 0 var(--space-3);
+  padding: var(--space-2) 0 var(--space-2);
   color: var(--color-text-subtle);
   font-size: var(--text-sm);
 }
 
-/* Loading shimmer rows for a feed. */
-.feed__skeleton {
-  height: 14px;
-  margin: var(--space-2) 0;
-  border-radius: var(--radius-sm);
+/* Loading shimmer cards for a rail. */
+.feed-card--skeleton {
+  width: 168px;
+  height: 150px;
+  border-radius: var(--radius-md);
   background: linear-gradient(
     90deg,
     var(--color-surface-alt) 25%,
@@ -500,18 +660,18 @@ button {
   animation: feed-shimmer 1.4s ease infinite;
 }
 
-.feed__skeleton:nth-child(2) {
-  width: 70%;
-}
-
 @keyframes feed-shimmer {
   from { background-position: 100% 0; }
   to { background-position: 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .feed__skeleton {
+  .feed-card--skeleton {
     animation: none;
+  }
+
+  .feed-card:hover .feed-card__photo img {
+    transform: none;
   }
 }
 

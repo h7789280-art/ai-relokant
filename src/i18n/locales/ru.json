@@ -10,12 +10,6 @@
     "askPlaceholder": "Спроси CityMate…",
     "notifications": "Уведомления",
     "changeCity": "Сменить город",
-    "quickQuestions": [
-      "Где обменять валюту?",
-      "Ближайшая аптека",
-      "Купить местную SIM",
-      "Вид на жительство"
-    ],
     "empty": "Пока пусто.",
     "weather": {
       "title": "Погода",
@@ -31,11 +25,13 @@
         "snow": "Снег",
         "showers": "Ливень",
         "thunderstorm": "Гроза"
-      }
+      },
+      "feelsLike": "Ощущается как"
     },
     "currency": {
       "title": "Курс валют",
-      "unavailable": "Курс недоступен"
+      "unavailable": "Курс недоступен",
+      "all": "Все курсы"
     },
     "news": {
       "title": "Новости сегодня"
@@ -45,6 +41,15 @@
     },
     "events": {
       "title": "Афиша сегодня"
+    },
+    "seeAll": "Смотреть все",
+    "chips": {
+      "exchange": "Обмен валюты",
+      "pharmacy": "Аптеки",
+      "sim": "Местная SIM",
+      "shops": "Магазины",
+      "rent": "Аренда жилья",
+      "transport": "Транспорт"
     }
   },
   "catalog": {

@@ -10,12 +10,6 @@
     "askPlaceholder": "Ask CityMate…",
     "notifications": "Notifications",
     "changeCity": "Change city",
-    "quickQuestions": [
-      "Where to exchange money?",
-      "Nearest pharmacy",
-      "Get a local SIM",
-      "Residence permit"
-    ],
     "empty": "Nothing here yet.",
     "weather": {
       "title": "Weather",
@@ -31,11 +25,13 @@
         "snow": "Snow",
         "showers": "Showers",
         "thunderstorm": "Thunderstorm"
-      }
+      },
+      "feelsLike": "Feels like"
     },
     "currency": {
       "title": "Exchange rate",
-      "unavailable": "Rates unavailable"
+      "unavailable": "Rates unavailable",
+      "all": "All rates"
     },
     "news": {
       "title": "News today"
@@ -45,6 +41,15 @@
     },
     "events": {
       "title": "What's on today"
+    },
+    "seeAll": "See all",
+    "chips": {
+      "exchange": "Exchange money",
+      "pharmacy": "Pharmacies",
+      "sim": "Local SIM",
+      "shops": "Shops",
+      "rent": "Rent a home",
+      "transport": "Transport"
     }
   },
   "catalog": {

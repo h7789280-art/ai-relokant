@@ -1,10 +1,10 @@
-// City home screen (CLAUDE.md §4, screen 1). Clean, airy iOS layout: header
-// (brand + active city + notifications), a prominent "Ask CityMate…" bar with
-// quick-question chips, a weather + water card, a currency card, and the
-// News / Markets / What's-on-today feeds. All feed data is Supabase content,
-// scoped to the active city and approved-only (Stage-2 helpers); empty feeds
-// fall back to a tidy "nothing yet" placeholder. No date-filter / category
-// strip — removed per §4.
+// City home screen (CLAUDE.md §4, screen 1). Premium, airy iOS layout: a
+// full-bleed city hero (brand + active city + notifications) with the "Ask
+// CityMate…" bar overlapping its base, icon quick-chips, a weather + water card,
+// a currency card, and the News / Markets / What's-on-today feeds rendered as
+// horizontally scrollable card rails. All feed data is Supabase content, scoped
+// to the active city and approved-only (Stage-2 helpers); empty feeds fall back
+// to a tidy "nothing yet" placeholder. No date-filter / category strip (§4).
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +13,7 @@ import {
   Bot,
   Mic,
   ChevronDown,
+  ChevronRight,
   Sun,
   CloudSun,
   Cloud,
@@ -22,9 +23,16 @@ import {
   CloudSnow,
   CloudLightning,
   Droplets,
+  Thermometer,
   Newspaper,
   Store,
   CalendarDays,
+  ArrowLeftRight,
+  Pill,
+  Smartphone,
+  ShoppingBag,
+  KeyRound,
+  Bus,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchCity, fetchContent } from '../lib/content.js'
@@ -45,11 +53,23 @@ const WEATHER_ICONS = {
   thunderstorm: CloudLightning,
 }
 
+// Quick chips: a meaningful lucide icon + an i18n label key. `to` routes either
+// to the AI chat (seeded with the chip's label as the question) or to a catalog
+// section (§4 — "lead to the chat / the matching section for now").
+const CHIPS = [
+  { key: 'exchange', icon: ArrowLeftRight, to: 'chat' },
+  { key: 'pharmacy', icon: Pill, to: '/catalog/pharmacies' },
+  { key: 'sim', icon: Smartphone, to: 'chat' },
+  { key: 'shops', icon: ShoppingBag, to: '/catalog/shops' },
+  { key: 'rent', icon: KeyRound, to: 'chat' },
+  { key: 'transport', icon: Bus, to: 'chat' },
+]
+
 // Feed query options. Module-scoped so their identity is stable across renders
 // (they're used as effect deps in useContentFeed).
-const NEWS_OPTS = { limit: 3, order: { column: 'published_at', ascending: false } }
-const EVENTS_OPTS = { limit: 3, order: { column: 'starts_at', ascending: true } }
-const MARKETS_OPTS = { limit: 3 }
+const NEWS_OPTS = { limit: 8, order: { column: 'published_at', ascending: false } }
+const EVENTS_OPTS = { limit: 8, order: { column: 'starts_at', ascending: true } }
+const MARKETS_OPTS = { limit: 8 }
 
 // Small async-state hook for one content feed. Treats errors like "empty" so a
 // flaky network never breaks the screen — it just shows the placeholder (§4).
@@ -74,6 +94,20 @@ function formatRate(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value)
+}
+
+// Localized short date + time for feed-card meta (e.g. "20 Jun, 14:00"). Returns
+// null for missing / unparseable values so the meta line is simply omitted.
+function formatDateTime(value) {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return new Intl.DateTimeFormat(i18n.language, {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
 }
 
 export default function Home() {
@@ -124,9 +158,6 @@ export default function Home() {
   const markets = useContentFeed('places', cityId, MARKETS_OPTS)
   const events = useContentFeed('events', cityId, EVENTS_OPTS)
 
-  // Quick-question chips (array from i18n).
-  const quickQuestions = t('home.quickQuestions', { returnObjects: true })
-
   // The search bar and chips currently just open the AI chat (§4 — wired to the
   // chat tab for now). The question is handed over via router state so Chat can
   // pick it up once it's built.
@@ -134,32 +165,42 @@ export default function Home() {
     navigate('/chat', question ? { state: { question } } : undefined)
   }
 
+  // A chip either seeds the chat with its label or jumps to a catalog section.
+  function onChip(chip) {
+    if (chip.to === 'chat') openChat(t(`home.chips.${chip.key}`))
+    else navigate(chip.to)
+  }
+
   const WeatherIcon = weather.data ? WEATHER_ICONS[weatherCodeKey(weather.data.code)] : Cloud
 
   return (
     <main className="app-shell home">
-      {/* Header: brand + active city + notifications bell (§4). */}
-      <header className="home__header">
-        <div className="home__heading">
-          <h1 className="home__brand">{t('appName')}</h1>
-          {selection?.cityName && (
-            <button
-              type="button"
-              className="home__city"
-              onClick={() => navigate('/profile')}
-              aria-label={t('home.changeCity')}
-            >
-              {selection.cityName}
-              <ChevronDown size={16} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-        <button type="button" className="home__bell" aria-label={t('home.notifications')}>
-          <Bell size={22} strokeWidth={1.9} aria-hidden="true" />
-        </button>
-      </header>
+      {/* Full-bleed city hero: brand + active city + bell over a softened photo
+          that fades into the page at its base (§4). */}
+      <div className="home__hero">
+        <header className="home__header">
+          <div className="home__heading">
+            <h1 className="home__brand">{t('appName')}</h1>
+            {selection?.cityName && (
+              <button
+                type="button"
+                className="home__city"
+                onClick={() => navigate('/profile')}
+                aria-label={t('home.changeCity')}
+              >
+                {selection.cityName}
+                <ChevronDown size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          <button type="button" className="home__bell" aria-label={t('home.notifications')}>
+            <Bell size={22} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        </header>
+      </div>
 
-      {/* Prominent "Ask CityMate…" bar — bot icon left, mic right (§4). */}
+      {/* Prominent "Ask CityMate…" bar — overlaps the hero base; bot left, mic
+          right (§4). */}
       <button type="button" className="home__ask" onClick={() => openChat()}>
         <span className="home__ask-bot" aria-hidden="true">
           <Bot size={22} strokeWidth={2} />
@@ -170,20 +211,23 @@ export default function Home() {
         </span>
       </button>
 
-      {Array.isArray(quickQuestions) && quickQuestions.length > 0 && (
-        <div className="home__chips">
-          {quickQuestions.map((q) => (
+      {/* Quick chips with meaning icons (§4). */}
+      <div className="home__chips">
+        {CHIPS.map((chip) => {
+          const Icon = chip.icon
+          return (
             <button
-              key={q}
+              key={chip.key}
               type="button"
               className="home__chip"
-              onClick={() => openChat(q)}
+              onClick={() => onChip(chip)}
             >
-              {q}
+              <Icon className="home__chip-icon" size={16} strokeWidth={2} aria-hidden="true" />
+              {t(`home.chips.${chip.key}`)}
             </button>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
 
       {/* Weather + water and currency, side by side on wider screens. */}
       <div className="home__row">
@@ -195,15 +239,21 @@ export default function Home() {
           ) : (
             <>
               <div className="weather-card__main">
-                <WeatherIcon size={40} strokeWidth={1.6} aria-hidden="true" />
+                <WeatherIcon size={44} strokeWidth={1.6} aria-hidden="true" />
                 <span className="weather-card__temp">{weather.data.temp}°</span>
               </div>
               <p className="weather-card__cond">
                 {t(`home.weather.codes.${weatherCodeKey(weather.data.code)}`)}
               </p>
+              {weather.data.feelsLike != null && (
+                <p className="weather-card__feels">
+                  <Thermometer size={14} aria-hidden="true" />
+                  {t('home.weather.feelsLike')} {weather.data.feelsLike}°
+                </p>
+              )}
               {weather.sea != null && (
                 <p className="weather-card__water">
-                  <Droplets size={15} aria-hidden="true" />
+                  <Droplets size={14} aria-hidden="true" />
                   {t('home.weather.water')} {weather.sea}°
                 </p>
               )}
@@ -212,7 +262,18 @@ export default function Home() {
         </section>
 
         <section className="home-card currency-card">
-          <h2 className="home-card__title">{t('home.currency.title')}</h2>
+          <div className="currency-card__head">
+            <h2 className="home-card__title">{t('home.currency.title')}</h2>
+            {rates.status === 'ready' && rates.rows.length > 0 && (
+              <button
+                type="button"
+                className="home-card__link"
+                onClick={() => openChat(t('home.currency.all'))}
+              >
+                {t('home.currency.all')}
+              </button>
+            )}
+          </div>
           {rates.status === 'loading' ? (
             <p className="home-card__muted">{t('common.loading')}</p>
           ) : rates.status === 'error' || rates.rows.length === 0 ? (
@@ -230,17 +291,23 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Today feeds — all Supabase, city-scoped, approved-only (§4, §5). */}
+      {/* Today feeds — all Supabase, city-scoped, approved-only (§4, §5). Each is
+          a horizontally scrollable rail of photo cards with a "See all" link. */}
       <Feed
         icon={Newspaper}
         title={t('home.news.title')}
         feed={news}
         empty={t('home.empty')}
+        onSeeAll={() => openChat(t('home.news.title'))}
         renderItem={(row) => (
-          <li key={row.id} className="feed__item">
-            <span className="feed__item-title">{row.title}</span>
-            {row.summary && <span className="feed__item-sub">{row.summary}</span>}
-          </li>
+          <FeedCard
+            key={row.id}
+            image={row.image_url}
+            phIcon={Newspaper}
+            title={row.title}
+            meta={formatDateTime(row.published_at)}
+            onClick={() => openChat(row.title)}
+          />
         )}
       />
 
@@ -249,11 +316,16 @@ export default function Home() {
         title={t('home.markets.title')}
         feed={markets}
         empty={t('home.empty')}
+        onSeeAll={() => navigate('/catalog')}
         renderItem={(row) => (
-          <li key={row.id} className="feed__item">
-            <span className="feed__item-title">{row.name}</span>
-            {row.address && <span className="feed__item-sub">{row.address}</span>}
-          </li>
+          <FeedCard
+            key={row.id}
+            image={row.image_url}
+            phIcon={Store}
+            title={row.name}
+            meta={row.address}
+            onClick={() => navigate(`/catalog/place/${row.id}`)}
+          />
         )}
       />
 
@@ -262,19 +334,26 @@ export default function Home() {
         title={t('home.events.title')}
         feed={events}
         empty={t('home.empty')}
+        onSeeAll={() => openChat(t('home.events.title'))}
         renderItem={(row) => (
-          <li key={row.id} className="feed__item">
-            <span className="feed__item-title">{row.title}</span>
-            {row.location && <span className="feed__item-sub">{row.location}</span>}
-          </li>
+          <FeedCard
+            key={row.id}
+            image={row.image_url}
+            phIcon={CalendarDays}
+            title={row.title}
+            meta={formatDateTime(row.starts_at) || row.location}
+            onClick={() => openChat(row.title)}
+          />
         )}
       />
     </main>
   )
 }
 
-// One "today" feed section: titled header + list, or a placeholder when empty.
-function Feed({ icon, title, feed, empty, renderItem }) {
+// One "today" feed section: titled header (+ "See all") and a horizontal card
+// rail, or a tidy placeholder when empty.
+function Feed({ icon, title, feed, empty, onSeeAll, renderItem }) {
+  const { t } = useTranslation()
   // Local (not a destructured arg) so the uppercase varsIgnorePattern covers it
   // — JSX-only usage isn't tracked by the lint config (see TabBar).
   const Icon = icon
@@ -283,17 +362,43 @@ function Feed({ icon, title, feed, empty, renderItem }) {
       <div className="feed__head">
         <Icon className="feed__icon" size={18} strokeWidth={2} aria-hidden="true" />
         <h2 className="feed__title">{title}</h2>
+        {feed.rows.length > 0 && (
+          <button type="button" className="feed__all" onClick={onSeeAll}>
+            {t('home.seeAll')}
+            <ChevronRight size={15} aria-hidden="true" />
+          </button>
+        )}
       </div>
       {feed.status === 'loading' ? (
-        <div className="feed__list">
-          <div className="feed__skeleton" />
-          <div className="feed__skeleton" />
+        <div className="feed__rail">
+          <div className="feed-card feed-card--skeleton" />
+          <div className="feed-card feed-card--skeleton" />
+          <div className="feed-card feed-card--skeleton" />
         </div>
       ) : feed.rows.length === 0 ? (
         <p className="feed__empty">{empty}</p>
       ) : (
-        <ul className="feed__list">{feed.rows.map(renderItem)}</ul>
+        <div className="feed__rail">{feed.rows.map(renderItem)}</div>
       )}
     </section>
+  )
+}
+
+// A single photo card in a feed rail: image (or icon placeholder) on top, title,
+// optional small meta line.
+function FeedCard({ image, phIcon, title, meta, onClick }) {
+  const PhIcon = phIcon
+  return (
+    <button type="button" className="feed-card" onClick={onClick}>
+      <span className={`feed-card__photo${image ? '' : ' feed-card__photo--ph'}`}>
+        {image ? (
+          <img src={image} alt="" loading="lazy" />
+        ) : (
+          <PhIcon size={26} strokeWidth={1.6} aria-hidden="true" />
+        )}
+      </span>
+      <span className="feed-card__title">{title}</span>
+      {meta && <span className="feed-card__meta">{meta}</span>}
+    </button>
   )
 }

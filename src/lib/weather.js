@@ -7,22 +7,25 @@ const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
 const MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine'
 
 /**
- * Current air temperature (°C, rounded) and WMO weather code for a point.
- * @returns {Promise<{ temp: number|null, code: number }>}
+ * Current air temperature, "feels like" apparent temperature (both °C, rounded)
+ * and WMO weather code for a point.
+ * @returns {Promise<{ temp: number|null, feelsLike: number|null, code: number }>}
  */
 export async function fetchWeather(lat, lon) {
   const params = new URLSearchParams({
     latitude: lat,
     longitude: lon,
-    current: 'temperature_2m,weather_code',
+    current: 'temperature_2m,apparent_temperature,weather_code',
     timezone: 'auto',
   })
   const res = await fetch(`${FORECAST_URL}?${params.toString()}`)
   if (!res.ok) throw new Error(`weather ${res.status}`)
   const json = await res.json()
   const temp = json.current?.temperature_2m
+  const feels = json.current?.apparent_temperature
   return {
     temp: temp == null ? null : Math.round(temp),
+    feelsLike: feels == null ? null : Math.round(feels),
     code: json.current?.weather_code ?? 0,
   }
 }
