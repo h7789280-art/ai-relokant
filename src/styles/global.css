@@ -49,9 +49,14 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  /* --- Typography --- */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
-    Roboto, Helvetica, Arial, sans-serif;
+  /* --- Typography ---
+     Manrope drives all UI + body text; Cormorant Garamond (with EB Garamond
+     behind it for Cyrillic, since Cormorant ships none) drives headings and the
+     "soulful" elements. System fonts trail each stack as a graceful fallback. */
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman',
+    serif;
   --text-xs: 12px;
   --text-sm: 14px;
   --text-base: 16px;
@@ -94,13 +99,17 @@ h2,
 h3,
 h4 {
   margin: 0 0 var(--space-3);
-  line-height: 1.2;
-  font-weight: 700;
+  line-height: 1.15;
+  /* Cormorant Garamond — elegant serif. It runs lighter than a bold sans, so
+     headings carry a 600 weight and slightly larger sizes to keep presence. */
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
-h1 { font-size: var(--text-2xl); }
-h2 { font-size: var(--text-xl); }
-h3 { font-size: var(--text-lg); }
+h1 { font-size: 34px; }
+h2 { font-size: 27px; }
+h3 { font-size: 22px; }
 
 p {
   margin: 0 0 var(--space-3);
@@ -162,9 +171,31 @@ button {
    ========================================================================== */
 
 .home {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* Airy sky behind the home content: the same welcome-sky.png clouds (with a
+   gradient sky as fallback), muted and feathered into the page so it reads as
+   soft daylight rather than a flat grey field. Fixed + behind everything, so
+   the white content cards stay crisp and legible on top (§4). */
+.home::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 360px;
+  background:
+    url('/welcome-sky.png') center top / cover no-repeat,
+    linear-gradient(180deg, #dcefff 0%, #eaf5ff 44%, var(--color-bg) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+  opacity: 0.6;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* --- Header --- */
@@ -181,9 +212,10 @@ button {
 
 .home__brand {
   margin: 0;
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .home__city {
@@ -317,6 +349,7 @@ button {
 
 .home-card__title {
   margin: 0 0 var(--space-3);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
@@ -402,8 +435,9 @@ button {
 
 .feed__title {
   margin: 0;
-  font-size: var(--text-base);
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 600;
   color: var(--color-text);
 }
 
@@ -502,9 +536,10 @@ button {
 
 .catalog__title {
   margin: 0;
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .catalog__subtitle {
@@ -746,8 +781,10 @@ button {
 
 .place__name {
   margin: 0;
-  font-size: var(--text-xl);
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .place__badges {
@@ -1131,7 +1168,10 @@ button {
 
 .welcome__subtitle {
   color: var(--color-text-muted);
-  font-size: var(--text-base);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--text-xl);
+  font-weight: 500;
   margin: 0;
 }
 

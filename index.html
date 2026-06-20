@@ -6,13 +6,19 @@
     <meta name="theme-color" content="#ffffff" />
     <title>CityMate</title>
     <meta name="description" content="CityMate — your local friend in a new city." />
-    <!-- Caveat: elegant handwriting display font for the welcome greeting.
-         Covers Cyrillic (ru/uk) + Latin Extended (Turkish ş/ı, Scandinavian
-         å/ä/ø/æ, Czech č/ě) so all 13 greetings render without tofu. -->
+    <!-- App typography (all must cover the 13 start languages — Cyrillic + Latin
+         Extended — so nothing renders as tofu):
+         · Manrope  — UI + body sans (Latin, Latin Extended, Cyrillic).
+         · Cormorant Garamond — elegant serif for headings / "soulful" bits.
+           It has no Cyrillic, so EB Garamond (same Garamond lineage, full
+           Cyrillic) follows in the --font-serif stack and the browser fills
+           ru/uk glyphs from it per-glyph — see src/styles/global.css.
+         · EB Garamond — Cyrillic-capable Garamond fallback for the serif.
+         · Caveat — handwriting display, used only for the welcome greeting. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
   </head>
