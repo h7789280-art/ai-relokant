@@ -337,7 +337,13 @@
     "subtitle": "Zet het op je startscherm voor snelle toegang.",
     "button": "Installeren",
     "dismiss": "Sluiten",
-    "iosHint": "Tik op Delen en daarna op „Zet op beginscherm”."
+    "iosHint": "Tap to see how",
+    "close": "Close",
+    "iosSheetTitle": "Add to Home Screen",
+    "iosSheetIntro": "Install CityMate in three quick steps.",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add”"
   },
   "language": {
     "label": "Language",

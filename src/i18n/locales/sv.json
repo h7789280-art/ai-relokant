@@ -337,7 +337,13 @@
     "subtitle": "Lägg till den på hemskärmen för snabb åtkomst.",
     "button": "Installera",
     "dismiss": "Stäng",
-    "iosHint": "Tryck på Dela och sedan “Lägg till på hemskärmen”."
+    "iosHint": "Tap to see how",
+    "close": "Close",
+    "iosSheetTitle": "Add to Home Screen",
+    "iosSheetIntro": "Install CityMate in three quick steps.",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add”"
   },
   "language": {
     "label": "Language",

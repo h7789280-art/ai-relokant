@@ -337,7 +337,13 @@
     "subtitle": "Hızlı erişim için ana ekrana ekleyin.",
     "button": "Yükle",
     "dismiss": "Kapat",
-    "iosHint": "Paylaş'a, ardından “Ana Ekrana Ekle”ye dokunun."
+    "iosHint": "Tap to see how",
+    "close": "Close",
+    "iosSheetTitle": "Add to Home Screen",
+    "iosSheetIntro": "Install CityMate in three quick steps.",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add”"
   },
   "language": {
     "label": "Language",

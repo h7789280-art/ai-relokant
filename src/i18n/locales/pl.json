@@ -337,7 +337,13 @@
     "subtitle": "Dodaj do ekranu głównego, aby mieć szybki dostęp.",
     "button": "Zainstaluj",
     "dismiss": "Zamknij",
-    "iosHint": "Dotknij Udostępnij, a następnie „Dodaj do ekranu początkowego”."
+    "iosHint": "Tap to see how",
+    "close": "Close",
+    "iosSheetTitle": "Add to Home Screen",
+    "iosSheetIntro": "Install CityMate in three quick steps.",
+    "iosStep1": "Tap the Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Tap “Add”"
   },
   "language": {
     "label": "Language",
