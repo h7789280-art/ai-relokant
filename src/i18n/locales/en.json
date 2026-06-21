@@ -336,6 +336,12 @@
       "submitCreate": "Add guide"
     }
   },
+  "profile": {
+    "settingsTitle": "Settings",
+    "language": "Interface language",
+    "city": "City",
+    "soon": "(soon)"
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

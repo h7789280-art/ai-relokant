@@ -2799,6 +2799,23 @@ button {
   }
 }
 
+/* --- Profile → settings (language + city), iOS-style list --- */
+.profile__settings-title {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-subtle);
+}
+
+.profile__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
 /* --- Profile → admin link --- */
 .profile__admin-link {
   display: inline-flex;

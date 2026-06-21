@@ -326,6 +326,12 @@
       "submitCreate": "Добавить гайд"
     }
   },
+  "profile": {
+    "settingsTitle": "Настройки",
+    "language": "Язык интерфейса",
+    "city": "Город",
+    "soon": "(скоро)"
+  },
   "language": {
     "label": "Язык",
     "select": "Выберите язык"
