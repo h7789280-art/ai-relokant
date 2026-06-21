@@ -202,6 +202,26 @@ export async function fetchPlace(placeId) {
   return data
 }
 
+/**
+ * Approved places for a set of ids (for the Favorites screen, §4). Order is NOT
+ * guaranteed — the caller re-orders to match its own list (e.g. favorite order).
+ * A favorite whose place was removed or unapproved simply drops out. Empty ids
+ * → [].
+ *
+ * @param {string[]} ids
+ * @param {{ columns?: string }} [opts]
+ */
+export async function fetchPlacesByIds(ids, { columns = '*' } = {}) {
+  if (!ids?.length) return []
+  const { data, error } = await supabase
+    .from('places')
+    .select(columns)
+    .in('id', ids)
+    .eq('status', 'approved')
+  if (error) throw error
+  return data ?? []
+}
+
 // ---- Single content rows for the detail screens (§4) -----------------------
 
 /**

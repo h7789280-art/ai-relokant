@@ -145,6 +145,14 @@
     "telegram": "Telegram",
     "website": "Website"
   },
+  "favorites": {
+    "subtitle": "Places you've saved",
+    "empty": "Nothing saved yet.",
+    "emptyHint": "Tap the heart on a place to save it here.",
+    "add": "Save to favorites",
+    "remove": "Remove from favorites",
+    "error": "Couldn't load your favorites. Please try again."
+  },
   "events": {
     "title": "What's on",
     "subtitle": "Events in your city, by date",

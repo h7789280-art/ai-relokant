@@ -730,6 +730,40 @@ button {
   font-size: var(--text-sm);
 }
 
+/* --- Favorites empty state (§4) --- */
+.favorites__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.favorites__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.favorites__empty-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.favorites__empty-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
 /* --- Search bar (first element: finding beats browsing, §4) --- */
 .catalog__search {
   display: flex;
@@ -1004,6 +1038,46 @@ button {
   color: var(--color-accent);
 }
 
+/* --- Favorite heart (shared: catalog rows + place card) (§4) --- */
+.fav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, transform 100ms ease;
+}
+
+.fav-btn:hover {
+  color: #e0245e;
+}
+
+.fav-btn:active {
+  transform: scale(0.9);
+}
+
+.fav-btn.is-active {
+  color: #e0245e;
+}
+
+/* The heart overlays the top-right corner of a catalog row, clear of the
+   centred chevron. The row wrapper is the positioning context. */
+.place-row-wrap {
+  position: relative;
+}
+
+.place-row__fav {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ==========================================================================
    Place card (§5, §11) — photo, name, trust marks, actions, details.
    ========================================================================== */
@@ -1032,8 +1106,22 @@ button {
 
 .place__head {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.place__head-main {
+  display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
+}
+
+.place__fav {
+  flex: 0 0 auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .place__name {

@@ -21,6 +21,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { fetchPlace, withTranslations } from '../lib/content.js'
+import FavoriteButton from '../components/FavoriteButton.jsx'
 import i18n from '../i18n/index.js'
 
 // WhatsApp deep link from a free-form number (strip everything but digits).
@@ -153,23 +154,26 @@ export default function Place() {
       )}
 
       <div className="place__head">
-        <h1 className="place__name">{place.name}</h1>
-        {(place.is_promoted || place.is_verified) && (
-          <div className="place__badges">
-            {place.is_promoted && (
-              <span className="badge badge--promoted">
-                <Megaphone size={13} aria-hidden="true" />
-                {t('catalog.promoted')}
-              </span>
-            )}
-            {place.is_verified && (
-              <span className="badge badge--verified">
-                <BadgeCheck size={13} aria-hidden="true" />
-                {t('catalog.verified')}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="place__head-main">
+          <h1 className="place__name">{place.name}</h1>
+          {(place.is_promoted || place.is_verified) && (
+            <div className="place__badges">
+              {place.is_promoted && (
+                <span className="badge badge--promoted">
+                  <Megaphone size={13} aria-hidden="true" />
+                  {t('catalog.promoted')}
+                </span>
+              )}
+              {place.is_verified && (
+                <span className="badge badge--verified">
+                  <BadgeCheck size={13} aria-hidden="true" />
+                  {t('catalog.verified')}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <FavoriteButton itemId={place.id} size={22} className="place__fav" />
       </div>
 
       {/* Action buttons: Call · WhatsApp · Route. */}
