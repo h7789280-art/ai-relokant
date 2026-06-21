@@ -342,6 +342,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "Install CityMate",
+    "subtitle": "Add it to your home screen for quick access.",
+    "button": "Install",
+    "dismiss": "Dismiss",
+    "iosHint": "Tap Share, then “Add to Home Screen”."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

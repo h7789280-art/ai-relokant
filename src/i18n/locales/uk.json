@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "Встановити CityMate",
+    "subtitle": "Додайте на головний екран для швидкого доступу.",
+    "button": "Встановити",
+    "dismiss": "Закрити",
+    "iosHint": "Натисніть «Поділитися», потім «На екран «Додому»»."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

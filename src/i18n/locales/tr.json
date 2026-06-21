@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "CityMate'i yükle",
+    "subtitle": "Hızlı erişim için ana ekrana ekleyin.",
+    "button": "Yükle",
+    "dismiss": "Kapat",
+    "iosHint": "Paylaş'a, ardından “Ana Ekrana Ekle”ye dokunun."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

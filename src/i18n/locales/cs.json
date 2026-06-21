@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "Nainstalovat CityMate",
+    "subtitle": "Přidejte si ji na plochu pro rychlý přístup.",
+    "button": "Nainstalovat",
+    "dismiss": "Zavřít",
+    "iosHint": "Klepněte na Sdílet a poté na „Přidat na plochu”."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

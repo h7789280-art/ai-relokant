@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "Installer CityMate",
+    "subtitle": "Legg den til på startskjermen for rask tilgang.",
+    "button": "Installer",
+    "dismiss": "Lukk",
+    "iosHint": "Trykk på Del og deretter “Legg til på Hjem-skjerm”."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

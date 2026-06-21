@@ -3,9 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#007aff" />
     <title>CityMate</title>
     <meta name="description" content="CityMate — your local friend in a new city." />
+    <!-- PWA: home-screen icon + iOS standalone hints (Stage 11C). The manifest
+         link + service-worker registration are injected by vite-plugin-pwa. -->
+    <link rel="icon" type="image/png" href="/favicon-64.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CityMate" />
     <!-- App typography (all must cover the 13 start languages — Cyrillic + Latin
          Extended — so nothing renders as tofu):
          · Manrope  — UI + body sans (Latin, Latin Extended, Cyrillic).

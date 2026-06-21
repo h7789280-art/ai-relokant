@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "CityMate installeren",
+    "subtitle": "Zet het op je startscherm voor snelle toegang.",
+    "button": "Installeren",
+    "dismiss": "Sluiten",
+    "iosHint": "Tik op Delen en daarna op „Zet op beginscherm”."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

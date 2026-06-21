@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "Installer CityMate",
+    "subtitle": "Ajoutez-le à votre écran d'accueil pour un accès rapide.",
+    "button": "Installer",
+    "dismiss": "Fermer",
+    "iosHint": "Touchez Partager, puis « Sur l'écran d'accueil »."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"

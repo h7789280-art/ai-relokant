@@ -2070,6 +2070,103 @@ button {
 }
 
 /* ==========================================================================
+   Install banner (PWA — §3, Stage 11C)
+   A soft, dismissible card floating just above the tab bar. Offers a one-tap
+   install on Chromium, or the Share → Home Screen hint on iOS Safari.
+   ========================================================================== */
+
+.install-banner {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Sit above the fixed tab bar (64px) + its safe-area inset, with a gap. */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + var(--space-3));
+  z-index: 99;
+  width: calc(100% - 2 * var(--space-4));
+  max-width: var(--content-max);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.install-banner__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.install-banner__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.install-banner__title {
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.install-banner__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.install-banner__cta {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.install-banner__cta:hover {
+  background: var(--color-accent-hover);
+}
+
+.install-banner__close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.install-banner__close:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
    Welcome / onboarding screen (§4)
    ========================================================================== */
 

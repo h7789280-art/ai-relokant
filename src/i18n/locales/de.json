@@ -332,6 +332,13 @@
     "city": "City",
     "soon": "(soon)"
   },
+  "install": {
+    "title": "CityMate installieren",
+    "subtitle": "Füge es für schnellen Zugriff zum Startbildschirm hinzu.",
+    "button": "Installieren",
+    "dismiss": "Schließen",
+    "iosHint": "Tippe auf „Teilen“, dann „Zum Home-Bildschirm“."
+  },
   "language": {
     "label": "Language",
     "select": "Select language"
