@@ -23,6 +23,7 @@ import {
   BadgeCheck,
   Plus,
   ShieldCheck,
+  Languages,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
@@ -35,6 +36,9 @@ import {
   createContent,
   updateContent,
   uploadPlacePhoto,
+  requestTranslation,
+  fetchAdminTranslations,
+  saveTranslations,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 
@@ -214,6 +218,179 @@ function FormBanners({ error, success }) {
         </p>
       )}
     </>
+  )
+}
+
+// Per-row content translation editor (CLAUDE.md §8) — Stage 11D.
+//
+// Auto-translates a row's TEXT fields into the other 12 start languages via
+// /api/translate (server-side Gemini, admin-only), lets the owner edit the
+// result, and saves it to content_translations. Translation is INDEPENDENT of
+// moderation status — a row can be approved with or without translations.
+//
+// Translations attach to an existing row id, so the panel only appears once the
+// row is saved. `fields` is [{ name, label, value }] of the source-language text
+// (everything else — phone/address/url/coords/hours — is intentionally excluded).
+function TranslationsPanel({ entityType, entityId, fields }) {
+  const { t, i18n } = useTranslation()
+  const [sourceLang, setSourceLang] = useState(i18n.language)
+  const [translations, setTranslations] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [translating, setTranslating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const targetLangs = SUPPORTED_LANGUAGES.filter((l) => l !== sourceLang)
+  const nativeName = (code) =>
+    i18n.getResource(code, 'translation', 'languageName') || code.toUpperCase()
+
+  // Preload any translations already saved for this row.
+  useEffect(() => {
+    if (!entityId) return
+    let active = true
+    setLoading(true)
+    fetchAdminTranslations(entityType, entityId)
+      .then((data) => active && setTranslations(data))
+      .catch(() => {})
+      .finally(() => active && setLoading(false))
+    return () => {
+      active = false
+    }
+  }, [entityType, entityId])
+
+  if (!entityId) {
+    return (
+      <section className="admin-tr admin-tr--locked">
+        <span className="admin-field__label">
+          <Languages size={15} aria-hidden="true" /> {t('admin.tr.title')}
+        </span>
+        <p className="admin-field__hint muted">{t('admin.tr.saveFirst')}</p>
+      </section>
+    )
+  }
+
+  const setValue = (lang, field, value) =>
+    setTranslations((prev) => ({ ...prev, [lang]: { ...(prev[lang] ?? {}), [field]: value } }))
+
+  // Only fields that actually carry source text are worth sending to Gemini.
+  const sourceFields = Object.fromEntries(
+    fields.map((f) => [f.name, (f.value ?? '').trim()]).filter(([, v]) => v),
+  )
+
+  async function handleTranslate() {
+    setError('')
+    setSuccess('')
+    if (Object.keys(sourceFields).length === 0) {
+      setError(t('admin.tr.nothingToTranslate'))
+      return
+    }
+    setTranslating(true)
+    try {
+      const result = await requestTranslation(sourceFields, sourceLang)
+      setTranslations((prev) => {
+        const next = { ...prev }
+        for (const [lang, vals] of Object.entries(result)) {
+          if (lang === sourceLang) continue // the source text is the base row
+          next[lang] = { ...(next[lang] ?? {}), ...vals }
+        }
+        return next
+      })
+      setSuccess(t('admin.tr.translated'))
+    } catch (err) {
+      setError(err?.message || t('admin.tr.error'))
+    } finally {
+      setTranslating(false)
+    }
+  }
+
+  async function handleSave() {
+    setError('')
+    setSuccess('')
+    setSaving(true)
+    try {
+      // Persist only the target languages (never the source — that's the base row).
+      const subset = {}
+      for (const lang of targetLangs) if (translations[lang]) subset[lang] = translations[lang]
+      await saveTranslations(entityType, entityId, subset)
+      setSuccess(t('admin.tr.saved'))
+    } catch (err) {
+      setError(err?.message || t('admin.tr.error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="admin-tr">
+      <div className="admin-tr__head">
+        <span className="admin-field__label">
+          <Languages size={15} aria-hidden="true" /> {t('admin.tr.title')}
+        </span>
+        <label className="admin-tr__source">
+          <span className="muted">{t('admin.tr.sourceLang')}</span>
+          <select
+            className="admin-field__input"
+            value={sourceLang}
+            onChange={(e) => setSourceLang(e.target.value)}
+          >
+            {SUPPORTED_LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {l.toUpperCase()} — {nativeName(l)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="admin-field__hint muted">{t('admin.tr.hint')}</p>
+
+      <div className="admin-tr__actions">
+        <button
+          type="button"
+          className="admin-btn admin-btn--ghost"
+          onClick={handleTranslate}
+          disabled={translating}
+        >
+          <Languages size={15} aria-hidden="true" />
+          {translating ? t('admin.tr.translating') : t('admin.tr.translate')}
+        </button>
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? t('admin.form.saving') : t('admin.tr.save')}
+        </button>
+      </div>
+
+      <FormBanners error={error} success={success} />
+
+      {loading ? (
+        <p className="muted">{t('admin.list.loading')}</p>
+      ) : (
+        <div className="admin-tr__langs">
+          {targetLangs.map((lang) => (
+            <details key={lang} className="admin-tr__lang">
+              <summary>
+                {lang.toUpperCase()} — {nativeName(lang)}
+              </summary>
+              {fields.map((f) => (
+                <label key={f.name} className="admin-field">
+                  <span className="admin-field__label">{f.label}</span>
+                  <textarea
+                    className="admin-field__input admin-field__textarea"
+                    rows={2}
+                    value={translations[lang]?.[f.name] ?? ''}
+                    onChange={(e) => setValue(lang, f.name, e.target.value)}
+                  />
+                </label>
+              ))}
+            </details>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -794,6 +971,15 @@ function PlacesSection() {
 
           <FormBanners error={error} success={success} />
 
+          <TranslationsPanel
+            entityType="places"
+            entityId={form.id}
+            fields={[
+              { name: 'name', label: t('admin.form.name'), value: form.name },
+              { name: 'description', label: t('admin.form.description'), value: form.description },
+            ]}
+          />
+
           <div className="admin-form__actions">
             {editing && (
               <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
@@ -1076,6 +1262,16 @@ function NewsSection() {
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
+          <TranslationsPanel
+            entityType="news"
+            entityId={form.id}
+            fields={[
+              { name: 'title', label: t('admin.news.title'), value: form.title },
+              { name: 'summary', label: t('admin.news.summary'), value: form.summary },
+              { name: 'body', label: t('admin.news.body'), value: form.body },
+            ]}
+          />
+
           <FormBanners error={sec.error} success={sec.success} />
 
           <div className="admin-form__actions">
@@ -1264,6 +1460,15 @@ function EventsSection() {
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
+          <TranslationsPanel
+            entityType="events"
+            entityId={form.id}
+            fields={[
+              { name: 'title', label: t('admin.events.title'), value: form.title },
+              { name: 'description', label: t('admin.events.description'), value: form.description },
+            ]}
+          />
+
           <FormBanners error={sec.error} success={sec.success} />
 
           <div className="admin-form__actions">
@@ -1417,6 +1622,15 @@ function GuidesSection() {
           </div>
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
+
+          <TranslationsPanel
+            entityType="guides"
+            entityId={form.id}
+            fields={[
+              { name: 'title', label: t('admin.guides.title'), value: form.title },
+              { name: 'body', label: t('admin.guides.body'), value: form.body },
+            ]}
+          />
 
           <FormBanners error={sec.error} success={sec.success} />
 

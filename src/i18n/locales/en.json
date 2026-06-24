@@ -227,6 +227,19 @@
     "link": "Admin panel",
     "title": "Moderation",
     "subtitle": "{{city}}",
+    "tr": {
+      "title": "Translations",
+      "hint": "Auto-translate the text fields above into the other 12 languages, then edit and save. Optional — a record can be approved without translations.",
+      "saveFirst": "Save the record first, then translate it into the other languages.",
+      "sourceLang": "Original language",
+      "translate": "Translate",
+      "translating": "Translating…",
+      "translated": "Translated. Review and save.",
+      "save": "Save translations",
+      "saved": "Translations saved.",
+      "nothingToTranslate": "Fill in the text fields above first.",
+      "error": "Couldn't translate. Please try again."
+    },
     "tabs": {
       "places": "Places",
       "news": "News",

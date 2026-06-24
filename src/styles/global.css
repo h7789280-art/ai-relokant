@@ -3324,6 +3324,68 @@ button {
   margin-top: var(--space-1);
 }
 
+/* Per-row content translation editor (CLAUDE.md §8). */
+.admin-tr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.admin-tr__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.admin-tr__head .admin-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.admin-tr__source {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+.admin-tr__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-tr__langs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.admin-tr__lang {
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-sm, 10px);
+  padding: var(--space-2);
+  background: var(--surface, #fff);
+}
+
+.admin-tr__lang > summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: revert;
+}
+
+.admin-tr__lang[open] > summary {
+  margin-bottom: var(--space-2);
+}
+
 .admin-btn {
   display: inline-flex;
   align-items: center;

@@ -132,6 +132,110 @@ export async function updateContent(table, id, patch) {
   return data
 }
 
+// ---- Content translations (CLAUDE.md §8) — Stage 11D -----------------------
+// The owner translates a row's TEXT fields into the other 12 start languages and
+// stores them in `content_translations` (key: entity_type / entity_id / lang /
+// field). The base row keeps the source-language text; the translations table
+// holds only the OTHER languages. RLS (supabase/translations.sql) lets only
+// admins write; the public reads translations of approved rows via
+// withTranslations() in src/lib/content.js.
+
+// Which columns of each content type are translatable prose (everything else —
+// phones, addresses, urls, coordinates, hours — is NOT translated, §8). The
+// admin "Translate" UI is built from this map.
+export const TRANSLATABLE_FIELDS = {
+  places: ['name', 'description'],
+  news: ['title', 'summary', 'body'],
+  events: ['title', 'description'],
+  guides: ['title', 'body'],
+}
+
+/**
+ * Call the server-side translator (api/translate.js) for one row's source-text
+ * fields. Sends the admin's access token so the closed endpoint can authorise
+ * the caller (§9). Returns { <lang>: { <field>: text } } for the other 12 langs.
+ *
+ * @param {Record<string,string>} fields  source-language { field: text }
+ * @param {string} sourceLang             language `fields` are written in
+ */
+export async function requestTranslation(fields, sourceLang) {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  const res = await fetch('/api/translate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ fields, sourceLang }),
+  })
+  const json = await res.json().catch(() => null)
+  if (!res.ok || !json?.translations) {
+    throw new Error(json?.detail || json?.error || 'Translation failed.')
+  }
+  return json.translations
+}
+
+/**
+ * Existing translations for one row, shaped as { <lang>: { <field>: value } }
+ * so the editor can preload them. Admins can read these for rows in any status
+ * (supabase/translations.sql). Returns {} when there are none.
+ *
+ * @param {('places'|'news'|'events'|'guides')} entityType
+ * @param {string} entityId
+ */
+export async function fetchAdminTranslations(entityType, entityId) {
+  if (!entityId) return {}
+  const { data, error } = await supabase
+    .from('content_translations')
+    .select('lang, field, value')
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+  if (error) throw error
+  const byLang = {}
+  for (const row of data ?? []) {
+    ;(byLang[row.lang] ??= {})[row.field] = row.value
+  }
+  return byLang
+}
+
+/**
+ * Persist a row's translations. `translations` is { <lang>: { <field>: value } }.
+ * Non-empty values are upserted; cleared (blank) ones are deleted, so the editor
+ * can both add and remove. Only the fields actually present are touched — fields
+ * left out of the map are untouched.
+ *
+ * @param {('places'|'news'|'events'|'guides')} entityType
+ * @param {string} entityId
+ * @param {Record<string, Record<string, string>>} translations
+ */
+export async function saveTranslations(entityType, entityId, translations) {
+  if (!entityId) throw new Error('saveTranslations: entityId is required')
+  const toUpsert = []
+  const toDelete = []
+  for (const [lang, fields] of Object.entries(translations ?? {})) {
+    for (const [field, raw] of Object.entries(fields ?? {})) {
+      const value = (raw ?? '').trim()
+      if (value) toUpsert.push({ entity_type: entityType, entity_id: entityId, lang, field, value })
+      else toDelete.push({ lang, field })
+    }
+  }
+
+  if (toUpsert.length) {
+    const { error } = await supabase
+      .from('content_translations')
+      .upsert(toUpsert, { onConflict: 'entity_type,entity_id,lang,field' })
+    if (error) throw error
+  }
+  for (const { lang, field } of toDelete) {
+    const { error } = await supabase
+      .from('content_translations')
+      .delete()
+      .match({ entity_type: entityType, entity_id: entityId, lang, field })
+    if (error) throw error
+  }
+}
+
 // Public bucket for place images (created in supabase/storage.sql). Only admins
 // can write to it; reads are public, so the returned URL renders directly. The
 // news / events moderation screens reuse the same bucket for their images.
