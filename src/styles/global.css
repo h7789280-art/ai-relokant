@@ -3520,3 +3520,170 @@ button {
 .admin-action--reject {
   color: var(--color-danger);
 }
+
+/* ==========================================================================
+   Auth — session-expired toast, reset flow, error affordances (CLAUDE.md §3)
+   ========================================================================== */
+
+/* Unobtrusive notice shown when a live session is dropped (expired token / iOS
+   PWA storage wipe). Sits above the fixed tab bar, mirroring the install banner. */
+.session-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + var(--space-3));
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: calc(100% - 2 * var(--space-4));
+  max-width: var(--content-max);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgba(17, 21, 28, 0.95);
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+  animation: auth-sheet-in 200ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.session-toast__text {
+  flex: 1 1 auto;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.session-toast__cta {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #fff;
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  text-decoration: underline;
+}
+
+.session-toast__close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  transition: background 150ms ease;
+}
+
+.session-toast__close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-toast {
+    animation: none;
+  }
+}
+
+/* "Forgot password?" — a quiet inline link under the password field. */
+.auth-modal__forgot {
+  align-self: flex-end;
+  margin-top: calc(-1 * var(--space-1));
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.auth-modal__forgot:hover {
+  text-decoration: underline;
+}
+
+/* Error block groups the message with its optional recovery action (resend /
+   switch to sign in). Extends the plain .auth-modal__error above. */
+.auth-modal__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.auth-modal__error p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.auth-modal__error-action {
+  align-self: flex-start;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.auth-modal__error-action:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.auth-modal__error-action:disabled {
+  color: var(--color-text-subtle);
+  cursor: default;
+}
+
+/* --- New-password page (reset link target) --- */
+.reset-page {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.reset-card {
+  width: 100%;
+  max-width: 420px;
+  margin-top: var(--space-6);
+}
+
+.reset-card__head,
+.reset-card__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.reset-card__done {
+  gap: var(--space-3);
+  margin-bottom: 0;
+}
+
+.reset-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.reset-card__icon--ok {
+  background: rgba(28, 122, 52, 0.12);
+  color: #1c7a34;
+}
+
+.reset-card__title {
+  margin: 0;
+}

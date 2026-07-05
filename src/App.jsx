@@ -14,7 +14,9 @@ import Chat from './pages/Chat.jsx'
 import Profile from './pages/Profile.jsx'
 import Admin from './pages/Admin.jsx'
 import Welcome from './pages/Welcome.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import AuthModal from './components/AuthModal.jsx'
+import SessionToast from './components/SessionToast.jsx'
 import { useApp } from './context/appContext.js'
 
 export default function App() {
@@ -29,6 +31,10 @@ export default function App() {
         path="/welcome"
         element={isOnboarded ? <Navigate to="/" replace /> : <Welcome />}
       />
+
+      {/* Password-reset link target (§3). Outside the onboarding guard and the
+          tab-bar Layout so it works regardless of whether a city is picked. */}
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Main app: tabbed shell with the bottom navigation (§4). Guarded — until
           onboarded, every main route bounces to welcome. */}
@@ -56,6 +62,8 @@ export default function App() {
     </Routes>
     {/* Shared sign-in / register modal — any gated surface opens it (§6, §12). */}
     <AuthModal />
+    {/* Unobtrusive "session expired" notice on token loss (§3). */}
+    <SessionToast />
     </>
   )
 }

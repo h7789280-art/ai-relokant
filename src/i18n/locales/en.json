@@ -221,7 +221,35 @@
     "gateFavorites": "Sign in to save places to your favorites. Browsing the city stays free — no account needed.",
     "signedInAs": "Signed in as",
     "signOut": "Sign out",
-    "guestNotice": "You're browsing as a guest. Sign in to save favorites and chat with CityMate."
+    "guestNotice": "You're browsing as a guest. Sign in to save favorites and chat with CityMate.",
+    "sessionExpired": "Your session expired. Please sign in again.",
+    "forgotPassword": "Forgot password?",
+    "resendConfirmation": "Resend confirmation email",
+    "resending": "Sending…",
+    "resendSent": "Email sent — check your inbox.",
+    "resetTitle": "Reset password",
+    "resetSubtitle": "Enter your email and we'll send a link to set a new password.",
+    "resetCta": "Send reset link",
+    "resetSent": "We sent a password-reset link to {{email}}. Open it to set a new password.",
+    "backToSignIn": "Back to sign in",
+    "errors": {
+      "invalidCredentials": "Wrong email or password.",
+      "emailNotConfirmed": "Your email isn't confirmed yet. Check your inbox for the confirmation link.",
+      "userExists": "You already have an account with this email. Try signing in instead.",
+      "switchToSignIn": "Go to sign in",
+      "rateLimit": "Too many attempts. Please wait a moment and try again.",
+      "weakPassword": "Password is too weak. Use at least 6 characters.",
+      "invalidEmail": "Please enter a valid email address.",
+      "sessionMissing": "This reset link is invalid or has expired. Request a new one."
+    },
+    "newPassword": {
+      "title": "Set a new password",
+      "subtitle": "Choose a new password for your account.",
+      "placeholder": "New password",
+      "submit": "Save new password",
+      "success": "Your password has been updated. You're signed in.",
+      "continue": "Continue to app"
+    }
   },
   "admin": {
     "link": "Admin panel",
@@ -378,6 +406,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "search": "Search",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
   }
 }
