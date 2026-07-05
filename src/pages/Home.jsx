@@ -25,11 +25,14 @@ import {
   ShoppingBag,
   KeyRound,
   Bus,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchCity, fetchContent } from '../lib/content.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
+import { useCurrencies } from '../hooks/useCurrencies.js'
+import CurrencyPicker from '../components/CurrencyPicker.jsx'
 import WeatherBackground from '../components/WeatherBackground.jsx'
 import i18n from '../i18n/index.js'
 
@@ -122,17 +125,21 @@ export default function Home() {
     }
   }, [cityId])
 
-  // --- currency rates --------------------------------------------------------
+  // --- currency rates (user-chosen currencies, stored locally) ---------------
+  const [currencies, setCurrencies] = useCurrencies()
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [rates, setRates] = useState({ status: 'loading', rows: [] })
   useEffect(() => {
     let active = true
-    fetchRates()
+    // Keep any previously shown rows while re-fetching (no loading flicker when
+    // the user changes the currency selection); errors fall back to the notice.
+    fetchRates(currencies)
       .then((rows) => active && setRates({ status: 'ready', rows }))
       .catch(() => active && setRates({ status: 'error', rows: [] }))
     return () => {
       active = false
     }
-  }, [])
+  }, [currencies])
 
   // --- content feeds ---------------------------------------------------------
   const news = useContentFeed('news', cityId, NEWS_OPTS)
@@ -257,15 +264,26 @@ export default function Home() {
         <section className="home-card currency-card">
           <div className="currency-card__head">
             <h2 className="home-card__title">{t('home.currency.title')}</h2>
-            {rates.status === 'ready' && rates.rows.length > 0 && (
+            <div className="currency-card__actions">
               <button
                 type="button"
-                className="home-card__link"
-                onClick={() => openChat(t('home.currency.all'))}
+                className="currency-card__gear"
+                onClick={() => setPickerOpen(true)}
+                aria-label={t('home.currency.customize')}
+                title={t('home.currency.customize')}
               >
-                {t('home.currency.all')}
+                <SlidersHorizontal size={16} strokeWidth={2} aria-hidden="true" />
               </button>
-            )}
+              {rates.status === 'ready' && rates.rows.length > 0 && (
+                <button
+                  type="button"
+                  className="home-card__link"
+                  onClick={() => openChat(t('home.currency.all'))}
+                >
+                  {t('home.currency.all')}
+                </button>
+              )}
+            </div>
           </div>
           {rates.status === 'loading' ? (
             <p className="home-card__muted">{t('common.loading')}</p>
@@ -338,6 +356,13 @@ export default function Home() {
             onClick={() => navigate('/events')}
           />
         )}
+      />
+
+      <CurrencyPicker
+        open={pickerOpen}
+        selected={currencies}
+        onChange={setCurrencies}
+        onClose={() => setPickerOpen(false)}
       />
     </main>
   )

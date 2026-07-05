@@ -756,6 +756,105 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.currency-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Gear/customize button on the currency card head. */
+.currency-card__gear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-subtle);
+}
+
+.currency-card__gear:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* --- Currency picker sheet (reuses .auth-modal shell) --- */
+.currency-picker__list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.currency-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.currency-picker__row.is-on {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.currency-picker__row:disabled {
+  opacity: 0.45;
+}
+
+.currency-picker__symbol {
+  flex: 0 0 auto;
+  width: 22px;
+  text-align: center;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.currency-picker__code {
+  flex: 0 0 auto;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.currency-picker__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.currency-picker__check {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  color: var(--color-accent);
+}
+
+.currency-picker__hint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+
 /* --- Today feeds (news / markets / events) as horizontal card rails --- */
 .feed {
   background: var(--color-surface);

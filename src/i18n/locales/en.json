@@ -41,7 +41,23 @@
     "currency": {
       "title": "Exchange rate",
       "unavailable": "Rates unavailable",
-      "all": "All rates"
+      "all": "All rates",
+      "customize": "Choose currencies",
+      "pickerTitle": "Currencies",
+      "pickerSubtitle": "Pick up to {{max}} to show against the lira (₺).",
+      "limitHint": "You can show up to {{max}} currencies. Remove one to add another.",
+      "names": {
+        "USD": "US dollar",
+        "EUR": "Euro",
+        "RUB": "Russian ruble",
+        "GBP": "British pound",
+        "UAH": "Ukrainian hryvnia",
+        "PLN": "Polish zloty",
+        "CZK": "Czech koruna",
+        "SEK": "Swedish krona",
+        "NOK": "Norwegian krone",
+        "DKK": "Danish krone"
+      }
     },
     "news": {
       "title": "News today"
@@ -407,6 +423,7 @@
     "save": "Save",
     "search": "Search",
     "back": "Back",
-    "close": "Close"
+    "close": "Close",
+    "done": "Done"
   }
 }
