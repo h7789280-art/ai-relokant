@@ -10,18 +10,23 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../context/authContext.js'
 import { classifyAuthError, authErrorMessageKey } from '../lib/authErrors.js'
 
 export default function ResetPassword() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { endRecovery } = useAuth()
 
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState('idle') // 'idle' | 'submitting' | 'success' | 'error'
   const [errorKind, setErrorKind] = useState('')
-  // The link either carries a valid recovery token or an error param in the hash
-  // (expired/invalid). Detect the error case up front for a clear message.
-  const [linkError, setLinkError] = useState(() => /error/i.test(window.location.hash || ''))
+  // The link either carries a valid recovery token or an error param — expired /
+  // already-used links come back with `error=...`, in the hash (implicit flow)
+  // or the query (code flow). Detect that up front for a clear message.
+  const [linkError, setLinkError] = useState(
+    () => /error/i.test(window.location.hash || '') || /error/i.test(window.location.search || ''),
+  )
 
   useEffect(() => {
     // A valid recovery token clears any early error flag once Supabase parses it.
@@ -64,7 +69,12 @@ export default function ResetPassword() {
             <button
               type="button"
               className="auth-modal__submit"
-              onClick={() => navigate('/', { replace: true })}
+              onClick={() => {
+                // Password saved — release the recovery lock, then hand the
+                // (now normally signed-in) user into the app.
+                endRecovery()
+                navigate('/', { replace: true })
+              }}
             >
               {t('auth.newPassword.continue')}
               <ArrowRight size={18} aria-hidden="true" />

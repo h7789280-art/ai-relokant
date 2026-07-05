@@ -18,9 +18,23 @@ import ResetPassword from './pages/ResetPassword.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import SessionToast from './components/SessionToast.jsx'
 import { useApp } from './context/appContext.js'
+import { useAuth } from './context/authContext.js'
 
 export default function App() {
   const { isOnboarded } = useApp()
+  const { recovering } = useAuth()
+
+  // While a "reset password" link is being handled, the new-password screen is
+  // the ONLY thing allowed to render — no matter the path or onboarding state.
+  // This keeps the recovery session from being adopted as a normal login and
+  // sweeping the user into the app before they set a new password (CLAUDE.md §3).
+  if (recovering) {
+    return (
+      <Routes>
+        <Route path="*" element={<ResetPassword />} />
+      </Routes>
+    )
+  }
 
   return (
     <>

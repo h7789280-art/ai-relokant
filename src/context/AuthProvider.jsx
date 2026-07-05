@@ -3,10 +3,20 @@
 // boot and keeps it in sync via onAuthStateChange, and exposes a single shared
 // auth modal that any gated surface can open.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { AuthContext } from './authContext.js'
 
+// A password-recovery link lands with `type=recovery` in the URL hash (implicit
+// flow). Detect that synchronously at boot so we can lock onto the reset screen
+// before the first paint — no flash of Home even when the link opens the site
+// root (Supabase Site URL) instead of /reset-password.
+function isRecoveryUrl() {
+  return /type=recovery/.test(window.location.hash || '')
+}
+
 export function AuthProvider({ children }) {
+  const navigate = useNavigate()
   const [session, setSession] = useState(null)
   // `loading` is true only until the persisted session is restored, so gated
   // screens can avoid flashing the sign-in prompt for already-signed-in users.
@@ -16,6 +26,10 @@ export function AuthProvider({ children }) {
   // wiped by iOS PWA) rather than by an explicit "Sign out" tap. Drives the
   // unobtrusive "session expired" notice instead of a silent guest downgrade.
   const [sessionExpired, setSessionExpired] = useState(false)
+  // True while a "reset password" link is being handled: the user must set a new
+  // password on /reset-password and MUST NOT be swept into the app as a normal
+  // login. Seeded from the URL so the lock is on before the first render.
+  const [recovering, setRecovering] = useState(isRecoveryUrl)
 
   // True between a manual signOut() and the SIGNED_OUT event it triggers, so we
   // can tell a deliberate logout from an expired token.
@@ -37,6 +51,18 @@ export function AuthProvider({ children }) {
     // Fires on sign-in, sign-out, and token refresh — the single source of
     // truth for the current session once we've booted.
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+      // A recovery link creates a session and fires PASSWORD_RECOVERY. This is
+      // "let the user set a new password", NOT a normal sign-in: raise the
+      // recovery lock and force the reset screen instead of adopting the session
+      // as a login. Handled here (app root) rather than only on /reset-password,
+      // so it works even when the email link opens the site root.
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecovering(true)
+        hadSessionRef.current = Boolean(next)
+        setSession(next ?? null)
+        navigate('/reset-password', { replace: true })
+        return
+      }
       if (event === 'SIGNED_OUT') {
         // Distinguish an explicit "Sign out" tap from a token that expired or
         // storage the OS wiped (iOS PWA): only the latter warns the user.
@@ -53,7 +79,8 @@ export function AuthProvider({ children }) {
       active = false
       sub.subscription.unsubscribe()
     }
-  }, [])
+    // `navigate` is stable across renders (react-router), so this binds once.
+  }, [navigate])
 
   const openAuth = useCallback(() => {
     setSessionExpired(false)
@@ -61,6 +88,9 @@ export function AuthProvider({ children }) {
   }, [])
   const closeAuth = useCallback(() => setAuthModalOpen(false), [])
   const dismissSessionExpired = useCallback(() => setSessionExpired(false), [])
+  // Called once the new password is saved: drop the recovery lock so the app
+  // shell is allowed to render again (see App.jsx).
+  const endRecovery = useCallback(() => setRecovering(false), [])
   const signOut = useCallback(() => {
     // Mark the coming SIGNED_OUT as deliberate so no "session expired" notice fires.
     manualSignOutRef.current = true
@@ -79,6 +109,8 @@ export function AuthProvider({ children }) {
       signOut,
       sessionExpired,
       dismissSessionExpired,
+      recovering,
+      endRecovery,
     }),
     [
       session,
@@ -89,6 +121,8 @@ export function AuthProvider({ children }) {
       signOut,
       sessionExpired,
       dismissSessionExpired,
+      recovering,
+      endRecovery,
     ],
   )
 
