@@ -15,6 +15,17 @@ function isRecoveryUrl() {
   return /type=recovery/.test(window.location.hash || '')
 }
 
+// On iOS PWA/Safari two things quietly break a persisted session:
+//   1. ITP caps script-writable storage at 7 days unless the user interacts
+//      first-party — a silent token rewrite counts as that interaction and
+//      resets the timer.
+//   2. A tab frozen for over an hour comes back with an expired access token;
+//      proactively refreshing on resume repairs it before any request 401s and
+//      produces a false "session expired".
+// So we refresh on boot and whenever the tab becomes visible again. Not more
+// than once per this window on visibility, to avoid churn on every micro-focus.
+const VISIBILITY_REFRESH_MIN_INTERVAL_MS = 3 * 60 * 1000
+
 export function AuthProvider({ children }) {
   const navigate = useNavigate()
   const [session, setSession] = useState(null)
@@ -38,15 +49,61 @@ export function AuthProvider({ children }) {
   // session actually went away (never on a cold boot that starts signed out).
   const hadSessionRef = useRef(false)
 
+  // Race guard: never let two lifecycle refreshes run at once (boot can overlap
+  // with an early visibilitychange). And throttle visibility-driven refreshes so
+  // rapid tab switches don't hammer the endpoint.
+  const refreshingRef = useRef(false)
+  const lastRefreshAtRef = useRef(0)
+
   useEffect(() => {
     let active = true
+
+    // Silently rewrite a fresh session into storage. Only ever runs when a
+    // session already exists (never for guests). Failures are swallowed: a
+    // network/temporary error must NOT surface "session expired" or demote the
+    // user — a genuinely unrecoverable session still arrives as SIGNED_OUT via
+    // onAuthStateChange below and is handled there, exactly as before.
+    const refreshSessionQuietly = async ({ throttle }) => {
+      if (refreshingRef.current) return
+      if (
+        throttle &&
+        Date.now() - lastRefreshAtRef.current < VISIBILITY_REFRESH_MIN_INTERVAL_MS
+      ) {
+        return
+      }
+      // Guests have nothing to refresh — leave them untouched.
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) return
+
+      refreshingRef.current = true
+      try {
+        await supabase.auth.refreshSession()
+      } catch {
+        // Swallow: transient/offline failure, stay signed in and quiet.
+      } finally {
+        // Stamp even on failure so a persistently failing refresh can't storm
+        // the endpoint on every visibility flip.
+        lastRefreshAtRef.current = Date.now()
+        refreshingRef.current = false
+      }
+    }
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return
       hadSessionRef.current = Boolean(data.session)
       setSession(data.session ?? null)
       setLoading(false)
+      // Boot refresh: not throttled — every launch should reset the ITP timer.
+      if (data.session) refreshSessionQuietly({ throttle: false })
     })
+
+    // Re-refresh when the app comes back to the foreground (iOS resume).
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSessionQuietly({ throttle: true })
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     // Fires on sign-in, sign-out, and token refresh — the single source of
     // truth for the current session once we've booted.
@@ -77,6 +134,7 @@ export function AuthProvider({ children }) {
 
     return () => {
       active = false
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       sub.subscription.unsubscribe()
     }
     // `navigate` is stable across renders (react-router), so this binds once.
