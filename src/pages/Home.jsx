@@ -38,6 +38,7 @@ import { useApp } from '../context/appContext.js'
 import { fetchCity, fetchContent } from '../lib/content.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
+import WeatherBackground from '../components/WeatherBackground.jsx'
 import i18n from '../i18n/index.js'
 
 // WMO condition key → lucide icon (keys produced by weatherCodeKey).
@@ -172,6 +173,13 @@ export default function Home() {
   }
 
   const WeatherIcon = weather.data ? WEATHER_ICONS[weatherCodeKey(weather.data.code)] : Cloud
+  // Night when the API says so, or (if it didn't) when the local hour is late —
+  // used to flip the weather card to a light-on-dark reading (see global.css).
+  const weatherNight =
+    weather.data &&
+    (weather.data.isDay == null
+      ? !(new Date().getHours() >= 6 && new Date().getHours() < 20)
+      : !weather.data.isDay)
 
   return (
     <main className="app-shell home">
@@ -231,32 +239,39 @@ export default function Home() {
 
       {/* Weather + water and currency, side by side on wider screens. */}
       <div className="home__row">
-        <section className="home-card weather-card">
+        <section
+          className={`home-card weather-card${
+            weather.status === 'ready' && weather.data ? ' weather-card--live' : ''
+          }${weatherNight ? ' weather-card--night' : ''}`}
+        >
           {weather.status === 'loading' ? (
             <p className="home-card__muted">{t('common.loading')}</p>
           ) : weather.status === 'error' || !weather.data ? (
             <p className="home-card__muted">{t('home.weather.unavailable')}</p>
           ) : (
             <>
-              <div className="weather-card__main">
-                <WeatherIcon size={44} strokeWidth={1.6} aria-hidden="true" />
-                <span className="weather-card__temp">{weather.data.temp}°</span>
+              <WeatherBackground code={weather.data.code} isDay={weather.data.isDay} />
+              <div className="weather-card__content">
+                <div className="weather-card__main">
+                  <WeatherIcon size={44} strokeWidth={1.6} aria-hidden="true" />
+                  <span className="weather-card__temp">{weather.data.temp}°</span>
+                </div>
+                <p className="weather-card__cond">
+                  {t(`home.weather.codes.${weatherCodeKey(weather.data.code)}`)}
+                </p>
+                {weather.data.feelsLike != null && (
+                  <p className="weather-card__feels">
+                    <Thermometer size={14} aria-hidden="true" />
+                    {t('home.weather.feelsLike')} {weather.data.feelsLike}°
+                  </p>
+                )}
+                {weather.sea != null && (
+                  <p className="weather-card__water">
+                    <Droplets size={14} aria-hidden="true" />
+                    {t('home.weather.water')} {weather.sea}°
+                  </p>
+                )}
               </div>
-              <p className="weather-card__cond">
-                {t(`home.weather.codes.${weatherCodeKey(weather.data.code)}`)}
-              </p>
-              {weather.data.feelsLike != null && (
-                <p className="weather-card__feels">
-                  <Thermometer size={14} aria-hidden="true" />
-                  {t('home.weather.feelsLike')} {weather.data.feelsLike}°
-                </p>
-              )}
-              {weather.sea != null && (
-                <p className="weather-card__water">
-                  <Droplets size={14} aria-hidden="true" />
-                  {t('home.weather.water')} {weather.sea}°
-                </p>
-              )}
             </>
           )}
         </section>
