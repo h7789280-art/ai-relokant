@@ -14,16 +14,6 @@ import {
   Mic,
   ChevronDown,
   ChevronRight,
-  Sun,
-  Moon,
-  CloudSun,
-  CloudMoon,
-  Cloud,
-  CloudFog,
-  CloudDrizzle,
-  CloudRain,
-  CloudSnow,
-  CloudLightning,
   Droplets,
   Thermometer,
   Newspaper,
@@ -42,54 +32,6 @@ import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import WeatherBackground from '../components/WeatherBackground.jsx'
 import i18n from '../i18n/index.js'
-
-// WMO condition key → lucide icon (keys produced by weatherCodeKey). This is the
-// daytime set; clear-sky conditions carry a sun.
-const WEATHER_ICONS = {
-  clear: Sun,
-  mainlyClear: CloudSun,
-  cloudy: Cloud,
-  fog: CloudFog,
-  drizzle: CloudDrizzle,
-  rain: CloudRain,
-  snow: CloudSnow,
-  showers: CloudRain,
-  thunderstorm: CloudLightning,
-}
-
-// Night overrides: only the sun-bearing conditions differ after dark — a clear
-// sky shows a moon, and "mainly clear" swaps the sun-behind-cloud for a moon so a
-// daytime sun never appears at night (same is_day flag that drives the
-// background). Everything else (cloud/fog/rain/snow) is identical day or night.
-const WEATHER_ICONS_NIGHT = {
-  clear: Moon,
-  mainlyClear: CloudMoon,
-}
-
-// The large condition glyph beside the temperature. Clear skies get a
-// code-drawn, day/night-aware sun or moon (a warm haloed disc with slow rays by
-// day; a softly glowing crescent with a spark or two by night) so it feels as
-// crafted as the animated card background; every other condition uses its lucide
-// icon, picking the night variant where one exists. Motion is opacity/transform
-// only and is disabled under prefers-reduced-motion (see global.css).
-function WeatherGlyph({ conditionKey, night }) {
-  if (conditionKey === 'clear') {
-    return night ? (
-      <span className="weather-glyph weather-glyph--moon" aria-hidden="true">
-        <span className="weather-glyph__moon" />
-        <span className="weather-glyph__spark weather-glyph__spark--a" />
-        <span className="weather-glyph__spark weather-glyph__spark--b" />
-      </span>
-    ) : (
-      <span className="weather-glyph weather-glyph--sun" aria-hidden="true">
-        <span className="weather-glyph__rays" />
-        <span className="weather-glyph__disc" />
-      </span>
-    )
-  }
-  const Icon = (night && WEATHER_ICONS_NIGHT[conditionKey]) || WEATHER_ICONS[conditionKey] || Cloud
-  return <Icon size={44} strokeWidth={1.6} aria-hidden="true" />
-}
 
 // Quick chips: a meaningful lucide icon + an i18n key. Every chip opens the AI
 // chat ("Ask CityMate") seeded with a ready-made question for its topic (§4 —
@@ -210,8 +152,8 @@ export default function Home() {
   }
 
   // Night when the API says so, or (if it didn't) when the local hour is late —
-  // flips the weather card to a light-on-dark reading and the condition glyph to
-  // its moon variant (see global.css / WeatherGlyph).
+  // flips the weather card to a light-on-dark reading (the sky body itself — sun
+  // by day, moon by night — is drawn solely by WeatherBackground).
   const weatherNight =
     weather.data &&
     (weather.data.isDay == null
@@ -290,10 +232,6 @@ export default function Home() {
               <WeatherBackground code={weather.data.code} isDay={weather.data.isDay} />
               <div className="weather-card__content">
                 <div className="weather-card__main">
-                  <WeatherGlyph
-                    conditionKey={weatherCodeKey(weather.data.code)}
-                    night={weatherNight}
-                  />
                   <span className="weather-card__temp">{weather.data.temp}°</span>
                 </div>
                 <p className="weather-card__cond">
