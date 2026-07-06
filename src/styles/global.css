@@ -134,11 +134,12 @@ button {
 .app-shell {
   max-width: var(--content-max);
   margin: 0 auto;
-  /* Top padding carries env(safe-area-inset-top): with the black-translucent
-     iOS status bar (index.html) the content starts at the very top of the
-     screen, so without this the first heading/search box would slide under the
-     clock/battery. Every main screen inherits this offset; the Home hero cancels
-     it deliberately (below) because it wants the photo to bleed all the way up. */
+  /* Base top padding plus env(safe-area-inset-top). Under the 'default' iOS
+     status bar (index.html) the bar is opaque and content sits below it, so the
+     inset is ~0 in standalone mode and this reduces to plain --space-5; the inset
+     still guards the Safari-browser / Android / landscape cases. Every main
+     screen inherits this offset; the Home hero cancels it deliberately (below)
+     so the photo bleeds up to just under the light status strip. */
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
     var(--space-5);
   min-height: 100%;
@@ -214,9 +215,10 @@ button {
   position: relative;
   isolation: isolate;
   /* Cancel the ENTIRE app-shell top padding — including its safe-area inset — so
-     the Alanya photo bleeds right up under the transparent status bar with no
-     grey/ivory strip above it. The hero then re-adds the same inset in its own
-     padding (below) so the brand title still clears the clock/battery. */
+     the Alanya photo bleeds right up to the top of the web view. Under the
+     'default' status bar that top edge is just below the opaque light status
+     strip (expected). The hero then re-adds the same base padding (below) so the
+     brand title still clears the top and, in the browser case, the inset. */
   margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
     calc(-1 * var(--space-4)) 0;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
@@ -1041,9 +1043,10 @@ button {
    page reads in the same cream key as the illustrated category cards below,
    instead of sitting cold on the app's grey. Full-bleed (100vw) and dissolving
    to transparent before the grid starts — no hard seam (§4, airy iOS feel).
-   It bleeds up by env(safe-area-inset-top) so the warm colour also fills the
-   status-bar / notch band above the title (no cold grey strip at the very top
-   on iOS). The downward dissolve is anchored in px off the app-shell top, so it
+   It bleeds up by env(safe-area-inset-top) so the warm colour reaches the top of
+   the web view. Under the 'default' status bar the inset is ~0 and the light
+   opaque status strip sits above; the ivory meets it flush with no cold grey
+   seam. The downward dissolve is anchored in px off the app-shell top, so it
    stays exactly where it was regardless of the inset. */
 .catalog::before {
   content: '';
@@ -2813,8 +2816,10 @@ button {
 .welcome {
   max-width: var(--content-max);
   margin: 0 auto;
-  /* Welcome renders outside the Layout/.app-shell, so it needs its own
-     safe-area-inset-top under the transparent status bar (index.html). */
+  /* Welcome renders outside the Layout/.app-shell, so it carries its own
+     base top padding + safe-area-inset-top. Under the 'default' status bar
+     (index.html) the inset is ~0 and this is just the base padding; the inset
+     guards the browser / Android / landscape cases. */
   padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-4)
     var(--space-6);
   min-height: 100%;
