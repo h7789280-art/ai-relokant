@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#007aff" />
+    <!-- Light app background so the browser chrome (Safari address bar / Android
+         status bar when NOT installed as a standalone app) matches the airy light
+         UI instead of a saturated blue band. Inside an installed iOS PWA this is
+         ignored — the status bar there is controlled by the black-translucent
+         style below (transparent, content flows under it). -->
+    <meta name="theme-color" content="#f2f3f7" />
     <title>CityMate</title>
     <meta name="description" content="CityMate — your local friend in a new city." />
     <!-- PWA: home-screen icon + iOS standalone hints (Stage 11C). The manifest
@@ -11,7 +16,16 @@
     <link rel="icon" type="image/png" href="/favicon-64.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- Transparent iOS status bar: the web content flows UP under the clock /
+         battery / notch band instead of iOS painting an opaque grey strip there
+         (which no CSS background could recolour). Every screen now fills that
+         band itself — ivory on Catalog, the Alanya photo on Home, etc. — so the
+         grey bar is gone app-wide. The top offset needed so headings don't slide
+         under the clock is added via env(safe-area-inset-top) in global.css
+         (.app-shell + .home__hero). NOTE: black-translucent forces LIGHT (white)
+         status-bar glyphs on iOS with no per-screen dark variant — see the
+         readability caveat noted to the owner. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="CityMate" />
     <!-- App typography (all must cover the 13 start languages — Cyrillic + Latin
          Extended — so nothing renders as tofu):

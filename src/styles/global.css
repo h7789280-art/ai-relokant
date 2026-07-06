@@ -134,7 +134,13 @@ button {
 .app-shell {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--space-5) var(--space-4);
+  /* Top padding carries env(safe-area-inset-top): with the black-translucent
+     iOS status bar (index.html) the content starts at the very top of the
+     screen, so without this the first heading/search box would slide under the
+     clock/battery. Every main screen inherits this offset; the Home hero cancels
+     it deliberately (below) because it wants the photo to bleed all the way up. */
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-5);
   min-height: 100%;
 }
 
@@ -207,7 +213,12 @@ button {
 .home__hero {
   position: relative;
   isolation: isolate;
-  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) 0;
+  /* Cancel the ENTIRE app-shell top padding — including its safe-area inset — so
+     the Alanya photo bleeds right up under the transparent status bar with no
+     grey/ivory strip above it. The hero then re-adds the same inset in its own
+     padding (below) so the brand title still clears the clock/battery. */
+  margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
+    calc(-1 * var(--space-4)) 0;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
     var(--space-7);
   min-height: 300px;
@@ -2802,7 +2813,10 @@ button {
 .welcome {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-4) var(--space-6);
+  /* Welcome renders outside the Layout/.app-shell, so it needs its own
+     safe-area-inset-top under the transparent status bar (index.html). */
+  padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-6);
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -2819,8 +2833,13 @@ button {
   position: relative;
   isolation: isolate;
   text-align: center;
-  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-4)) 0;
-  padding: var(--space-7) var(--space-4) var(--space-5);
+  /* Match the sky bleed to the top of the screen: cancel the whole column top
+     padding (safe-area included), then re-add the inset inside so the greeting
+     doesn't tuck under the clock. */
+  margin: calc(-1 * (var(--space-6) + env(safe-area-inset-top, 0px)))
+    calc(-1 * var(--space-4)) 0;
+  padding: calc(var(--space-7) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-5);
   overflow: hidden;
 }
 
