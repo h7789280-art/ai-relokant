@@ -1020,9 +1020,41 @@ button {
    ========================================================================== */
 
 .catalog {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* Warm ivory wash behind the title, subtitle and search box so the top of the
+   page reads in the same cream key as the illustrated category cards below,
+   instead of sitting cold on the app's grey. Full-bleed (100vw) and dissolving
+   to transparent before the grid starts — no hard seam (§4, airy iOS feel). */
+.catalog::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 300px;
+  background: linear-gradient(
+    180deg,
+    #faf6ee 0%,
+    #fdfcf7 45%,
+    rgba(253, 252, 247, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Keep the top content above the wash. */
+.catalog__header,
+.catalog__search,
+.catalog__grid,
+.catalog__results {
+  position: relative;
+  z-index: 1;
 }
 
 .catalog__header {
