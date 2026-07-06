@@ -33,6 +33,7 @@ import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
 import CurrencyPicker from '../components/CurrencyPicker.jsx'
+import Flag from '../components/Flag.jsx'
 import WeatherBackground from '../components/WeatherBackground.jsx'
 import i18n from '../i18n/index.js'
 
@@ -293,7 +294,10 @@ export default function Home() {
             <ul className="currency-card__list">
               {rates.rows.map((r) => (
                 <li key={r.code} className="currency-card__row">
-                  <span className="currency-card__code">{r.code}</span>
+                  <span className="currency-card__label">
+                    <Flag code={r.code} />
+                    <span className="currency-card__code">{r.code}</span>
+                  </span>
                   <span className="currency-card__value">{formatRate(r.perTry)} ₺</span>
                 </li>
               ))}
