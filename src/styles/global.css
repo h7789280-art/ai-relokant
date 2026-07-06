@@ -222,8 +222,11 @@ button {
   margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
     calc(-1 * var(--space-4)) 0;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
-    var(--space-7);
-  min-height: 300px;
+    var(--space-6);
+  /* More compact than before (300px): the "Ask CityMate…" bar now overlaps deep
+     onto the lower third of the photo, so the hero itself can be shorter and the
+     content below pulls up (§4). */
+  min-height: 264px;
   display: flex;
   flex-direction: column;
 }
@@ -245,9 +248,10 @@ button {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(10, 28, 48, 0.46) 0%,
-    rgba(10, 28, 48, 0.16) 30%,
-    rgba(242, 243, 247, 0) 60%,
+    rgba(10, 28, 48, 0.44) 0%,
+    rgba(10, 28, 48, 0.14) 28%,
+    rgba(242, 243, 247, 0) 52%,
+    rgba(242, 243, 247, 0) 78%,
     var(--color-bg) 100%
   );
   z-index: -1;
@@ -317,23 +321,30 @@ button {
 .home__ask {
   position: relative;
   z-index: 2;
-  /* Pull up onto the hero — net overlap is this minus the .home column gap. */
-  margin-top: calc(-1 * var(--space-7));
+  /* Ride up onto the lower third of the hero photo — net overlap is this pull-up
+     minus the .home column gap, so most of the bar lies over the sea (§4). The
+     left/right margins inset it from the screen edges (narrower than full-bleed,
+     per the mockup), letting a strip of the photo show on either side. */
+  margin: calc(-1 * (var(--space-7) + var(--space-5))) var(--space-3) 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  width: 100%;
   padding: var(--space-3) var(--space-3);
-  border: none;
+  /* Frosted, mostly-opaque white so the placeholder + bot + mic stay readable
+     even over the palest part of the water (the Alanya photo is bright near the
+     shore) — high alpha + blur underlay + a lifting shadow guarantee contrast. */
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 12px 30px rgba(10, 28, 48, 0.24);
   text-align: left;
   transition: box-shadow 150ms ease, transform 150ms ease;
 }
 
 .home__ask:hover {
-  box-shadow: 0 16px 38px rgba(17, 21, 28, 0.16);
+  box-shadow: 0 16px 38px rgba(10, 28, 48, 0.28);
 }
 
 .home__ask:active {
