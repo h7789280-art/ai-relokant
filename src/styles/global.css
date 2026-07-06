@@ -1029,20 +1029,25 @@ button {
 /* Warm ivory wash behind the title, subtitle and search box so the top of the
    page reads in the same cream key as the illustrated category cards below,
    instead of sitting cold on the app's grey. Full-bleed (100vw) and dissolving
-   to transparent before the grid starts — no hard seam (§4, airy iOS feel). */
+   to transparent before the grid starts — no hard seam (§4, airy iOS feel).
+   It bleeds up by env(safe-area-inset-top) so the warm colour also fills the
+   status-bar / notch band above the title (no cold grey strip at the very top
+   on iOS). The downward dissolve is anchored in px off the app-shell top, so it
+   stays exactly where it was regardless of the inset. */
 .catalog::before {
   content: '';
   position: absolute;
-  top: 0;
+  top: calc(-1 * env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: 100vw;
-  height: 300px;
+  height: calc(300px + env(safe-area-inset-top, 0px));
   background: linear-gradient(
     180deg,
-    #faf6ee 0%,
-    #fdfcf7 45%,
-    rgba(253, 252, 247, 0) 100%
+    #faf6ee 0px,
+    #faf6ee env(safe-area-inset-top, 0px),
+    #fdfcf7 calc(env(safe-area-inset-top, 0px) + 135px),
+    rgba(253, 252, 247, 0) calc(env(safe-area-inset-top, 0px) + 300px)
   );
   pointer-events: none;
   z-index: 0;
