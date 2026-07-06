@@ -394,21 +394,33 @@ button {
 }
 
 /* --- Quick chips (icon + label, horizontal scroll) --- */
+/* Horizontal scroller. overflow-x:auto silently forces the y-axis to clip too
+   (CSS won't let one axis scroll while the other stays visible), so a chip's
+   rounded top edge + soft shadow would be sliced by a hard straight line if
+   they reached the padding-box edge. Fix (same trick as .feed__rail): the
+   negative INLINE margins bleed the row to the screen edges while the matching
+   inline padding restores the content inset; the BLOCK padding then reserves
+   real room top & bottom INSIDE the clip region so the pills — rounding and
+   shadow — sit fully within it and nothing is cut.
+
+   The visible "top edge cut", though, was NOT this clip: it was the
+   "Ask CityMate…" bar overlapping the row. That bar is position:relative +
+   z-index:2 and carries a deep 0 12px 30px shadow (~42px reach), so it — and its
+   shadow — painted OVER the top of the (unpositioned, auto z-index) chips, which
+   read as a straight slice across their rounded tops. Two things fix it, without
+   touching the bar's own geometry / hero overlap:
+     1. top margin space-6 (32px) + the .home flex gap (space-4, 16px) opens
+        ~48px between the bar's bottom and the chips — clear of the ~42px shadow;
+     2. position:relative + z-index:3 lifts the chips ABOVE the bar in the
+        stacking order, so even any residual shadow can't tint them. */
 .home__chips {
+  position: relative;
+  z-index: 3;
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
-  /* Horizontal scroller. overflow-x:auto silently forces the y-axis to clip too
-     (CSS won't let one axis scroll while the other stays visible), so a chip's
-     rounded top edge + soft shadow would be sliced by a hard straight line if
-     they reached the padding-box edge. Fix (same trick as .feed__rail): the
-     negative INLINE margins bleed the row to the screen edges while the matching
-     inline padding restores the content inset; the BLOCK padding then reserves
-     real room top & bottom INSIDE the clip region so the pills — rounding and
-     shadow — sit fully within it and nothing is cut. The top margin also drops
-     the row clear of the "Ask CityMate…" bar's deep drop shadow above it. */
-  margin: var(--space-4) calc(-1 * var(--space-4)) 0;
+  margin: var(--space-6) calc(-1 * var(--space-4)) 0;
   padding: var(--space-3) var(--space-4);
 }
 
