@@ -223,10 +223,11 @@ button {
     calc(-1 * var(--space-4)) 0;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
     var(--space-6);
-  /* More compact than before (300px): the "Ask CityMate…" bar now overlaps deep
-     onto the lower third of the photo, so the hero itself can be shorter and the
-     content below pulls up (§4). */
-  min-height: 264px;
+  /* Taller again (was 264px) so the "Ask CityMate…" bar can ride DEEP onto the
+     lower third/quarter of the photo while the upper half still shows the
+     fortress + coast uncropped — the bar's bigger pull-up (below) then lands it
+     well over the sea, and the content underneath still tucks up snugly (§4). */
+  min-height: 316px;
   display: flex;
   flex-direction: column;
 }
@@ -249,9 +250,11 @@ button {
   background: linear-gradient(
     180deg,
     rgba(10, 28, 48, 0.44) 0%,
-    rgba(10, 28, 48, 0.14) 28%,
-    rgba(242, 243, 247, 0) 52%,
-    rgba(242, 243, 247, 0) 78%,
+    rgba(10, 28, 48, 0.12) 26%,
+    rgba(242, 243, 247, 0) 50%,
+    /* Hold the photo transparent well past where the bar now sits (lower third)
+       so open sea shows above, around and below it before feathering to bg. */
+    rgba(242, 243, 247, 0) 86%,
     var(--color-bg) 100%
   );
   z-index: -1;
@@ -321,11 +324,13 @@ button {
 .home__ask {
   position: relative;
   z-index: 2;
-  /* Ride up onto the lower third of the hero photo — net overlap is this pull-up
-     minus the .home column gap, so most of the bar lies over the sea (§4). The
-     left/right margins inset it from the screen edges (narrower than full-bleed,
-     per the mockup), letting a strip of the photo show on either side. */
-  margin: calc(-1 * (var(--space-7) + var(--space-5))) var(--space-3) 0;
+  /* Ride DEEP onto the lower third/quarter of the hero photo — net overlap is
+     this pull-up (96px) minus the .home column gap (16px) = 80px of the bar
+     sitting over the sea, so the fortress + coast fill the upper half above it
+     (§4). The generous left/right margins inset it noticeably from the screen
+     edges (clearly narrower than the content below), so a wide strip of sea
+     shows on either side, as in the mockup. */
+  margin: calc(-1 * (var(--space-7) + var(--space-7))) var(--space-5) 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
