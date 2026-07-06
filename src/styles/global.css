@@ -399,14 +399,17 @@ button {
   gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
-  /* Bleed to the screen edges so the row scrolls full-width. The top margin adds
-     breathing room below the "Ask CityMate…" bar (which rides high with a deep
-     negative pull-up + drop shadow) so the chips clear it instead of tucking
-     under its lower edge. The roomier vertical padding keeps the chips — and
-     their soft shadow — from being clipped by the scroll box (overflow-x also
-     clips the y-axis). */
-  margin: var(--space-3) calc(-1 * var(--space-4)) 0;
-  padding: var(--space-2) var(--space-4);
+  /* Horizontal scroller. overflow-x:auto silently forces the y-axis to clip too
+     (CSS won't let one axis scroll while the other stays visible), so a chip's
+     rounded top edge + soft shadow would be sliced by a hard straight line if
+     they reached the padding-box edge. Fix (same trick as .feed__rail): the
+     negative INLINE margins bleed the row to the screen edges while the matching
+     inline padding restores the content inset; the BLOCK padding then reserves
+     real room top & bottom INSIDE the clip region so the pills — rounding and
+     shadow — sit fully within it and nothing is cut. The top margin also drops
+     the row clear of the "Ask CityMate…" bar's deep drop shadow above it. */
+  margin: var(--space-4) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-3) var(--space-4);
 }
 
 .home__chips::-webkit-scrollbar {
