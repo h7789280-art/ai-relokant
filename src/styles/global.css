@@ -409,10 +409,13 @@ button {
    shadow — painted OVER the top of the (unpositioned, auto z-index) chips, which
    read as a straight slice across their rounded tops. Two things fix it, without
    touching the bar's own geometry / hero overlap:
-     1. top margin space-6 (32px) + the .home flex gap (space-4, 16px) opens
-        ~48px between the bar's bottom and the chips — clear of the ~42px shadow;
-     2. position:relative + z-index:3 lifts the chips ABOVE the bar in the
-        stacking order, so even any residual shadow can't tint them. */
+     The real cause of the visible "cut" turned out to be a stale service-worker
+     cache, not the gap — so the big top margin is no longer needed and was just
+     reading as an empty band. What still matters is the stacking:
+     position:relative + z-index:3 lifts the chips ABOVE the bar (and its shadow),
+     so their rounded tops can't be tinted. Keep that; only the margin shrinks.
+     A small margin-top plus the .home flex gap (space-4, 16px) and the row's own
+     padding-top (space-3) leaves gentle air without the hole. */
 .home__chips {
   position: relative;
   z-index: 3;
@@ -420,7 +423,7 @@ button {
   gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
-  margin: var(--space-6) calc(-1 * var(--space-4)) 0;
+  margin: var(--space-1) calc(-1 * var(--space-4)) 0;
   padding: var(--space-3) var(--space-4);
 }
 
