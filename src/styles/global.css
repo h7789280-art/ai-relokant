@@ -223,11 +223,12 @@ button {
     calc(-1 * var(--space-4)) 0;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
     var(--space-6);
-  /* Taller again (was 264px) so the "Ask CityMate…" bar can ride DEEP onto the
-     lower third/quarter of the photo while the upper half still shows the
-     fortress + coast uncropped — the bar's bigger pull-up (below) then lands it
-     well over the sea, and the content underneath still tucks up snugly (§4). */
-  min-height: 316px;
+  /* Taller still (was 316px) so the "Ask CityMate…" bar can ride EVEN DEEPER onto
+     the lower third/quarter of the photo while the upper half keeps the fortress
+     + coast uncropped — the bar's bigger pull-up (below) lands it well up over
+     the open sea, and this extra height keeps the content underneath tucked up
+     over the photo base (no gap) instead of riding onto the hero (§4). */
+  min-height: 348px;
   display: flex;
   flex-direction: column;
 }
@@ -325,12 +326,14 @@ button {
   position: relative;
   z-index: 2;
   /* Ride DEEP onto the lower third/quarter of the hero photo — net overlap is
-     this pull-up (96px) minus the .home column gap (16px) = 80px of the bar
-     sitting over the sea, so the fortress + coast fill the upper half above it
-     (§4). The generous left/right margins inset it noticeably from the screen
-     edges (clearly narrower than the content below), so a wide strip of sea
-     shows on either side, as in the mockup. */
-  margin: calc(-1 * (var(--space-7) + var(--space-7))) var(--space-5) 0;
+     this pull-up (128px) minus the .home column gap (16px) = 112px of the bar
+     sitting over the sea (up from 80px), so it lands high enough that the
+     fortress + coast fill the upper half above it (§4). The wide left/right
+     margins (48px + the 16px shell padding = 64px per edge) inset it hard from
+     the screen edges — clearly narrower than the content below, so a broad
+     strip of sea shows left and right, as in the mockup. */
+  margin: calc(-1 * (var(--space-7) + var(--space-7) + var(--space-6)))
+    var(--space-7) 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
