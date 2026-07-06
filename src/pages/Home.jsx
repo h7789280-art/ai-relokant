@@ -15,6 +15,9 @@ import {
   ChevronDown,
   ChevronRight,
   Droplets,
+  Droplet,
+  Wind,
+  Sun,
   Thermometer,
   Newspaper,
   Store,
@@ -257,6 +260,35 @@ export default function Home() {
                     {t('home.weather.water')} {weather.sea}°
                   </p>
                 )}
+                {/* UV / Wind / Humidity — compact row (§4). Always rendered so the
+                    row stays intact; any missing reading shows a dash, not a gap. */}
+                <div className="weather-card__stats">
+                  <span className="weather-card__stat">
+                    <Sun size={13} aria-hidden="true" />
+                    <span className="weather-card__stat-label">{t('home.weather.uv')}</span>
+                    <span className="weather-card__stat-val">
+                      {weather.data.uv != null ? weather.data.uv : '—'}
+                    </span>
+                  </span>
+                  <span className="weather-card__stat">
+                    <Wind size={13} aria-hidden="true" />
+                    <span className="weather-card__stat-label">{t('home.weather.wind')}</span>
+                    <span className="weather-card__stat-val">
+                      {weather.data.wind != null
+                        ? `${weather.data.wind} ${t('home.weather.kmh')}`
+                        : '—'}
+                    </span>
+                  </span>
+                  <span className="weather-card__stat">
+                    <Droplet size={13} aria-hidden="true" />
+                    <span className="weather-card__stat-label">{t('home.weather.humidity')}</span>
+                    <span className="weather-card__stat-val">
+                      {weather.data.humidity != null
+                        ? `${weather.data.humidity}${t('home.weather.percent')}`
+                        : '—'}
+                    </span>
+                  </span>
+                </div>
               </div>
             </>
           )}

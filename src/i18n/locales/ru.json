@@ -26,7 +26,12 @@
         "showers": "Ливень",
         "thunderstorm": "Гроза"
       },
-      "feelsLike": "Ощущается как"
+      "feelsLike": "Ощущается как",
+      "uv": "UV",
+      "wind": "Ветер",
+      "humidity": "Влажность",
+      "kmh": "км/ч",
+      "percent": "%"
     },
     "currency": {
       "title": "Курс валют",

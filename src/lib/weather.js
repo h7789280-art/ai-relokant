@@ -11,14 +11,20 @@ const MARINE_URL = 'https://marine-api.open-meteo.com/v1/marine'
  * a WMO weather code, and a day/night flag for a point. `is_day` comes straight
  * from Open-Meteo (1 = daytime at the location, 0 = night) and drives the
  * weather-card background palette; we fall back to `null` when the API omits it
- * so the UI can decide from local time instead.
- * @returns {Promise<{ temp: number|null, feelsLike: number|null, code: number, isDay: boolean|null }>}
+ * so the UI can decide from local time instead. We also return three compact
+ * extras for the widget's bottom row: relative humidity (%), wind speed (km/h),
+ * and the UV index for the current hour — each `null` when the API omits it.
+ * @returns {Promise<{ temp: number|null, feelsLike: number|null, code: number, isDay: boolean|null, humidity: number|null, wind: number|null, uv: number|null }>}
  */
 export async function fetchWeather(lat, lon) {
   const params = new URLSearchParams({
     latitude: lat,
     longitude: lon,
-    current: 'temperature_2m,apparent_temperature,weather_code,is_day',
+    // Humidity + wind live in `current`; UV index does NOT — it's only a
+    // forecast field, so we pull it from `hourly` and pick the current hour below.
+    current: 'temperature_2m,apparent_temperature,weather_code,is_day,relative_humidity_2m,wind_speed_10m',
+    hourly: 'uv_index',
+    wind_speed_unit: 'kmh',
     timezone: 'auto',
   })
   const res = await fetch(`${FORECAST_URL}?${params.toString()}`)
@@ -27,12 +33,33 @@ export async function fetchWeather(lat, lon) {
   const temp = json.current?.temperature_2m
   const feels = json.current?.apparent_temperature
   const isDay = json.current?.is_day
+  const humidity = json.current?.relative_humidity_2m
+  const wind = json.current?.wind_speed_10m
   return {
     temp: temp == null ? null : Math.round(temp),
     feelsLike: feels == null ? null : Math.round(feels),
     code: json.current?.weather_code ?? 0,
     isDay: isDay == null ? null : isDay === 1,
+    humidity: humidity == null ? null : Math.round(humidity),
+    wind: wind == null ? null : Math.round(wind),
+    uv: currentHourUv(json),
   }
+}
+
+/**
+ * Read the UV index for the *current local hour* out of Open-Meteo's hourly
+ * arrays — matching `current.time` (truncated to the hour) against `hourly.time`
+ * so we report UV *now* rather than the day's peak. Rounded to a whole number
+ * (matching the mockup's "UV 9"); null when the field or the hour isn't present.
+ */
+function currentHourUv(json) {
+  const nowHour = json.current?.time?.slice(0, 13) // "YYYY-MM-DDTHH"
+  const times = json.hourly?.time
+  const values = json.hourly?.uv_index
+  if (!nowHour || !Array.isArray(times) || !Array.isArray(values)) return null
+  const i = times.findIndex((t) => typeof t === 'string' && t.slice(0, 13) === nowHour)
+  const uv = i >= 0 ? values[i] : null
+  return uv == null ? null : Math.round(uv)
 }
 
 /**

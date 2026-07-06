@@ -490,6 +490,33 @@ button {
   color: var(--color-text-subtle);
 }
 
+/* UV / Wind / Humidity row — compact, sits below feels/water. */
+.weather-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0 0;
+}
+
+.weather-card__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.weather-card__stat svg,
+.weather-card__stat-label {
+  color: var(--color-text-subtle);
+}
+
+.weather-card__stat-val {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* ==========================================================================
    Weather card — animated, code-drawn background (WeatherBackground.jsx)
    Pastel gradients + light CSS/SVG motion that reacts to the WMO group and to
@@ -519,6 +546,16 @@ button {
 .weather-card--night .weather-card__feels svg,
 .weather-card--night .weather-card__water svg {
   color: #aab4c4;
+}
+.weather-card--night .weather-card__stat {
+  color: #c8d0dc;
+}
+.weather-card--night .weather-card__stat svg,
+.weather-card--night .weather-card__stat-label {
+  color: #aab4c4;
+}
+.weather-card--night .weather-card__stat-val {
+  color: #f3f6fb;
 }
 
 /* --- Background layer + per-group / day-night gradients --- */

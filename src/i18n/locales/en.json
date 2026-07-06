@@ -36,7 +36,12 @@
         "showers": "Showers",
         "thunderstorm": "Thunderstorm"
       },
-      "feelsLike": "Feels like"
+      "feelsLike": "Feels like",
+      "uv": "UV",
+      "wind": "Wind",
+      "humidity": "Humidity",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Exchange rate",
