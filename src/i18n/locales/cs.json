@@ -80,6 +80,18 @@
       "realestate": "Nemovitosti",
       "pets": "Domácí mazlíčci"
     },
+    "categoryDesc": {
+      "health": "Lékaři, zubaři, lékárny, kliniky",
+      "documents": "Notáři, překladatelé, právníci, pobyt",
+      "home": "Opravy, úklid, nábytek, řemeslníci",
+      "shops": "Potraviny, centra, oblečení, domácnost",
+      "food": "Restaurace, kavárny, rozvoz, pekárny",
+      "transport": "Taxi, transfer, půjčovna a servis aut",
+      "kids": "Školy, školky, kroužky, centra",
+      "leisure": "Pláže, parky, atrakce, výlety",
+      "realestate": "Pronájem, koupě, agentury, čtvrti",
+      "pets": "Veterináři, chovatelské potřeby, pojištění"
+    },
     "subcategories": {
       "doctors": "Lékaři",
       "dentists": "Zubaři",

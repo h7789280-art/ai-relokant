@@ -106,6 +106,18 @@
       "realestate": "Real estate",
       "pets": "Pets"
     },
+    "categoryDesc": {
+      "health": "Doctors, dentists, pharmacies, clinics",
+      "documents": "Notaries, translators, lawyers, permits",
+      "home": "Repairs, cleaning, furniture, utilities",
+      "shops": "Groceries, malls, clothing, home goods",
+      "food": "Restaurants, cafés, delivery, bakeries",
+      "transport": "Taxi, transfers, car rental & service",
+      "kids": "Schools, kindergartens, clubs, centers",
+      "leisure": "Beaches, parks, attractions, excursions",
+      "realestate": "Rent, buy, agencies, districts",
+      "pets": "Vet clinics, pet supplies, insurance"
+    },
     "subcategories": {
       "doctors": "Doctors",
       "dentists": "Dentists",

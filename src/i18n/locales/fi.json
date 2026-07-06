@@ -80,6 +80,18 @@
       "realestate": "Kiinteistöt",
       "pets": "Lemmikit"
     },
+    "categoryDesc": {
+      "health": "Lääkärit, hammaslääkärit, apteekit, klinikat",
+      "documents": "Notaarit, kääntäjät, lakimiehet, oleskelulupa",
+      "home": "Korjaus, siivous, huonekalut, remontit",
+      "shops": "Ruokakaupat, ostoskeskukset, vaatteet, koti",
+      "food": "Ravintolat, kahvilat, kotiinkuljetus, leipomot",
+      "transport": "Taksi, kuljetus, autovuokraus ja huolto",
+      "kids": "Koulut, päiväkodit, kerhot, keskukset",
+      "leisure": "Rannat, puistot, nähtävyydet, retket",
+      "realestate": "Vuokraus, osto, välittäjät, kaupunginosat",
+      "pets": "Eläinlääkärit, lemmikkitarvikkeet, vakuutus"
+    },
     "subcategories": {
       "doctors": "Lääkärit",
       "dentists": "Hammaslääkärit",

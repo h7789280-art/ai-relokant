@@ -80,6 +80,18 @@
       "realestate": "Immobilien",
       "pets": "Haustiere"
     },
+    "categoryDesc": {
+      "health": "Ärzte, Zahnärzte, Apotheken, Kliniken",
+      "documents": "Notare, Übersetzer, Anwälte, Aufenthalt",
+      "home": "Reparatur, Reinigung, Möbel, Handwerker",
+      "shops": "Lebensmittel, Malls, Kleidung, Haushalt",
+      "food": "Restaurants, Cafés, Lieferung, Bäckereien",
+      "transport": "Taxi, Transfer, Mietwagen & Service",
+      "kids": "Schulen, Kitas, Clubs, Zentren",
+      "leisure": "Strände, Parks, Ausflüge, Sehenswürdigkeiten",
+      "realestate": "Mieten, Kaufen, Makler, Stadtteile",
+      "pets": "Tierärzte, Tierbedarf, Versicherung"
+    },
     "subcategories": {
       "doctors": "Ärzte",
       "dentists": "Zahnärzte",

@@ -80,6 +80,18 @@
       "realestate": "Vastgoed",
       "pets": "Huisdieren"
     },
+    "categoryDesc": {
+      "health": "Artsen, tandartsen, apotheken, klinieken",
+      "documents": "Notarissen, vertalers, advocaten, verblijf",
+      "home": "Reparatie, schoonmaak, meubels, klusjes",
+      "shops": "Boodschappen, malls, kleding, huisraad",
+      "food": "Restaurants, cafés, bezorging, bakkerijen",
+      "transport": "Taxi, transfer, autoverhuur & service",
+      "kids": "Scholen, kinderdagverblijven, clubs, centra",
+      "leisure": "Stranden, parken, attracties, excursies",
+      "realestate": "Huren, kopen, makelaars, wijken",
+      "pets": "Dierenartsen, dierbenodigdheden, verzekering"
+    },
     "subcategories": {
       "doctors": "Artsen",
       "dentists": "Tandartsen",

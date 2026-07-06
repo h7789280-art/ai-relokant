@@ -20,12 +20,31 @@ import {
 import { categoryIcon } from '../lib/categoryIcons.js'
 import PlaceRow from '../components/PlaceRow.jsx'
 
+// Category slug → illustration file in public/categories/ (800×600 WebP, subject
+// on the right over a light ivory left third). Served by URL (not bundled) so
+// Vite never re-encodes or inlines them and the file weight stays as shipped.
+const CATEGORY_IMAGE = {
+  health: 'stethoscope',
+  documents: 'documents',
+  home: 'armchair',
+  shops: 'shops',
+  food: 'food',
+  transport: 'transport',
+  kids: 'kids_teddy',
+  leisure: 'leisure',
+  realestate: 'real_estate',
+  pets: 'pets',
+}
+
 export default function Catalog() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { cityId } = useApp()
 
   const [query, setQuery] = useState('')
+  // Slugs whose illustration failed to load — the card then drops the image and
+  // scrim and falls back to the icon plaque + text on a clean surface.
+  const [imgFailed, setImgFailed] = useState(() => new Set())
   const [cats, setCats] = useState({ status: 'loading', rows: [] })
   const [subs, setSubs] = useState([])
   // `q` tags which query these rows answer (null = none yet); a search is
@@ -68,6 +87,8 @@ export default function Catalog() {
   // Localized label for a category / subcategory slug (i18n, DB name fallback).
   const catLabel = (cat) => t(`catalog.categories.${cat.slug}`, cat.name)
   const subLabel = (sub) => t(`catalog.subcategories.${sub.slug}`, sub.name)
+  // Short subtitle under the name (i18n; empty string = not shown).
+  const catDesc = (cat) => t(`catalog.categoryDesc.${cat.slug}`, '')
 
   // Category slug by id, so a matched subcategory can link to its parent screen.
   const catSlugById = useMemo(() => {
@@ -136,6 +157,9 @@ export default function Catalog() {
           <div className="catalog__grid">
             {cats.rows.map((cat) => {
               const Icon = categoryIcon(cat.icon)
+              const imgName = CATEGORY_IMAGE[cat.slug]
+              const showImg = imgName && !imgFailed.has(cat.slug)
+              const desc = catDesc(cat)
               return (
                 <button
                   key={cat.id}
@@ -143,11 +167,37 @@ export default function Catalog() {
                   className="cat-tile"
                   onClick={() => navigate(`/catalog/${cat.slug}`)}
                 >
-                  <span className="cat-tile__icon" aria-hidden="true">
-                    <Icon size={24} strokeWidth={2} />
+                  {showImg && (
+                    <>
+                      <img
+                        className="cat-tile__img"
+                        src={`/categories/${imgName}.webp`}
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                        onError={() =>
+                          setImgFailed((prev) => new Set(prev).add(cat.slug))
+                        }
+                      />
+                      <span className="cat-tile__scrim" aria-hidden="true" />
+                    </>
+                  )}
+                  <span className="cat-tile__body">
+                    <span className="cat-tile__icon" aria-hidden="true">
+                      <Icon size={22} strokeWidth={2} />
+                    </span>
+                    <span className="cat-tile__text">
+                      <span className="cat-tile__name-row">
+                        <span className="cat-tile__name">{catLabel(cat)}</span>
+                        <ChevronRight
+                          className="cat-tile__chevron"
+                          size={18}
+                          aria-hidden="true"
+                        />
+                      </span>
+                      {desc && <span className="cat-tile__desc">{desc}</span>}
+                    </span>
                   </span>
-                  <span className="cat-tile__name">{catLabel(cat)}</span>
-                  <ChevronRight className="cat-tile__chevron" size={18} aria-hidden="true" />
                 </button>
               )
             })}

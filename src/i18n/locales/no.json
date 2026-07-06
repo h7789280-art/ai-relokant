@@ -80,6 +80,18 @@
       "realestate": "Eiendom",
       "pets": "Kjæledyr"
     },
+    "categoryDesc": {
+      "health": "Leger, tannleger, apotek, klinikker",
+      "documents": "Notarer, oversettere, advokater, opphold",
+      "home": "Reparasjon, rengjøring, møbler, håndverk",
+      "shops": "Dagligvarer, kjøpesentre, klær, hjem",
+      "food": "Restauranter, kafeer, levering, bakerier",
+      "transport": "Taxi, transfer, bilutleie og service",
+      "kids": "Skoler, barnehager, klubber, sentre",
+      "leisure": "Strender, parker, attraksjoner, utflukter",
+      "realestate": "Leie, kjøp, meglere, bydeler",
+      "pets": "Veterinærer, dyreartikler, forsikring"
+    },
     "subcategories": {
       "doctors": "Leger",
       "dentists": "Tannleger",

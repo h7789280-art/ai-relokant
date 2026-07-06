@@ -80,6 +80,18 @@
       "realestate": "Emlak",
       "pets": "Evcil hayvanlar"
     },
+    "categoryDesc": {
+      "health": "Doktorlar, diş hekimleri, eczaneler, klinikler",
+      "documents": "Noterler, tercümanlar, avukatlar, oturum",
+      "home": "Tamir, temizlik, mobilya, tesisat",
+      "shops": "Market, AVM, giyim, ev eşyası",
+      "food": "Restoranlar, kafeler, teslimat, fırınlar",
+      "transport": "Taksi, transfer, araç kiralama ve servis",
+      "kids": "Okullar, anaokulları, kulüpler, merkezler",
+      "leisure": "Plajlar, parklar, gezilecek yerler, turlar",
+      "realestate": "Kiralık, satılık, emlak, mahalleler",
+      "pets": "Veteriner, evcil ürünleri, sigorta"
+    },
     "subcategories": {
       "doctors": "Doktorlar",
       "dentists": "Diş hekimleri",

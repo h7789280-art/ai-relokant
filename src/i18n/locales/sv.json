@@ -80,6 +80,18 @@
       "realestate": "Fastigheter",
       "pets": "Husdjur"
     },
+    "categoryDesc": {
+      "health": "Läkare, tandläkare, apotek, kliniker",
+      "documents": "Notarier, översättare, jurister, uppehåll",
+      "home": "Reparation, städning, möbler, hantverk",
+      "shops": "Livsmedel, gallerior, kläder, hemmet",
+      "food": "Restauranger, kaféer, leverans, bagerier",
+      "transport": "Taxi, transfer, biluthyrning & service",
+      "kids": "Skolor, förskolor, klubbar, center",
+      "leisure": "Stränder, parker, sevärdheter, utflykter",
+      "realestate": "Hyra, köpa, mäklare, stadsdelar",
+      "pets": "Veterinärer, djurtillbehör, försäkring"
+    },
     "subcategories": {
       "doctors": "Läkare",
       "dentists": "Tandläkare",
