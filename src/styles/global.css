@@ -337,7 +337,10 @@ button {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3);
+  /* Slim vertical padding keeps the bar thin & elegant — the bot chip / mic set
+     the height, not fat padding — while the horizontal padding is unchanged so
+     the width & hero overlap stay exactly as tuned above. */
+  padding: var(--space-2) var(--space-3);
   /* Frosted, mostly-opaque white so the placeholder + bot + mic stay readable
      even over the palest part of the water (the Alanya photo is bright near the
      shore) — high alpha + blur underlay + a lifting shadow guarantee contrast. */
@@ -364,8 +367,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--color-accent);
@@ -396,9 +399,14 @@ button {
   gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
-  /* Bleed to the screen edges so the row scrolls full-width. */
-  margin: 0 calc(-1 * var(--space-4));
-  padding: var(--space-1) var(--space-4);
+  /* Bleed to the screen edges so the row scrolls full-width. The top margin adds
+     breathing room below the "Ask CityMate…" bar (which rides high with a deep
+     negative pull-up + drop shadow) so the chips clear it instead of tucking
+     under its lower edge. The roomier vertical padding keeps the chips — and
+     their soft shadow — from being clipped by the scroll box (overflow-x also
+     clips the y-axis). */
+  margin: var(--space-3) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-2) var(--space-4);
 }
 
 .home__chips::-webkit-scrollbar {
