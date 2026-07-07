@@ -71,6 +71,20 @@ export async function updatePlace(id, patch) {
   return data
 }
 
+/**
+ * Permanently delete a place (NOT a status change — the row is physically
+ * removed). Admin-only via RLS (supabase/admin.sql). Also removes the place's
+ * `content_translations`: that table is polymorphic (entity_type/entity_id, no
+ * FK), so there is no DB cascade and we must clear the orphans ourselves (§8).
+ * Irreversible — the caller must confirm first.
+ */
+export async function deletePlace(id) {
+  if (!id) throw new Error('deletePlace: id is required')
+  const { error } = await supabase.from('places').delete().eq('id', id)
+  if (error) throw error
+  await deleteContentTranslations('places', id)
+}
+
 // ---- Generic moderated content (news / events / guides) — Stage 10 ----------
 // Same shape as the place helpers above, but for the other city-scoped content
 // tables. Every privileged read/write is gated by the RLS policies in
@@ -130,6 +144,81 @@ export async function updateContent(table, id, patch) {
     .single()
   if (error) throw error
   return data
+}
+
+/**
+ * Permanently delete a content row (news / events / guides) — a physical delete,
+ * not a status change. Admin-only via RLS (supabase/admin-content.sql). Also
+ * clears the row's `content_translations` (polymorphic table, no FK cascade — §8)
+ * so no orphaned translations are left behind. Irreversible; confirm first.
+ */
+export async function deleteContent(table, id) {
+  assertContentTable(table)
+  if (!id) throw new Error('deleteContent: id is required')
+  const { error } = await supabase.from(table).delete().eq('id', id)
+  if (error) throw error
+  await deleteContentTranslations(table, id)
+}
+
+/**
+ * Remove every translation attached to one content row. Shared by the delete
+ * helpers above. Admin-only via RLS (supabase/translations.sql).
+ */
+async function deleteContentTranslations(entityType, entityId) {
+  const { error } = await supabase
+    .from('content_translations')
+    .delete()
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+  if (error) throw error
+}
+
+/**
+ * Auto-cleanup of PAST events (CLAUDE.md §4 screen 5, owner rule) — "lazy"
+ * purge run when the owner opens the admin Events tab.
+ *
+ * Safety by design: we never delete an event the moment it ends. Past events are
+ * already HIDDEN from the public the instant their date passes (the query filter
+ * in fetchUpcomingEvents, content.js); this only physically removes ones that
+ * are well past — older than `bufferDays` (default 7) after their date — so
+ * nothing is irreversibly dropped on a timer without a buffer.
+ *
+ * The event's date is its start; multi-day events still running (ends_at on/after
+ * the cutoff) are kept. Undated events (no starts_at) are never auto-purged.
+ * Orphaned translations are cleared too (no FK cascade, §8). Returns the count
+ * deleted.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {{ bufferDays?: number }} [opts]
+ */
+export async function purgePastEvents(cityId, { bufferDays = 7 } = {}) {
+  if (!cityId) return 0
+  const cutoffMs = Date.now() - bufferDays * 24 * 60 * 60 * 1000
+  const cutoff = new Date(cutoffMs).toISOString()
+
+  // Candidates: events that STARTED before the buffer cutoff (city-scoped).
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, ends_at')
+    .eq('city_id', cityId)
+    .lt('starts_at', cutoff)
+  if (error) throw error
+
+  // Keep any multi-day event still running (ends on/after the cutoff).
+  const staleIds = (data ?? [])
+    .filter((ev) => !ev.ends_at || new Date(ev.ends_at).getTime() < cutoffMs)
+    .map((ev) => ev.id)
+  if (staleIds.length === 0) return 0
+
+  const { error: delErr } = await supabase.from('events').delete().in('id', staleIds)
+  if (delErr) throw delErr
+  const { error: trErr } = await supabase
+    .from('content_translations')
+    .delete()
+    .eq('entity_type', 'events')
+    .in('entity_id', staleIds)
+  if (trErr) throw trErr
+  return staleIds.length
 }
 
 // ---- Content translations (CLAUDE.md §8) — Stage 11D -----------------------

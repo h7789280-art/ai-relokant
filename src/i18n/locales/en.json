@@ -370,6 +370,8 @@
       "approve": "Approve",
       "reject": "Reject",
       "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this record permanently? This cannot be undone.",
       "promoted": "Promoted",
       "verified": "Verified"
     },

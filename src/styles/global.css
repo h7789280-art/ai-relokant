@@ -4088,6 +4088,17 @@ button {
   color: var(--color-danger);
 }
 
+/* Permanent delete — destructive, so it reads stronger than "reject". */
+.admin-action--delete {
+  color: #fff;
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.admin-action--delete:hover {
+  filter: brightness(0.94);
+}
+
 /* ==========================================================================
    Auth — session-expired toast, reset flow, error affordances (CLAUDE.md §3)
    ========================================================================== */

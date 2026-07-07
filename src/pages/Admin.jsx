@@ -19,6 +19,7 @@ import {
   Check,
   X,
   Pencil,
+  Trash2,
   Megaphone,
   BadgeCheck,
   Plus,
@@ -32,9 +33,12 @@ import {
   fetchAdminPlaces,
   createPlace,
   updatePlace,
+  deletePlace,
   fetchAdminContent,
   createContent,
   updateContent,
+  deleteContent,
+  purgePastEvents,
   uploadPlacePhoto,
   requestTranslation,
   fetchAdminTranslations,
@@ -396,7 +400,7 @@ function TranslationsPanel({ entityType, entityId, fields }) {
 
 // A generic moderation list: rows with a status badge and approve / reject /
 // edit actions. `titleOf` and `metaOf(row) -> string[]` adapt it per table.
-function ModerationList({ state, titleOf, metaOf, onApprove, onReject, onEdit }) {
+function ModerationList({ state, titleOf, metaOf, onApprove, onReject, onEdit, onDelete }) {
   const { t } = useTranslation()
   if (state.status === 'loading') return <p className="muted">{t('admin.list.loading')}</p>
   if (state.status === 'error') return <p className="admin-form__error">{t('admin.list.error')}</p>
@@ -445,6 +449,17 @@ function ModerationList({ state, titleOf, metaOf, onApprove, onReject, onEdit })
               <button type="button" className="admin-action" onClick={() => onEdit(row)}>
                 <Pencil size={15} aria-hidden="true" />
                 {t('admin.actions.edit')}
+              </button>
+              <button
+                type="button"
+                className="admin-action admin-action--delete"
+                onClick={() => {
+                  // Irreversible physical delete — always confirm first.
+                  if (window.confirm(t('admin.actions.deleteConfirm'))) onDelete(row.id)
+                }}
+              >
+                <Trash2 size={15} aria-hidden="true" />
+                {t('admin.actions.delete')}
               </button>
             </div>
           </li>
@@ -514,7 +529,31 @@ function useContentSection(table) {
   const approve = (id) => patch(id, { status: 'approved', verified_at: new Date().toISOString() })
   const reject = (id) => patch(id, { status: 'rejected' })
 
-  return { cityId, state, error, setError, success, setSuccess, saving, save, approve, reject }
+  // Permanent, physical delete (removes the row + its translations). Confirmation
+  // is handled at the call site (ModerationList) — this just performs it.
+  async function remove(id) {
+    try {
+      await deleteContent(table, id)
+      reload()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    }
+  }
+
+  return {
+    cityId,
+    state,
+    error,
+    setError,
+    success,
+    setSuccess,
+    saving,
+    save,
+    approve,
+    reject,
+    remove,
+    reload,
+  }
 }
 
 // ---- date <-> input helpers ------------------------------------------------
@@ -741,6 +780,19 @@ function PlacesSection() {
   async function patch(place, changes) {
     try {
       await updatePlace(place.id, changes)
+      loadPlaces()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    }
+  }
+
+  // Permanent, physical delete (place row + its translations). Irreversible, so
+  // confirm first; drop the edit form if it holds the row we're removing.
+  async function removePlace(place) {
+    if (!window.confirm(t('admin.actions.deleteConfirm'))) return
+    try {
+      await deletePlace(place.id)
+      if (form.id === place.id) resetForm()
       loadPlaces()
     } catch (err) {
       setError(describeError(err) || t('admin.form.error'))
@@ -1086,6 +1138,14 @@ function PlacesSection() {
                       <BadgeCheck size={15} aria-hidden="true" />
                       {t('admin.actions.verified')}
                     </button>
+                    <button
+                      type="button"
+                      className="admin-action admin-action--delete"
+                      onClick={() => removePlace(place)}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                      {t('admin.actions.delete')}
+                    </button>
                   </div>
                 </li>
               )
@@ -1145,6 +1205,11 @@ function NewsSection() {
   const resetForm = () => {
     setForm(emptyNews())
     sec.setError('')
+  }
+  // Drop the edit form if we're deleting the row it holds.
+  const remove = (id) => {
+    if (editing && form.id === id) resetForm()
+    sec.remove(id)
   }
 
   async function handleSubmit(e) {
@@ -1301,6 +1366,7 @@ function NewsSection() {
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}
+          onDelete={remove}
         />
       </section>
     </>
@@ -1354,6 +1420,30 @@ function EventsSection() {
     setForm(emptyEvent())
     sec.setError('')
   }
+  // Drop the edit form if we're deleting the row it holds.
+  const remove = (id) => {
+    if (editing && form.id === id) resetForm()
+    sec.remove(id)
+  }
+
+  // Lazy auto-cleanup (owner rule): whenever the owner opens the Events tab,
+  // physically purge events well past their date (buffer inside purgePastEvents),
+  // then refresh the list so the freed rows disappear. Best-effort — a failure
+  // here must never block moderating; past events are hidden from the public by
+  // the query filter regardless (fetchUpcomingEvents), so this is just tidy-up.
+  useEffect(() => {
+    if (!sec.cityId) return
+    let active = true
+    purgePastEvents(sec.cityId)
+      .then((n) => {
+        if (active && n > 0) sec.reload()
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sec.cityId])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -1498,6 +1588,7 @@ function EventsSection() {
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}
+          onDelete={remove}
         />
       </section>
     </>
@@ -1544,6 +1635,11 @@ function GuidesSection() {
   const resetForm = () => {
     setForm(emptyGuide())
     sec.setError('')
+  }
+  // Drop the edit form if we're deleting the row it holds.
+  const remove = (id) => {
+    if (editing && form.id === id) resetForm()
+    sec.remove(id)
   }
 
   async function handleSubmit(e) {
@@ -1661,6 +1757,7 @@ function GuidesSection() {
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}
+          onDelete={remove}
         />
       </section>
     </>

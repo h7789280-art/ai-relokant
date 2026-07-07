@@ -52,6 +52,50 @@ export async function fetchContent(table, cityId, { columns = '*', limit, order 
   return data ?? []
 }
 
+// Turkey is UTC+3 all year (no DST since 2016). Comparing event dates to the
+// user's browser clock (or plain UTC) would make an event vanish a few hours
+// early/late; we always measure "today" by Turkey wall-clock time instead (§4).
+const TURKEY_OFFSET_MS = 3 * 60 * 60 * 1000
+
+/** ISO instant for the start (00:00) of *today* in Turkey (UTC+3). */
+function turkeyStartOfTodayISO() {
+  const nowTurkey = new Date(Date.now() + TURKEY_OFFSET_MS)
+  const y = nowTurkey.getUTCFullYear()
+  const m = nowTurkey.getUTCMonth()
+  const d = nowTurkey.getUTCDate()
+  // Turkey midnight expressed as a UTC instant: subtract the +3h offset back.
+  return new Date(Date.UTC(y, m, d) - TURKEY_OFFSET_MS).toISOString()
+}
+
+/**
+ * Approved, city-scoped events that are NOT in the past — the public afisha feed
+ * (Home rail + Events screen). An event is hidden the moment its date passes
+ * (owner rule): we keep only rows whose start is today-or-later OR whose end is
+ * today-or-later (so a multi-day event still running stays), plus undated rows
+ * (no starts_at) which have no date to be "past". "Today" is measured in Turkey
+ * time (UTC+3), not the browser's, so events don't drop a few hours early/late.
+ *
+ * Physical removal of long-past events happens separately with a buffer
+ * (purgePastEvents in src/lib/admin.js) — this only controls visibility.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {{ columns?: string, limit?: number, order?: {column: string, ascending?: boolean} }} [opts]
+ */
+export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order } = {}) {
+  if (!cityId) return []
+  const cutoff = turkeyStartOfTodayISO()
+  let query = publicContentQuery('events', cityId, { columns }).or(
+    `starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`,
+  )
+  if (order) {
+    query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })
+  }
+  if (limit) query = query.limit(limit)
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
 /**
  * Fetch translations for a set of content rows in a single language and merge
  * them onto the rows. Only approved-parent translations are returned (RLS), so

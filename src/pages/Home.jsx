@@ -31,7 +31,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchCity, fetchContent, fetchMarkets } from '../lib/content.js'
+import { fetchCity, fetchContent, fetchMarkets, fetchUpcomingEvents } from '../lib/content.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
@@ -58,20 +58,26 @@ const CHIPS = [
 const NEWS_OPTS = { limit: 8, order: { column: 'published_at', ascending: false } }
 const EVENTS_OPTS = { limit: 8, order: { column: 'starts_at', ascending: true } }
 
+// Events use the "upcoming only" reader so past events drop off the Home rail the
+// moment their date passes (Turkey time); other feeds use the plain reader. The
+// fetcher ignores `table` (events-only) but keeps the (table, cityId, opts)
+// shape so useContentFeed stays uniform. Module-scoped for a stable identity.
+const fetchEventsFeed = (_table, cityId, opts) => fetchUpcomingEvents(cityId, opts)
+
 // Small async-state hook for one content feed. Treats errors like "empty" so a
 // flaky network never breaks the screen — it just shows the placeholder (§4).
-function useContentFeed(table, cityId, opts) {
+function useContentFeed(table, cityId, opts, fetcher = fetchContent) {
   const [state, setState] = useState({ status: 'loading', rows: [] })
   useEffect(() => {
     if (!cityId) return
     let active = true
-    fetchContent(table, cityId, opts)
+    fetcher(table, cityId, opts)
       .then((rows) => active && setState({ status: 'ready', rows }))
       .catch(() => active && setState({ status: 'ready', rows: [] }))
     return () => {
       active = false
     }
-  }, [table, cityId, opts])
+  }, [table, cityId, opts, fetcher])
   return state
 }
 
@@ -146,7 +152,7 @@ export default function Home() {
 
   // --- content feeds ---------------------------------------------------------
   const news = useContentFeed('news', cityId, NEWS_OPTS)
-  const events = useContentFeed('events', cityId, EVENTS_OPTS)
+  const events = useContentFeed('events', cityId, EVENTS_OPTS, fetchEventsFeed)
 
   // Markets: ONLY places tagged with the `markets` category (bazaars / food
   // markets) — never the whole catalog (§4). Own effect (not useContentFeed)

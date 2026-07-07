@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, MapPin, Clock } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchContent, withTranslations } from '../lib/content.js'
+import { fetchUpcomingEvents, withTranslations } from '../lib/content.js'
 import i18n from '../i18n/index.js'
 
 // Oldest-first by start date keeps the agenda reading top-to-bottom; undated
@@ -54,7 +54,7 @@ export default function Events() {
   useEffect(() => {
     if (!cityId) return
     let active = true
-    fetchContent('events', cityId, EVENTS_OPTS)
+    fetchUpcomingEvents(cityId, EVENTS_OPTS)
       .then((rows) => withTranslations('events', rows, i18nInstance.language))
       .then((rows) => active && setState({ status: 'ready', rows }))
       .catch(() => active && setState({ status: 'ready', rows: [] }))
