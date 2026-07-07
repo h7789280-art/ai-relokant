@@ -28,7 +28,12 @@ import {
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
-import { fetchCategories, fetchAllSubcategories } from '../lib/content.js'
+import {
+  fetchCategories,
+  fetchAllSubcategories,
+  fetchCountries,
+  fetchAllCities,
+} from '../lib/content.js'
 import {
   fetchAdminPlaces,
   createPlace,
@@ -78,12 +83,17 @@ function AdminPanel() {
   const { selection } = useApp()
   const [tab, setTab] = useState('places')
 
+  // Country + city reference data for the per-form scoping selectors (Stage A),
+  // loaded once and shared by every section. Includes inactive ("(soon)") cities
+  // so the owner can stage content for a city before it launches.
+  const geo = useAdminGeo()
+
   const sections = {
-    places: <PlacesSection />,
-    news: <NewsSection />,
-    events: <EventsSection />,
-    guides: <GuidesSection />,
-    marketSchedule: <MarketScheduleSection />,
+    places: <PlacesSection geo={geo} />,
+    news: <NewsSection geo={geo} />,
+    events: <EventsSection geo={geo} />,
+    guides: <GuidesSection geo={geo} />,
+    marketSchedule: <MarketScheduleSection geo={geo} />,
   }
 
   return (
@@ -199,6 +209,81 @@ function StatusField({ value, onChange }) {
         <option value="rejected">{t('admin.status.rejected')}</option>
       </select>
     </label>
+  )
+}
+
+// Country + city reference data for the scoping selectors (Stage A — multi-city).
+// Loaded once per admin session. Cities include inactive ("(soon)") ones so the
+// owner can prepare content for a city before it goes live.
+function useAdminGeo() {
+  const [geo, setGeo] = useState({ countries: [], cities: [] })
+  useEffect(() => {
+    let active = true
+    Promise.all([fetchCountries(), fetchAllCities()])
+      .then(([countries, cities]) => active && setGeo({ countries, cities }))
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+  return geo
+}
+
+// Country + city selector shared by every content form (Stage A). Makes the
+// record's owning city EXPLICIT instead of implicitly the active city — the
+// owner can file a record under ANY country/city (including inactive "(soon)"
+// ones, e.g. to stage content before launch). Each row still belongs to exactly
+// one city (§5); this only chooses which. `cityId` is the current form value;
+// `onCityChange(id)` updates it. The country select is derived from the chosen
+// city's country_id, so switching country jumps to that country's first city.
+function CountryCityFields({ geo, cityId, onCityChange }) {
+  const { t } = useTranslation()
+  const { countries, cities } = geo
+  const currentCity = cities.find((c) => c.id === cityId)
+  const countryId = currentCity?.country_id ?? ''
+  const countryCities = cities.filter((c) => c.country_id === countryId)
+  const soon = (row) => (row.is_active ? '' : ` ${t('admin.form.soon')}`)
+
+  const handleCountry = (nextCountryId) => {
+    // Keep city_id valid: jump to the new country's first (preferably active) city.
+    const inCountry = cities.filter((c) => c.country_id === nextCountryId)
+    const next = inCountry.find((c) => c.is_active) ?? inCountry[0]
+    onCityChange(next ? next.id : '')
+  }
+
+  return (
+    <div className="admin-form__row">
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.form.country')}</span>
+        <select
+          className="admin-field__input"
+          value={countryId}
+          onChange={(e) => handleCountry(e.target.value)}
+        >
+          {countries.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {soon(c)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.form.city')}</span>
+        <select
+          className="admin-field__input"
+          value={cityId || ''}
+          onChange={(e) => onCityChange(e.target.value)}
+        >
+          {countryCities.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {soon(c)}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
   )
 }
 
@@ -497,12 +582,15 @@ function useContentSection(table) {
     reload()
   }, [reload])
 
-  // Save a built payload. Returns the saved row on success (truthy → the caller
-  // resets, or keeps the form with the new id to translate), null on failure.
+  // Save a built payload. The payload now carries its own `city_id` (chosen in the
+  // form via CountryCityFields, Stage A) instead of the active city — so the owner
+  // can file a record under any city. Returns the saved row on success (truthy →
+  // the caller resets, or keeps the form with the new id to translate), null on
+  // failure.
   async function save({ payload, isEdit, id, name }) {
     if (saving) return null
-    if (!cityId) {
-      setError(t('admin.form.error'))
+    if (!payload?.city_id) {
+      setError(t('admin.form.cityRequired'))
       return null
     }
     setSaving(true)
@@ -513,7 +601,7 @@ function useContentSection(table) {
       // with the fresh id and open the translations panel ("Save and translate").
       const saved = isEdit
         ? await updateContent(table, id, payload)
-        : await createContent(table, { ...payload, city_id: cityId })
+        : await createContent(table, payload)
       setSuccess(t(isEdit ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       reload()
       return saved
@@ -595,8 +683,9 @@ function inputToISO(value) {
 // Places (the original tool, unchanged in behaviour)
 // ============================================================================
 
-const emptyPlace = () => ({
+const emptyPlace = (cityId = '') => ({
   id: null,
+  city_id: cityId,
   name: '',
   description: '',
   address: '',
@@ -618,6 +707,7 @@ const emptyPlace = () => ({
 function formFromPlace(p) {
   return {
     id: p.id,
+    city_id: p.city_id ?? '',
     name: p.name ?? '',
     description: p.description ?? '',
     address: p.address ?? '',
@@ -637,14 +727,15 @@ function formFromPlace(p) {
   }
 }
 
-function PlacesSection() {
+function PlacesSection({ geo }) {
   const { t } = useTranslation()
   const { cityId } = useApp()
 
   const [cats, setCats] = useState([])
   const [subs, setSubs] = useState([])
   const [places, setPlaces] = useState({ status: 'loading', rows: [] })
-  const [form, setForm] = useState(emptyPlace)
+  // New rows default to the active city; the form's CountryCityFields can retarget.
+  const [form, setForm] = useState(() => emptyPlace(cityId))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -707,7 +798,7 @@ function PlacesSection() {
   }
 
   const resetForm = () => {
-    setForm(emptyPlace())
+    setForm(emptyPlace(cityId))
     setError('')
   }
 
@@ -750,13 +841,13 @@ function PlacesSection() {
       setError(t('admin.form.nameRequired'))
       return
     }
-    if (!cityId) {
-      setError(t('admin.form.error'))
+    if (!form.city_id) {
+      setError(t('admin.form.cityRequired'))
       return
     }
 
     const payload = {
-      city_id: cityId,
+      city_id: form.city_id,
       name,
       description: form.description.trim() || null,
       address: form.address.trim() || null,
@@ -848,6 +939,12 @@ function PlacesSection() {
               required
             />
           </label>
+
+          <CountryCityFields
+            geo={geo}
+            cityId={form.city_id}
+            onCityChange={(v) => setField('city_id', v)}
+          />
 
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.form.description')}</span>
@@ -1201,8 +1298,9 @@ function PlacesSection() {
 // News
 // ============================================================================
 
-const emptyNews = () => ({
+const emptyNews = (cityId = '') => ({
   id: null,
+  city_id: cityId,
   title: '',
   summary: '',
   body: '',
@@ -1217,6 +1315,7 @@ const emptyNews = () => ({
 function formFromNews(n) {
   return {
     id: n.id,
+    city_id: n.city_id ?? '',
     title: n.title ?? '',
     summary: n.summary ?? '',
     body: n.body ?? '',
@@ -1229,10 +1328,10 @@ function formFromNews(n) {
   }
 }
 
-function NewsSection() {
+function NewsSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('news')
-  const [form, setForm] = useState(emptyNews)
+  const [form, setForm] = useState(() => emptyNews(sec.cityId))
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
 
@@ -1243,7 +1342,7 @@ function NewsSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyNews())
+    setForm(emptyNews(sec.cityId))
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -1267,6 +1366,7 @@ function NewsSection() {
       return
     }
     const payload = {
+      city_id: form.city_id,
       title,
       summary: form.summary.trim() || null,
       body: form.body.trim() || null,
@@ -1315,6 +1415,12 @@ function NewsSection() {
               required
             />
           </label>
+
+          <CountryCityFields
+            geo={geo}
+            cityId={form.city_id}
+            onCityChange={(v) => setField('city_id', v)}
+          />
 
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.news.summary')}</span>
@@ -1448,8 +1554,9 @@ function NewsSection() {
 // Events
 // ============================================================================
 
-const emptyEvent = () => ({
+const emptyEvent = (cityId = '') => ({
   id: null,
+  city_id: cityId,
   title: '',
   description: '',
   starts_at: '',
@@ -1477,6 +1584,7 @@ const numToInput = (v) => (v === null || v === undefined ? '' : String(v))
 function formFromEvent(ev) {
   return {
     id: ev.id,
+    city_id: ev.city_id ?? '',
     title: ev.title ?? '',
     description: ev.description ?? '',
     starts_at: toDateTimeLocal(ev.starts_at),
@@ -1497,10 +1605,10 @@ function formFromEvent(ev) {
   }
 }
 
-function EventsSection() {
+function EventsSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('events')
-  const [form, setForm] = useState(emptyEvent)
+  const [form, setForm] = useState(() => emptyEvent(sec.cityId))
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
 
@@ -1511,7 +1619,7 @@ function EventsSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyEvent())
+    setForm(emptyEvent(sec.cityId))
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -1564,6 +1672,7 @@ function EventsSection() {
     }
     const type = form.price_type || null
     const payload = {
+      city_id: form.city_id,
       title,
       description: form.description.trim() || null,
       starts_at: inputToISO(form.starts_at),
@@ -1623,6 +1732,12 @@ function EventsSection() {
               required
             />
           </label>
+
+          <CountryCityFields
+            geo={geo}
+            cityId={form.city_id}
+            onCityChange={(v) => setField('city_id', v)}
+          />
 
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.events.description')}</span>
@@ -1881,8 +1996,9 @@ function EventsSection() {
 // Guides
 // ============================================================================
 
-const emptyGuide = () => ({
+const emptyGuide = (cityId = '') => ({
   id: null,
+  city_id: cityId,
   title: '',
   body: '',
   source_url: '',
@@ -1893,6 +2009,7 @@ const emptyGuide = () => ({
 function formFromGuide(g) {
   return {
     id: g.id,
+    city_id: g.city_id ?? '',
     title: g.title ?? '',
     body: g.body ?? '',
     source_url: g.source_url ?? '',
@@ -1901,10 +2018,10 @@ function formFromGuide(g) {
   }
 }
 
-function GuidesSection() {
+function GuidesSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('guides')
-  const [form, setForm] = useState(emptyGuide)
+  const [form, setForm] = useState(() => emptyGuide(sec.cityId))
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
 
@@ -1915,7 +2032,7 @@ function GuidesSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyGuide())
+    setForm(emptyGuide(sec.cityId))
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -1939,6 +2056,7 @@ function GuidesSection() {
       return
     }
     const payload = {
+      city_id: form.city_id,
       title,
       body: form.body.trim() || null,
       source_url: form.source_url.trim() || null,
@@ -1982,6 +2100,12 @@ function GuidesSection() {
               required
             />
           </label>
+
+          <CountryCityFields
+            geo={geo}
+            cityId={form.city_id}
+            onCityChange={(v) => setField('city_id', v)}
+          />
 
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.guides.body')}</span>
@@ -2099,9 +2223,10 @@ function toNum(value) {
   return Number.isFinite(n) ? n : null
 }
 
-function formFromMarket(row) {
+function formFromMarket(row, defaultCityId = '') {
   return {
     id: row?.id ?? null,
+    city_id: row?.city_id ?? defaultCityId,
     name: row?.name ?? '',
     image_url: row?.image_url ?? '',
     hours: row?.hours ?? '',
@@ -2112,7 +2237,7 @@ function formFromMarket(row) {
   }
 }
 
-function MarketScheduleSection() {
+function MarketScheduleSection({ geo }) {
   const { t } = useTranslation()
   const { cityId } = useApp()
   const [state, setState] = useState({ status: 'loading', rows: [] })
@@ -2191,6 +2316,7 @@ function MarketScheduleSection() {
                   dow={dow}
                   row={row}
                   cityId={cityId}
+                  geo={geo}
                   onSaved={reload}
                   onDeleted={reload}
                 />
@@ -2202,6 +2328,7 @@ function MarketScheduleSection() {
                   dow={dow}
                   row={null}
                   cityId={cityId}
+                  geo={geo}
                   onSaved={() => onDraftSaved(draft.key)}
                   onDeleted={() => removeDraft(draft.key)}
                 />
@@ -2217,17 +2344,18 @@ function MarketScheduleSection() {
 // One market: editable card with its own save / delete / translations. `row` is
 // null for a not-yet-saved market the owner just added; saving inserts it, and
 // `onSaved` lets the parent swap the blank card for the real (reloaded) row.
-function MarketCard({ dow, row, cityId, onSaved, onDeleted }) {
+function MarketCard({ dow, row, cityId, geo, onSaved, onDeleted }) {
   const { t } = useTranslation()
-  const [form, setForm] = useState(() => formFromMarket(row))
+  // Existing rows carry their own city_id; a new draft defaults to the active city.
+  const [form, setForm] = useState(() => formFromMarket(row, cityId))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   // Re-sync the card when its underlying row changes (e.g. after a reload).
   useEffect(() => {
-    setForm(formFromMarket(row))
-  }, [row])
+    setForm(formFromMarket(row, cityId))
+  }, [row, cityId])
 
   const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }))
 
@@ -2239,8 +2367,8 @@ function MarketCard({ dow, row, cityId, onSaved, onDeleted }) {
       setError(t('admin.marketSchedule.nameRequired'))
       return
     }
-    if (!cityId) {
-      setError(t('admin.form.error'))
+    if (!form.city_id) {
+      setError(t('admin.form.cityRequired'))
       return
     }
     setSaving(true)
@@ -2250,7 +2378,7 @@ function MarketCard({ dow, row, cityId, onSaved, onDeleted }) {
       await saveMarketScheduleRow({
         // Keep the id on update so translations stay attached to the same row.
         ...(form.id ? { id: form.id } : {}),
-        city_id: cityId,
+        city_id: form.city_id,
         day_of_week: dow,
         name,
         image_url: form.image_url.trim() || null,
@@ -2311,6 +2439,12 @@ function MarketCard({ dow, row, cityId, onSaved, onDeleted }) {
             placeholder={t('admin.marketSchedule.namePlaceholder')}
           />
         </label>
+
+        <CountryCityFields
+          geo={geo}
+          cityId={form.city_id}
+          onCityChange={(v) => setField('city_id', v)}
+        />
 
         <PhotoField value={form.image_url} onChange={(v) => setField('image_url', v)} />
 

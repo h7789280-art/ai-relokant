@@ -396,6 +396,23 @@ export async function fetchCity(cityId) {
   return data
 }
 
+/**
+ * All cities across every country, ordered for the admin scoping selectors
+ * (Stage A). Includes inactive ("(soon)") cities: the admin can stage content
+ * for a city before it launches, so — unlike the welcome screen — nothing is
+ * filtered by is_active here. Cities are public reference data (readable by
+ * anon), same as fetchCities.
+ */
+export async function fetchAllCities() {
+  const { data, error } = await supabase
+    .from('cities')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
 /** Cities for a country, ordered for the welcome-screen selector. */
 export async function fetchCities(countryId) {
   if (!countryId) return []

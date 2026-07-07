@@ -10,6 +10,10 @@
     "askPlaceholder": "Спроси CityMate…",
     "notifications": "Уведомления",
     "changeCity": "Сменить город",
+    "cityPicker": {
+      "title": "Выберите город",
+      "subtitle": "Города вашей текущей страны."
+    },
     "empty": "Пока пусто.",
     "weather": {
       "title": "Погода",
@@ -385,6 +389,10 @@
       "savedEdit": "Изменения места «{{name}}» сохранены.",
       "nameRequired": "Введите название.",
       "titleRequired": "Введите заголовок.",
+      "cityRequired": "Выберите страну и город.",
+      "country": "Страна",
+      "city": "Город",
+      "soon": "(скоро)",
       "verifiedAt": "Дата проверки"
     },
     "list": {
@@ -462,6 +470,7 @@
   "profile": {
     "settingsTitle": "Настройки",
     "language": "Язык интерфейса",
+    "country": "Страна",
     "city": "Город",
     "soon": "(скоро)"
   },

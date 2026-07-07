@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Building2, ChevronRight, LogOut, Mail, UserPlus, ShieldCheck } from 'lucide-react'
+import { Building2, ChevronRight, Globe, LogOut, Mail, UserPlus, ShieldCheck } from 'lucide-react'
 import i18n, { SUPPORTED_LANGUAGES } from '../i18n/index.js'
-import { fetchCities } from '../lib/content.js'
+import { fetchCountries, fetchCities } from '../lib/content.js'
 import { useApp } from '../context/appContext.js'
 import { useAuth } from '../context/authContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
@@ -19,15 +19,46 @@ export default function Profile() {
   const { isAdmin } = useIsAdmin()
   const { selection, confirmSelection } = useApp()
 
-  // Cities of the currently selected country, for the city selector. The active
-  // (selectable) ones are chosen; inactive ones show "(soon)" and are disabled.
+  // Country switching (Stage A). The country the selector shows is local state so
+  // it can lead the persisted selection while cities load; it follows `selection`
+  // whenever that changes elsewhere. Only ACTIVE countries are offered.
+  const [countries, setCountries] = useState([])
+  const [countryId, setCountryId] = useState(selection?.countryId ?? '')
+  // Cities of the shown country. Active ones are selectable; inactive show
+  // "(soon)" and are disabled — same rule as the welcome screen.
   const [cities, setCities] = useState([])
+  // Set when the user picks a NEW country: once that country's cities load we
+  // auto-switch to its first active city (a country change implies a city change,
+  // §5 — content is city-scoped). Avoids auto-switching on the initial load.
+  const pendingCitySwitch = useRef(false)
+
   useEffect(() => {
-    if (!selection?.countryId) return
     let active = true
-    fetchCities(selection.countryId)
+    fetchCountries()
+      .then((rows) => active && setCountries(rows))
+      .catch(() => active && setCountries([]))
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // Follow the persisted selection's country (e.g. after a city switch elsewhere).
+  useEffect(() => {
+    if (selection?.countryId) setCountryId(selection.countryId)
+  }, [selection?.countryId])
+
+  useEffect(() => {
+    if (!countryId) return
+    let active = true
+    fetchCities(countryId)
       .then((rows) => {
-        if (active) setCities(rows)
+        if (!active) return
+        setCities(rows)
+        if (pendingCitySwitch.current) {
+          pendingCitySwitch.current = false
+          const firstActive = rows.find((c) => c.is_active)
+          if (firstActive) applySelection(countryId, firstActive)
+        }
       })
       .catch(() => {
         if (active) setCities([])
@@ -35,33 +66,50 @@ export default function Profile() {
     return () => {
       active = false
     }
-  }, [selection?.countryId])
+    // applySelection is stable enough (reads countries/confirmSelection); deps kept
+    // minimal so this only re-runs on a country change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryId])
 
   function handleLanguageChange(event) {
     i18n.changeLanguage(event.target.value)
   }
 
-  // Switch the active city. We rebuild the country row from the persisted
-  // selection (confirmSelection stores names/ids, not full rows) and keep the
-  // current language. This re-scopes every content read to the new city_id.
-  function handleCityChange(event) {
-    const city = cities.find((c) => c.id === event.target.value)
-    if (!city || !city.is_active || !selection) return
+  // Re-scope the app to (country, city): rebuild the full country row from the
+  // loaded countries list (confirmSelection stores ids/names, not full rows) and
+  // keep the current language. Hard country boundary stays intact — content is
+  // scoped by the new city_id (§5).
+  function applySelection(cId, city) {
+    const country = countries.find((c) => c.id === cId)
+    if (!country || !city) return
     confirmSelection({
-      country: {
-        id: selection.countryId,
-        code: selection.countryCode,
-        name: selection.countryName,
-      },
+      country: { id: country.id, code: country.code, name: country.name },
       city,
       lang: i18n.resolvedLanguage,
     })
   }
 
+  // Changing COUNTRY: show it immediately and, once its cities load, switch to
+  // its first active city (see pendingCitySwitch).
+  function handleCountryChange(event) {
+    const id = event.target.value
+    if (!id || id === countryId) return
+    pendingCitySwitch.current = true
+    setCountryId(id)
+  }
+
+  // Changing CITY within the shown country.
+  function handleCityChange(event) {
+    const city = cities.find((c) => c.id === event.target.value)
+    if (!city || !city.is_active) return
+    applySelection(countryId, city)
+  }
+
   const nativeName = (code) =>
     i18n.getResource(code, 'translation', 'languageName') || code
 
-  // Keep the <select> controlled even before the city list has loaded.
+  // Keep the <select>s controlled even before their lists have loaded.
+  const countryValue = countries.some((c) => c.id === countryId) ? countryId : ''
   const cityValue = cities.some((c) => c.id === selection?.cityId)
     ? selection.cityId
     : ''
@@ -133,8 +181,33 @@ export default function Profile() {
             <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
           </label>
 
+          {/* Country */}
+          <label className="welcome__field">
+            <span className="welcome__field-icon" aria-hidden="true">
+              <Globe size={22} strokeWidth={1.75} />
+            </span>
+            <span className="welcome__field-body">
+              <span className="welcome__label">{t('profile.country')}</span>
+              <select
+                className="welcome__select"
+                value={countryValue}
+                onChange={handleCountryChange}
+                aria-label={t('profile.country')}
+              >
+                {countries
+                  .filter((c) => c.is_active)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
+            </span>
+            <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
+          </label>
+
           {/* City */}
-          {selection?.countryId && (
+          {countryId && (
             <label className="welcome__field">
               <span className="welcome__field-icon" aria-hidden="true">
                 <Building2 size={22} strokeWidth={1.75} />

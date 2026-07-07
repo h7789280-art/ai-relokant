@@ -20,6 +20,10 @@
     "askPlaceholder": "Ask CityMate…",
     "notifications": "Notifications",
     "changeCity": "Change city",
+    "cityPicker": {
+      "title": "Choose city",
+      "subtitle": "Cities in your current country."
+    },
     "empty": "Nothing here yet.",
     "weather": {
       "title": "Weather",
@@ -395,6 +399,10 @@
       "savedEdit": "Changes to “{{name}}” saved.",
       "nameRequired": "Please enter a name.",
       "titleRequired": "Please enter a title.",
+      "cityRequired": "Please choose a country and city.",
+      "country": "Country",
+      "city": "City",
+      "soon": "(soon)",
       "verifiedAt": "Last checked"
     },
     "list": {
@@ -472,6 +480,7 @@
   "profile": {
     "settingsTitle": "Settings",
     "language": "Interface language",
+    "country": "Country",
     "city": "City",
     "soon": "(soon)"
   },

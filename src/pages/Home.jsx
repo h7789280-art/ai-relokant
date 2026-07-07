@@ -37,6 +37,7 @@ import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
 import CurrencyPicker from '../components/CurrencyPicker.jsx'
+import CityPicker from '../components/CityPicker.jsx'
 import Flag from '../components/Flag.jsx'
 import WeatherBackground from '../components/WeatherBackground.jsx'
 import i18n from '../i18n/index.js'
@@ -108,7 +109,26 @@ export default function Home() {
   const { t, i18n: i18nInstance } = useTranslation()
   const lang = i18nInstance.language
   const navigate = useNavigate()
-  const { selection, cityId } = useApp()
+  const { selection, cityId, confirmSelection } = useApp()
+
+  // City switcher sheet (Stage A). The header city button opens it; picking a
+  // city of the CURRENT country re-scopes the whole app (same mechanism as
+  // onboarding, minus the country/language change). Country switching stays in
+  // the profile — not offered here.
+  const [cityPickerOpen, setCityPickerOpen] = useState(false)
+  function onPickCity(city) {
+    setCityPickerOpen(false)
+    if (!selection || city.id === cityId) return
+    confirmSelection({
+      country: {
+        id: selection.countryId,
+        code: selection.countryCode,
+        name: selection.countryName,
+      },
+      city,
+      lang: i18n.resolvedLanguage,
+    })
+  }
 
   // --- weather + water (Open-Meteo, keyed off the city's coordinates) --------
   const [weather, setWeather] = useState({ status: 'loading', data: null, sea: null })
@@ -207,7 +227,7 @@ export default function Home() {
               <button
                 type="button"
                 className="home__city"
-                onClick={() => navigate('/profile')}
+                onClick={() => setCityPickerOpen(true)}
                 aria-label={t('home.changeCity')}
               >
                 {selection.cityName}
@@ -426,6 +446,14 @@ export default function Home() {
         selected={currencies}
         onChange={setCurrencies}
         onClose={() => setPickerOpen(false)}
+      />
+
+      <CityPicker
+        open={cityPickerOpen}
+        countryId={selection?.countryId}
+        currentCityId={cityId}
+        onSelect={onPickCity}
+        onClose={() => setCityPickerOpen(false)}
       />
     </main>
   )
