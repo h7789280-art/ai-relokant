@@ -1009,7 +1009,14 @@ button {
   white-space: nowrap;
 }
 
-/* Horizontal rail — bleeds to the card edges so cards can scroll past them.
+/* Horizontal rail — bleeds to the RIGHT card edge only, so the last card peeks
+   past the edge as a "scroll me" hint, while the FIRST card stays flush with the
+   section header (and with the news / markets rails). We must NOT use the
+   symmetric negative-margin + padding trick on the left: once the flex content
+   overflows, Chrome drops a scroll container's START padding, so the first card
+   would jump ~space-4 left of the header (afisha "falling out" of the shared left
+   edge). Leaving the left at 0/0 makes the first card sit at the section's
+   content box in BOTH the overflowing and the fits-on-screen case.
    overflow-x:auto silently forces the y-axis to clip too (see .home__chips), so
    the BLOCK padding must reserve real room top & bottom INSIDE the clip region —
    otherwise the card's bottom (photo shadow, title, meta) gets sliced by the
@@ -1021,8 +1028,8 @@ button {
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  margin: 0 calc(-1 * var(--space-4));
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  margin: 0 calc(-1 * var(--space-4)) 0 0;
+  padding: var(--space-2) var(--space-4) var(--space-3) 0;
 }
 
 .feed__rail::-webkit-scrollbar {
