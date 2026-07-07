@@ -105,6 +105,115 @@ export function turkeyDayOfWeek() {
   return jsDay === 0 ? 7 : jsDay // → 1 = Monday … 7 = Sunday
 }
 
+// ---- Afisha date filter (Events screen, ribbon next to the city filter) ----
+// The date filter is computed here, in Turkey time (UTC+3), so its period edges
+// line up with the not-past cutoff used everywhere else in the afisha. The result
+// is a pair of absolute instants {from, to} passed straight into the queries /
+// RPC — the DB does the actual narrowing.
+
+/** Start (00:00:00.000) of the given Turkey calendar day, as a UTC-instant ISO. */
+function turkeyStartOfDayISO(y, m, d) {
+  return new Date(Date.UTC(y, m, d) - TURKEY_OFFSET_MS).toISOString()
+}
+
+/** End (23:59:59.999) of the given Turkey calendar day, as a UTC-instant ISO. */
+function turkeyEndOfDayISO(y, m, d) {
+  return new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - TURKEY_OFFSET_MS).toISOString()
+}
+
+/** Today's Turkey calendar parts + ISO weekday (1 = Mon … 7 = Sun). */
+function turkeyTodayParts() {
+  const nowTurkey = new Date(Date.now() + TURKEY_OFFSET_MS)
+  const jsDay = nowTurkey.getUTCDay()
+  return {
+    y: nowTurkey.getUTCFullYear(),
+    m: nowTurkey.getUTCMonth(),
+    d: nowTurkey.getUTCDate(),
+    dow: jsDay === 0 ? 7 : jsDay,
+  }
+}
+
+/** Add `days` to a Turkey Y-M-D, normalising month/year rollover. */
+function ymdPlusDays(y, m, d, days) {
+  const t = new Date(Date.UTC(y, m, d + days))
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() }
+}
+
+/** The later of two ISO instants (used to clamp a range's lower bound). */
+function laterISO(a, b) {
+  return a > b ? a : b
+}
+
+/** Parse a `<input type="date">` value ("YYYY-MM-DD") into {y, m, d} or null. */
+function parseDateInput(value) {
+  if (!value) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return null
+  return { y: Number(m[1]), m: Number(m[2]) - 1, d: Number(m[3]) }
+}
+
+/**
+ * Turn a date-filter preset (+ optional custom bounds) into an absolute instant
+ * range {from, to} for the afisha queries. All maths is in Turkey time (UTC+3),
+ * mirroring the not-past cutoff so the period edges never drift a few hours.
+ *
+ * `from` is always clamped to the start of today in Turkey — a date filter never
+ * reveals past events, even if the picked range lies (partly) in the past. `to`
+ * may be null (open-ended custom range). Returns null when nothing is filtered
+ * ("All dates", or a "custom" preset with neither bound picked) — callers treat
+ * null as "no date filter" (undated events stay visible, as before).
+ *
+ * @param {('all'|'today'|'weekend'|'week'|'month'|'custom')} preset
+ * @param {string} [customFrom]  "YYYY-MM-DD" (only for the 'custom' preset)
+ * @param {string} [customTo]    "YYYY-MM-DD" (only for the 'custom' preset)
+ * @returns {{from: string, to: (string|null)}|null}
+ */
+export function computeDateRange(preset, customFrom = '', customTo = '') {
+  const { y, m, d, dow } = turkeyTodayParts()
+  const todayStart = turkeyStartOfDayISO(y, m, d)
+
+  switch (preset) {
+    case 'today':
+      return { from: todayStart, to: turkeyEndOfDayISO(y, m, d) }
+
+    case 'weekend': {
+      // Saturday (6) and Sunday (7) of the current Mon-started week. When today is
+      // already the weekend, the clamp below keeps the lower bound at today.
+      const sat = ymdPlusDays(y, m, d, 6 - dow)
+      const sun = ymdPlusDays(y, m, d, 7 - dow)
+      return {
+        from: laterISO(turkeyStartOfDayISO(sat.y, sat.m, sat.d), todayStart),
+        to: turkeyEndOfDayISO(sun.y, sun.m, sun.d),
+      }
+    }
+
+    case 'week': {
+      // From today to the end of this week (Sunday, ISO weekday 7).
+      const sun = ymdPlusDays(y, m, d, 7 - dow)
+      return { from: todayStart, to: turkeyEndOfDayISO(sun.y, sun.m, sun.d) }
+    }
+
+    case 'month': {
+      // Day 0 of next month = last day of this month.
+      const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
+      return { from: todayStart, to: turkeyEndOfDayISO(y, m, lastDay) }
+    }
+
+    case 'custom': {
+      const from = parseDateInput(customFrom)
+      const to = parseDateInput(customTo)
+      if (!from && !to) return null // nothing picked → no filter
+      return {
+        from: from ? laterISO(turkeyStartOfDayISO(from.y, from.m, from.d), todayStart) : todayStart,
+        to: to ? turkeyEndOfDayISO(to.y, to.m, to.d) : null,
+      }
+    }
+
+    default:
+      return null // 'all' — no date filter
+  }
+}
+
 /**
  * Approved events that PHYSICALLY TAKE PLACE in a given city and are NOT in the
  * past — the single-city afisha filter (Events screen, when the user narrows the
@@ -128,9 +237,11 @@ export function turkeyDayOfWeek() {
  * (purgePastEvents in src/lib/admin.js) — this only controls visibility.
  *
  * @param {string} cityId  venue city id (required)
- * @param {{ columns?: string, limit?: number, order?: {column: string, ascending?: boolean} }} [opts]
+ * @param {{ columns?: string, limit?: number, order?: {column: string, ascending?: boolean}, range?: {from: string, to: (string|null)} }} [opts]
+ *   range: optional afisha date filter (computeDateRange) — narrows to events
+ *   overlapping [from, to] and hides undated ones. Omit for the full agenda.
  */
-export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order } = {}) {
+export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order, range = null } = {}) {
   if (!cityId) return []
   const cutoff = turkeyStartOfTodayISO()
   let query = supabase
@@ -138,7 +249,22 @@ export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order 
     .select(columns)
     .eq('status', 'approved')
     .eq('venue_city_id', cityId)
-    .or(`starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`)
+  if (range) {
+    // Date filter active (afisha ribbon): keep only DATED events overlapping
+    // [from, to]. `from` is already clamped to today by computeDateRange, so the
+    // not-past rule holds; undated events are hidden while a filter is on.
+    // Overlap = event starts on/before the period end AND its end (or its start,
+    // when single-day) falls on/after the period start.
+    query = query.not('starts_at', 'is', null)
+    query = query.or(
+      `ends_at.gte.${range.from},and(ends_at.is.null,starts_at.gte.${range.from})`,
+    )
+    if (range.to) query = query.lte('starts_at', range.to)
+  } else {
+    // No date filter: keep future/ongoing rows plus undated ("date to be
+    // announced") ones — the original behaviour.
+    query = query.or(`starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`)
+  }
   if (order) {
     query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })
   }
@@ -171,14 +297,22 @@ export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order 
  * to approved-only inside the function.
  *
  * @param {string} cityId  active city id (required)
- * @param {{ limit?: number }} [opts]
+ * @param {{ limit?: number, range?: {from: string, to: (string|null)} }} [opts]
+ *   range: optional afisha date filter (computeDateRange). Its bounds go to the
+ *   RPC as p_from / p_to, which narrows to events overlapping [from, to] and
+ *   hides undated ones — the proximity/date ordering is untouched. Omit (or pass
+ *   a null range, e.g. the Home rail) for the full regional feed.
  * @returns {Promise<Array>} events ordered by proximity then date (throws on error)
  */
-export async function fetchRegionalEvents(cityId, { limit } = {}) {
+export async function fetchRegionalEvents(cityId, { limit, range = null } = {}) {
   if (!cityId) return []
   // The function already filters (approved / not-past / same country) and orders
-  // (proximity, then date) — we only cap the row count. Order is preserved.
-  let query = supabase.rpc('events_by_country_proximity', { p_city_id: cityId })
+  // (proximity, then date) — we only add the optional date window and cap the row
+  // count. Order is preserved. Absent p_from/p_to default to null server-side.
+  const params = { p_city_id: cityId }
+  if (range?.from) params.p_from = range.from
+  if (range?.to) params.p_to = range.to
+  let query = supabase.rpc('events_by_country_proximity', params)
   if (limit) query = query.limit(limit)
   const { data, error } = await query
   if (error) throw error

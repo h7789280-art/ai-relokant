@@ -23,7 +23,13 @@ import {
   Check,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchRegionalEvents, fetchUpcomingEvents, fetchCities, withTranslations } from '../lib/content.js'
+import {
+  fetchRegionalEvents,
+  fetchUpcomingEvents,
+  fetchCities,
+  withTranslations,
+  computeDateRange,
+} from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
 import { formatEventPrice } from '../lib/eventPrice.js'
 import i18n from '../i18n/index.js'
@@ -83,6 +89,9 @@ export default function Events() {
 
   // null → REGIONAL view (whole country by proximity); a city id → that city only.
   const [filterCityId, setFilterCityId] = useState(null)
+  // Date filter (ribbon next to the city one). preset 'all' = no narrowing; the
+  // custom range keeps its two <input type="date"> values ("YYYY-MM-DD" or '').
+  const [dateFilter, setDateFilter] = useState({ preset: 'all', from: '', to: '' })
   const [state, setState] = useState({ status: 'loading', rows: [] })
 
   // Cities of the current country for the filter ribbon (active only — mirrors
@@ -106,9 +115,12 @@ export default function Events() {
   useEffect(() => {
     if (!cityId) return
     let active = true
+    // Turn the ribbon selection into an absolute {from, to} window (Turkey time;
+    // null = no date filter). Computed here so it uses a fresh "now" each load.
+    const range = computeDateRange(dateFilter.preset, dateFilter.from, dateFilter.to)
     const load = filterCityId
-      ? fetchUpcomingEvents(filterCityId, CITY_OPTS)
-      : fetchRegionalEvents(cityId)
+      ? fetchUpcomingEvents(filterCityId, { ...CITY_OPTS, range })
+      : fetchRegionalEvents(cityId, { range })
     // No synchronous "loading" reset here (keeps the previous rows briefly while
     // re-fetching, matching Home's feed hook) — the resolve below swaps them in.
     load
@@ -118,7 +130,7 @@ export default function Events() {
     return () => {
       active = false
     }
-  }, [cityId, filterCityId, lang])
+  }, [cityId, filterCityId, lang, dateFilter])
 
   const regional = !filterCityId
 
@@ -133,11 +145,14 @@ export default function Events() {
         <p className="catalog__subtitle">{t('events.subtitle')}</p>
       </header>
 
-      <CityFilter
-        cities={cities}
-        value={filterCityId}
-        onChange={setFilterCityId}
-      />
+      <div className="afisha-filters">
+        <CityFilter
+          cities={cities}
+          value={filterCityId}
+          onChange={setFilterCityId}
+        />
+        <DateFilter value={dateFilter} onChange={setDateFilter} />
+      </div>
 
       {state.status === 'loading' ? (
         <div className="listing__group">
@@ -246,6 +261,121 @@ function FilterRow({ label, selected, onClick }) {
         </span>
       </button>
     </li>
+  )
+}
+
+// The quick presets, in menu order. 'all' first (the default / reset). 'custom'
+// isn't a row — it's the two date inputs below, and becomes active on their use.
+const DATE_PRESETS = ['all', 'today', 'weekend', 'week', 'month']
+
+// Short "12 Jul" from a date-input value ("YYYY-MM-DD"), in the UI language.
+function shortInputDate(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return value
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' }).format(d)
+}
+
+// What the ribbon toggle shows: a preset name, or for a custom range the picked
+// dates ("12–15 Jul" / open-ended variants).
+function dateFilterLabel(value, t) {
+  if (value.preset !== 'custom') return t(`events.dateFilter.${value.preset}`)
+  const from = value.from ? shortInputDate(value.from) : null
+  const to = value.to ? shortInputDate(value.to) : null
+  if (from && to) return `${from} – ${to}`
+  if (from) return t('events.dateFilter.fromLabel', { date: from })
+  if (to) return t('events.dateFilter.toLabel', { date: to })
+  return t('events.dateFilter.custom')
+}
+
+// Sibling of CityFilter (§4 — compact dropdown, not a page): presets + a custom
+// range. Picking a preset closes the menu; editing the date inputs switches to
+// the 'custom' preset and applies live (menu stays open). Closes on outside
+// click / Escape.
+function DateFilter({ value, onChange }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const active = value.preset !== 'all'
+  const label = dateFilterLabel(value, t)
+
+  const pickPreset = (preset) => {
+    onChange({ preset, from: '', to: '' })
+    setOpen(false)
+  }
+  const setCustom = (patch) => {
+    onChange({ preset: 'custom', from: value.from, to: value.to, ...patch })
+  }
+
+  return (
+    <div className="afisha-filter" ref={ref}>
+      <button
+        type="button"
+        className={`afisha-filter__toggle${active ? ' is-active' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={t('events.dateFilter.aria')}
+      >
+        <CalendarDays size={15} strokeWidth={2} aria-hidden="true" />
+        <span className="afisha-filter__label">{label}</span>
+        <ChevronDown size={15} strokeWidth={2} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="afisha-filter__menu afisha-filter__menu--date" role="dialog">
+          <ul className="afisha-filter__presets" role="listbox">
+            {DATE_PRESETS.map((p) => (
+              <FilterRow
+                key={p}
+                label={t(`events.dateFilter.${p}`)}
+                selected={value.preset === p}
+                onClick={() => pickPreset(p)}
+              />
+            ))}
+          </ul>
+          <div className="afisha-filter__custom">
+            <span className="afisha-filter__custom-title">
+              {t('events.dateFilter.custom')}
+            </span>
+            <label className="afisha-filter__field">
+              <span className="afisha-filter__field-label">{t('events.dateFilter.from')}</span>
+              <input
+                type="date"
+                className="afisha-filter__date-input"
+                value={value.from}
+                onChange={(e) => setCustom({ from: e.target.value })}
+              />
+            </label>
+            <label className="afisha-filter__field">
+              <span className="afisha-filter__field-label">{t('events.dateFilter.to')}</span>
+              <input
+                type="date"
+                className="afisha-filter__date-input"
+                value={value.to}
+                onChange={(e) => setCustom({ to: e.target.value })}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

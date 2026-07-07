@@ -1856,9 +1856,25 @@ a.place__detail-link {
    Compact dropdown that scopes the regional afisha to a single city. A pill
    toggle + an absolutely-positioned menu — deliberately small so it doesn't
    swell the header (§4). */
+/* Row that holds the city + date ribbons side by side. Wraps to a second line
+   on narrow screens so the header never swells (§4). */
+.afisha-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
 .afisha-filter {
   position: relative;
   align-self: flex-start;
+}
+
+/* The date ribbon shows its selection in the accent colour when narrowed, so an
+   active date filter reads at a glance without an extra badge. */
+.afisha-filter__toggle.is-active {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .afisha-filter__toggle {
@@ -1942,6 +1958,59 @@ a.place__detail-link {
   display: inline-flex;
   width: 15px;
   color: var(--color-accent);
+}
+
+/* Date-filter dropdown: presets list on top, a small custom-range block below. */
+.afisha-filter__menu--date {
+  right: 0;
+  left: auto;
+  min-width: 14rem;
+}
+
+.afisha-filter__presets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.afisha-filter__custom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.afisha-filter__custom-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.afisha-filter__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.afisha-filter__field-label {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.afisha-filter__date-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 9rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
 }
 
 .listing__groups {

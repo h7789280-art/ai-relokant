@@ -230,6 +230,19 @@
       "all": "All cities",
       "label": "City",
       "aria": "Filter events by city"
+    },
+    "dateFilter": {
+      "aria": "Filter events by date",
+      "all": "All dates",
+      "today": "Today",
+      "weekend": "Weekend",
+      "week": "This week",
+      "month": "This month",
+      "custom": "Pick dates",
+      "from": "From",
+      "to": "To",
+      "fromLabel": "From {{date}}",
+      "toLabel": "Until {{date}}"
     }
   },
   "news": {
