@@ -94,13 +94,15 @@ export async function deletePlace(id) {
 // Tables the admin moderation screen manages besides `places`.
 const ADMIN_CONTENT_TABLES = ['news', 'events', 'guides']
 
-// Multi-city content (Stage B): news / guides link to several cities of one
-// country through a join table, instead of a single city_id. Each entry is
-// { table: '<join table>', fk: '<parent id column>' }. Places / events stay
-// single-city. See supabase/news-guides-multi-city.sql.
+// Multi-city content: a row links to several cities of one country through a join
+// table, instead of a single city_id. Each entry is { table: '<join table>', fk:
+// '<parent id column>' }. News / guides (Stage B) and events (Stage C) are all
+// multi-city; places stay single-city. See supabase/news-guides-multi-city.sql
+// and supabase/events-multi-city.sql.
 const CONTENT_CITY_JOINS = {
   news: { table: 'news_cities', fk: 'news_id' },
   guides: { table: 'guide_cities', fk: 'guide_id' },
+  events: { table: 'event_cities', fk: 'event_id' },
 }
 
 function assertContentTable(table) {
@@ -122,10 +124,10 @@ export async function fetchAdminContent(table, cityId) {
   if (!cityId) return []
   const join = CONTENT_CITY_JOINS[table]
   if (join) {
-    // Multi-city (news / guides): list rows LINKED to the active city, but embed
-    // ALL of each row's city links so the moderation list can show every city an
-    // item is visible in. Two steps: the ids linked to the active city, then the
-    // rows with their full link set.
+    // Multi-city (news / guides / events): list rows LINKED to the active city,
+    // but embed ALL of each row's city links so the moderation list can show every
+    // city an item is visible in. Two steps: the ids linked to the active city,
+    // then the rows with their full link set.
     const { data: links, error: linkErr } = await supabase
       .from(join.table)
       .select(join.fk)
@@ -144,7 +146,8 @@ export async function fetchAdminContent(table, cityId) {
       return { ...rest, city_ids: (cityLinks ?? []).map((c) => c.city_id) }
     })
   }
-  // Single-city (events): filter directly on city_id, as before.
+  // Fallback for any future single-city moderated table (all current ones —
+  // news / events / guides — are multi-city and take the branch above).
   const { data, error } = await supabase
     .from(table)
     .select('*')
@@ -274,11 +277,23 @@ export async function purgePastEvents(cityId, { bufferDays = 7 } = {}) {
   const cutoffMs = Date.now() - bufferDays * 24 * 60 * 60 * 1000
   const cutoff = new Date(cutoffMs).toISOString()
 
-  // Candidates: events that STARTED before the buffer cutoff (city-scoped).
+  // Events visible in this city (Stage C multi-city: visibility is the
+  // event_cities link table, not the legacy city_id the admin no longer writes).
+  const { data: links, error: linkErr } = await supabase
+    .from('event_cities')
+    .select('event_id')
+    .eq('city_id', cityId)
+  if (linkErr) throw linkErr
+  const linkedIds = [...new Set((links ?? []).map((l) => l.event_id))]
+  if (linkedIds.length === 0) return 0
+
+  // Candidates: linked events that STARTED before the buffer cutoff. A past event
+  // is past in every city (same starts_at), so deleting the row — which cascades
+  // its links — is correct even for a multi-city event.
   const { data, error } = await supabase
     .from('events')
     .select('id, ends_at')
-    .eq('city_id', cityId)
+    .in('id', linkedIds)
     .lt('starts_at', cutoff)
   if (error) throw error
 

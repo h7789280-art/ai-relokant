@@ -9,10 +9,12 @@ import { supabase } from './supabase'
 // Content tables that are city-scoped AND moderated.
 export const CONTENT_TABLES = ['places', 'events', 'guides', 'news', 'ads']
 
-// Multi-city content (Stage B): one news item / guide can be shown in SEVERAL
-// cities of the same country via a link table, instead of a single city_id.
-// Each maps to its join table (foreign key `<table_singular>_id`, `city_id`).
-// Places / events stay single-city. See supabase/news-guides-multi-city.sql.
+// Multi-city content: a record can be shown in SEVERAL cities of the same country
+// via a link table, instead of a single city_id. Each maps to its join table
+// (foreign key `<table_singular>_id`, `city_id`). News / guides (Stage B) go
+// through fetchContent below; events (Stage C) have their own reader
+// (fetchUpcomingEvents) and join `event_cities` there. Places stay single-city.
+// See supabase/news-guides-multi-city.sql and supabase/events-multi-city.sql.
 const MULTI_CITY_JOINS = { news: 'news_cities', guides: 'guide_cities' }
 
 /**
@@ -110,6 +112,13 @@ export function turkeyDayOfWeek() {
  * (no starts_at) which have no date to be "past". "Today" is measured in Turkey
  * time (UTC+3), not the browser's, so events don't drop a few hours early/late.
  *
+ * Multi-city (Stage C): visibility is the set of linked cities in `event_cities`,
+ * not a single city_id. We inner-join on that link table and keep only events
+ * LINKED to the active city — (event_id, city_id) is unique so an event shows up
+ * at most once, no duplication. Country scoping is automatic: a Turkish event's
+ * links don't contain a UAE city, so Dubai never sees it. The scope stays CITY
+ * (only the active city); regional-by-proximity display is Stage C part 2.
+ *
  * Physical removal of long-past events happens separately with a buffer
  * (purgePastEvents in src/lib/admin.js) — this only controls visibility.
  *
@@ -119,9 +128,12 @@ export function turkeyDayOfWeek() {
 export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order } = {}) {
   if (!cityId) return []
   const cutoff = turkeyStartOfTodayISO()
-  let query = publicContentQuery('events', cityId, { columns }).or(
-    `starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`,
-  )
+  let query = supabase
+    .from('events')
+    .select(`${columns}, event_cities!inner(city_id)`)
+    .eq('status', 'approved')
+    .eq('event_cities.city_id', cityId)
+    .or(`starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`)
   if (order) {
     query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })
   }

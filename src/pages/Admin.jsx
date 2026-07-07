@@ -62,9 +62,10 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
 const TABS = ['places', 'news', 'events', 'guides', 'marketSchedule']
 
-// Content types shown in SEVERAL cities of one country (Stage B) — the form uses
-// a city-checkbox picker and writes a link table instead of a single city_id.
-const MULTI_CITY_TABLES = ['news', 'guides']
+// Content types shown in SEVERAL cities of one country — the form uses a
+// city-checkbox picker and writes a link table instead of a single city_id.
+// News / guides (Stage B) and events (Stage C).
+const MULTI_CITY_TABLES = ['news', 'guides', 'events']
 
 export default function Admin() {
   const { t } = useTranslation()
@@ -1675,9 +1676,12 @@ function NewsSection({ geo }) {
 // Events
 // ============================================================================
 
-const emptyEvent = (cityId = '') => ({
+// Multi-city (Stage C): country + set of checked cities, same as news / guides —
+// no single city_id (visibility is the event_cities link table).
+const emptyEvent = () => ({
   id: null,
-  city_id: cityId,
+  country_id: '',
+  city_ids: [],
   title: '',
   description: '',
   starts_at: '',
@@ -1705,7 +1709,8 @@ const numToInput = (v) => (v === null || v === undefined ? '' : String(v))
 function formFromEvent(ev) {
   return {
     id: ev.id,
-    city_id: ev.city_id ?? '',
+    country_id: '', // derived from the linked cities by the caller (needs geo)
+    city_ids: Array.isArray(ev.city_ids) ? ev.city_ids : [],
     title: ev.title ?? '',
     description: ev.description ?? '',
     starts_at: toDateTimeLocal(ev.starts_at),
@@ -1729,18 +1734,21 @@ function formFromEvent(ev) {
 function EventsSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('events')
-  const [form, setForm] = useState(() => emptyEvent(sec.cityId))
+  const [form, setForm] = useState(() => emptyEvent())
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
+  useDefaultCity(geo, sec.cityId, form, setForm)
 
   const startEdit = (row) => {
     sec.setError('')
     sec.setSuccess('')
-    setForm(formFromEvent(row))
+    const cityIds = Array.isArray(row.city_ids) ? row.city_ids : []
+    const firstCity = geo.cities.find((c) => c.id === cityIds[0])
+    setForm({ ...formFromEvent(row), country_id: firstCity?.country_id ?? '', city_ids: cityIds })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyEvent(sec.cityId))
+    setForm(emptyEvent())
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -1793,7 +1801,8 @@ function EventsSection({ geo }) {
     }
     const type = form.price_type || null
     const payload = {
-      city_id: form.city_id,
+      // No city_id — visibility is the set of linked cities (Stage C), written by
+      // sec.save via cityIds below.
       title,
       description: form.description.trim() || null,
       starts_at: inputToISO(form.starts_at),
@@ -1813,7 +1822,13 @@ function EventsSection({ geo }) {
       price_deposit: type === 'deposit' ? toNum(form.price_deposit) : null,
       price_currency: form.price_currency || 'TRY',
     }
-    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    const saved = await sec.save({
+      payload,
+      cityIds: form.city_ids,
+      isEdit: editing,
+      id: form.id,
+      name: title,
+    })
     if (!saved) return
     if (translateAfter && !editing && saved.id) {
       setForm((f) => ({ ...f, id: saved.id }))
@@ -1854,10 +1869,13 @@ function EventsSection({ geo }) {
             />
           </label>
 
-          <CountryCityFields
+          <CountryCitiesField
             geo={geo}
-            cityId={form.city_id}
-            onCityChange={(v) => setField('city_id', v)}
+            countryId={form.country_id}
+            cityIds={form.city_ids}
+            onChange={({ countryId, cityIds }) =>
+              setForm((f) => ({ ...f, country_id: countryId, city_ids: cityIds }))
+            }
           />
 
           <label className="admin-field">
@@ -2102,7 +2120,11 @@ function EventsSection({ geo }) {
         <ModerationList
           state={sec.state}
           titleOf={(r) => r.title}
-          metaOf={(r) => [fmtMeta(r), r.location]}
+          metaOf={(r) => [
+            t('admin.form.citiesIn', { cities: cityNamesOf(geo, r.city_ids) }),
+            fmtMeta(r),
+            r.location,
+          ]}
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}
