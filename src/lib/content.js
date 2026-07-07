@@ -144,16 +144,22 @@ export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order 
 }
 
 /**
- * REGIONAL afisha (Stage C part 2): approved, not-past events of the active
- * city's whole COUNTRY, ordered by PROXIMITY to the active city (own city first,
- * then nearer → farther), and within the same proximity by soonest date.
+ * REGIONAL afisha (Stage C): approved, not-past events SHOWN in the active city
+ * (the city is among the event's "where-shown" checkboxes), ordered by PROXIMITY
+ * of each event's VENUE city to the active city (own-city venue first, then nearer
+ * → farther), and within the same proximity by soonest date.
  *
- * The proximity sort — including the min-distance of a multi-city event to the
- * user's city and the not-past cutoff (Turkey time) — is computed SERVER-SIDE by
- * the Postgres function events_by_country_proximity (supabase/events-regional.sql),
- * so the ordering is consistent and phones don't crunch haversine. The hard
- * country boundary (§5) lives there too: only same-country events come back, so
- * Dubai never sees a Turkish event. Each event appears once (no duplication).
+ * Stage C part 3 split "where it happens" (events.venue_city_id) from "where it's
+ * shown" (event_cities checkboxes): visibility is by the checkboxes, proximity is
+ * by the venue — so a concert in Ankara shown in Alanya sorts FAR, not at 0.
+ *
+ * The whole sort — venue distance, the not-past cutoff (Turkey time) and the
+ * visibility/country filter — is computed SERVER-SIDE by the Postgres function
+ * events_by_country_proximity (supabase/events-venue-city.sql), so the ordering is
+ * consistent and phones don't crunch haversine. The hard country boundary (§5)
+ * lives there too: an event comes back only when the user's OWN city is one of its
+ * checkboxes, and a city is in exactly one country — so Dubai never sees a Turkish
+ * event. Each event appears once (no duplication).
  *
  * This is the DEFAULT afisha view (Home rail + Events screen "All cities"). The
  * per-city view still uses fetchUpcomingEvents (city-scoped). RLS gates the rows

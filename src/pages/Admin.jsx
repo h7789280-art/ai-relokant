@@ -1682,6 +1682,10 @@ const emptyEvent = () => ({
   id: null,
   country_id: '',
   city_ids: [],
+  // Venue city — the ONE city where the event physically happens (proximity
+  // sort). Separate from city_ids (the where-shown checkboxes). See
+  // supabase/events-venue-city.sql.
+  venue_city_id: '',
   title: '',
   description: '',
   starts_at: '',
@@ -1711,6 +1715,7 @@ function formFromEvent(ev) {
     id: ev.id,
     country_id: '', // derived from the linked cities by the caller (needs geo)
     city_ids: Array.isArray(ev.city_ids) ? ev.city_ids : [],
+    venue_city_id: ev.venue_city_id ?? '',
     title: ev.title ?? '',
     description: ev.description ?? '',
     starts_at: toDateTimeLocal(ev.starts_at),
@@ -1790,6 +1795,13 @@ function EventsSection({ geo }) {
       sec.setError(t('admin.form.titleRequired'))
       return
     }
+    // Venue city (where the event physically happens) is required — it's what the
+    // regional afisha measures proximity to. Separate from the where-shown
+    // checkboxes (validated as cityIds by sec.save).
+    if (!form.venue_city_id) {
+      sec.setError(t('admin.events.venueRequired'))
+      return
+    }
     // Blank / non-numeric price inputs become null. Only the amounts that belong
     // to the chosen mode are kept — switching mode clears the others so stale
     // numbers never linger on the row.
@@ -1802,8 +1814,10 @@ function EventsSection({ geo }) {
     const type = form.price_type || null
     const payload = {
       // No city_id — visibility is the set of linked cities (Stage C), written by
-      // sec.save via cityIds below.
+      // sec.save via cityIds below. venue_city_id (the physical city) drives the
+      // regional proximity sort and is stored on the row itself.
       title,
+      venue_city_id: form.venue_city_id || null,
       description: form.description.trim() || null,
       starts_at: inputToISO(form.starts_at),
       gathering_at: inputToISO(form.gathering_at),
@@ -1874,9 +1888,41 @@ function EventsSection({ geo }) {
             countryId={form.country_id}
             cityIds={form.city_ids}
             onChange={({ countryId, cityIds }) =>
-              setForm((f) => ({ ...f, country_id: countryId, city_ids: cityIds }))
+              setForm((f) => ({
+                ...f,
+                country_id: countryId,
+                city_ids: cityIds,
+                // A venue belongs to its country — clear it when the country
+                // changes so it can't linger from the previous one.
+                venue_city_id: countryId === f.country_id ? f.venue_city_id : '',
+              }))
             }
           />
+
+          {/* Venue city — the ONE city where the event physically happens; drives
+              the regional proximity sort. Separate from the where-shown checkboxes
+              above (it is NOT auto-added to them). Scoped to the chosen country. */}
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.events.venueCity')}</span>
+            <select
+              className="admin-field__input"
+              value={form.venue_city_id}
+              onChange={(e) => setField('venue_city_id', e.target.value)}
+              disabled={!form.country_id}
+              required
+            >
+              <option value="">{t('admin.events.venuePlaceholder')}</option>
+              {geo.cities
+                .filter((c) => c.country_id === form.country_id)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.is_active ? '' : ` ${t('admin.form.soon')}`}
+                  </option>
+                ))}
+            </select>
+            <span className="admin-field__hint muted">{t('admin.events.venueCityHint')}</span>
+          </label>
 
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.events.description')}</span>
@@ -2121,6 +2167,11 @@ function EventsSection({ geo }) {
           state={sec.state}
           titleOf={(r) => r.title}
           metaOf={(r) => [
+            r.venue_city_id
+              ? t('admin.events.venueIn', {
+                  city: geo.cities.find((c) => c.id === r.venue_city_id)?.name ?? '—',
+                })
+              : null,
             t('admin.form.citiesIn', { cities: cityNamesOf(geo, r.city_ids) }),
             fmtMeta(r),
             r.location,
