@@ -203,7 +203,11 @@
     "title": "What's on",
     "subtitle": "Events in your city, by date",
     "empty": "No events yet.",
-    "undated": "Date to be announced"
+    "undated": "Date to be announced",
+    "when": "Date & time",
+    "location": "Location",
+    "link": "Event page",
+    "notFound": "Event not found."
   },
   "news": {
     "title": "City news",

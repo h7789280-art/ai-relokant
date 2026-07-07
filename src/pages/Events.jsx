@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, MapPin, Clock } from 'lucide-react'
+import { ArrowLeft, CalendarDays, MapPin, Clock, ChevronRight } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchUpcomingEvents, withTranslations } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
@@ -115,6 +115,7 @@ function renderGroups(rows, t) {
 }
 
 function EventCard({ event }) {
+  const navigate = useNavigate()
   const time = formatTime(event.starts_at)
   // Tap the location to open a route in maps (§4) — by coordinates when the event
   // has them, otherwise by its location text. Same helper as places / markets.
@@ -123,8 +124,24 @@ function EventCard({ event }) {
     longitude: event.longitude,
     address: event.location,
   })
+  // The whole card opens the event's full page (§4 screen 5). It's an <article>
+  // (not a <button>) so the location link can nest inside without invalid
+  // button-in-button markup; the link stops propagation so tapping it routes to
+  // maps instead of opening the page.
+  const open = () => navigate(`/events/${event.id}`)
   return (
-    <article className="event-card">
+    <article
+      className="event-card event-card--link"
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          open()
+        }
+      }}
+    >
       {event.image_url ? (
         <img className="event-card__photo" src={event.image_url} alt="" loading="lazy" />
       ) : (
@@ -148,6 +165,7 @@ function EventCard({ event }) {
                 href={route}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
               >
                 <MapPin size={14} aria-hidden="true" />
                 {event.location}
@@ -161,6 +179,7 @@ function EventCard({ event }) {
         </div>
         {event.description && <p className="event-card__desc">{event.description}</p>}
       </div>
+      <ChevronRight className="event-card__chevron" size={18} aria-hidden="true" />
     </article>
   )
 }

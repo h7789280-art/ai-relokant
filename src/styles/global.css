@@ -1886,11 +1886,31 @@ a.place__detail-link {
 /* --- Event card --- */
 .event-card {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
+}
+
+/* Whole card taps through to the event's full page (§4 screen 5). */
+.event-card--link {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.event-card--link:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.event-card--link:active {
+  transform: scale(0.995);
+}
+
+.event-card__chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-subtle);
 }
 
 .event-card__photo {

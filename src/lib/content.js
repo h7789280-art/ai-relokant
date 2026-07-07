@@ -334,6 +334,25 @@ export async function fetchNewsItem(newsId) {
 }
 
 /**
+ * A single approved event by id (for the event detail page, §4 screen 5). The
+ * approved filter is also enforced by RLS; kept explicit here. Unlike the feed
+ * (fetchUpcomingEvents) this does NOT hide past events — a shared/bookmarked
+ * link should still open even the day after, and physical cleanup of long-past
+ * rows happens separately (purgePastEvents). Returns null when not found.
+ */
+export async function fetchEvent(eventId) {
+  if (!eventId) return null
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
  * A single approved guide by id (for the "Documents & life" guide page).
  * Returns null when not found.
  */
