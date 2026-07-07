@@ -12,8 +12,9 @@ export const CONTENT_TABLES = ['places', 'events', 'guides', 'news', 'ads']
 // Multi-city content: a record can be shown in SEVERAL cities of the same country
 // via a link table, instead of a single city_id. Each maps to its join table
 // (foreign key `<table_singular>_id`, `city_id`). News / guides (Stage B) go
-// through fetchContent below; events (Stage C) have their own reader
-// (fetchUpcomingEvents) and join `event_cities` there. Places stay single-city.
+// through fetchContent below; events (Stage C) have their own readers —
+// fetchRegionalEvents (where-shown checkboxes + venue proximity) and
+// fetchUpcomingEvents (single-city filter by venue_city_id). Places stay single-city.
 // See supabase/news-guides-multi-city.sql and supabase/events-multi-city.sql.
 const MULTI_CITY_JOINS = { news: 'news_cities', guides: 'guide_cities' }
 
@@ -105,24 +106,28 @@ export function turkeyDayOfWeek() {
 }
 
 /**
- * Approved, city-scoped events that are NOT in the past — the public afisha feed
- * (Home rail + Events screen). An event is hidden the moment its date passes
- * (owner rule): we keep only rows whose start is today-or-later OR whose end is
- * today-or-later (so a multi-day event still running stays), plus undated rows
- * (no starts_at) which have no date to be "past". "Today" is measured in Turkey
- * time (UTC+3), not the browser's, so events don't drop a few hours early/late.
+ * Approved events that PHYSICALLY TAKE PLACE in a given city and are NOT in the
+ * past — the single-city afisha filter (Events screen, when the user narrows the
+ * ribbon to one city). An event is hidden the moment its date passes (owner rule):
+ * we keep only rows whose start is today-or-later OR whose end is today-or-later
+ * (so a multi-day event still running stays), plus undated rows (no starts_at)
+ * which have no date to be "past". "Today" is measured in Turkey time (UTC+3),
+ * not the browser's, so events don't drop a few hours early/late.
  *
- * Multi-city (Stage C): visibility is the set of linked cities in `event_cities`,
- * not a single city_id. We inner-join on that link table and keep only events
- * LINKED to the active city — (event_id, city_id) is unique so an event shows up
- * at most once, no duplication. Country scoping is automatic: a Turkish event's
- * links don't contain a UAE city, so Dubai never sees it. The scope stays CITY
- * (only the active city); regional-by-proximity display is Stage C part 2.
+ * VENUE, not where-shown (Stage C part 3): the single-city filter answers "what
+ * happens IN this city", so it filters by events.venue_city_id — NOT the
+ * event_cities where-shown checkboxes. Picking "Alanya" returns only events whose
+ * venue is Alanya; a concert in Ankara that is merely SHOWN in Alanya's regional
+ * feed does not appear here. (The default "All cities" regional view is the one
+ * that uses the where-shown checkboxes + venue proximity — see fetchRegionalEvents.)
+ *
+ * Country boundary (§5): the filter ribbon only offers cities of the active
+ * country, so venue_city_id = cityId can never cross into another country.
  *
  * Physical removal of long-past events happens separately with a buffer
  * (purgePastEvents in src/lib/admin.js) — this only controls visibility.
  *
- * @param {string} cityId  active city id (required)
+ * @param {string} cityId  venue city id (required)
  * @param {{ columns?: string, limit?: number, order?: {column: string, ascending?: boolean} }} [opts]
  */
 export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order } = {}) {
@@ -130,9 +135,9 @@ export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order 
   const cutoff = turkeyStartOfTodayISO()
   let query = supabase
     .from('events')
-    .select(`${columns}, event_cities!inner(city_id)`)
+    .select(columns)
     .eq('status', 'approved')
-    .eq('event_cities.city_id', cityId)
+    .eq('venue_city_id', cityId)
     .or(`starts_at.is.null,starts_at.gte.${cutoff},ends_at.gte.${cutoff}`)
   if (order) {
     query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })

@@ -3,7 +3,8 @@
 // to the active city (own city first, then nearer → farther) — the sort is done
 // server-side (fetchRegionalEvents → events_by_country_proximity). A compact
 // city-filter ribbon at the top can narrow the feed to a SINGLE city (then it's
-// the classic city-scoped, date-grouped agenda via fetchUpcomingEvents). Reached
+// a date-grouped agenda of events whose VENUE is that city — venue_city_id, not
+// where-shown checkboxes — via fetchUpcomingEvents). Reached
 // from Home ("What's on today → See all") and direct navigation. Each card shows
 // title, date/time, location, photo and a short description. Empty → a tidy
 // "nothing yet" placeholder. Only the afisha is regional; places / news stay
@@ -27,8 +28,9 @@ import { directionsUrl } from '../lib/maps.js'
 import { formatEventPrice } from '../lib/eventPrice.js'
 import i18n from '../i18n/index.js'
 
-// When a single city is picked, oldest-first by start date keeps the agenda
-// reading top-to-bottom; undated rows sink to the end (nullsFirst:false).
+// When a single city is picked, the feed is events held IN that city (by venue);
+// oldest-first by start date keeps the agenda reading top-to-bottom, and undated
+// rows sink to the end (nullsFirst:false). Proximity is irrelevant — one city.
 const CITY_OPTS = { order: { column: 'starts_at', ascending: true } }
 
 // Sentinel for "no day grouped yet" — distinct from every real key (a Y-M-D
@@ -98,8 +100,9 @@ export default function Events() {
     }
   }, [selection?.countryId])
 
-  // Load the feed: regional-by-proximity when no city is picked, else the classic
-  // city-scoped agenda. Both are approved-only and hide past events.
+  // Load the feed: regional-by-proximity when no city is picked, else the agenda
+  // of events held IN the picked city (by venue). Both are approved-only and hide
+  // past events.
   useEffect(() => {
     if (!cityId) return
     let active = true
