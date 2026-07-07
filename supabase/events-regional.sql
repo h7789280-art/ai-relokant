@@ -110,7 +110,12 @@ begin
         end
       ) asc nulls last,
       -- Within the same proximity, soonest first; undated last.
-      min(e.starts_at) asc nulls last;
+      min(e.starts_at) asc nulls last,
+      -- Deterministic tie-break: events at the same distance AND the same date
+      -- (e.g. several undated events, or events sharing a linked city) otherwise
+      -- come back in an unspecified, run-to-run-varying order. Break the tie by id
+      -- so the feed is stable across reloads. (id is the group key, always present.)
+      e.id asc;
 end;
 $$;
 
