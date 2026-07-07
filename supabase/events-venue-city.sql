@@ -76,17 +76,19 @@ update public.events
 -- ----------------------------------------------------------------------------
 -- events_by_country_proximity(p_city_id) — the regional afisha feed (REWRITTEN).
 --   Returns the approved, NOT-past events SHOWN in p_city_id (i.e. p_city_id is
---   among the event's where-shown checkboxes), one row per event, ordered by the
---   proximity of the event's VENUE city to p_city_id, then by soonest date.
+--   among the event's where-shown checkboxes), one row per event, ordered by
+--   soonest DATE first, then — within the same date — by the proximity of the
+--   event's VENUE city to p_city_id.
 --
 --   * VISIBILITY = p_city_id ∈ event_cities. This is also the hard country
 --     boundary (§5): only events the owner checked for the user's own city come
 --     back. (event_id, city_id) is unique, so the join yields at most one row per
 --     event — no duplication, no group by needed.
 --   * PROXIMITY = haversine from p_city_id to events.venue_city_id (the venue),
---     NOT the min over the where-shown checkboxes. A venue in the user's own city
---     is exactly 0 and leads; farther venues sort after; an event with no venue
---     (or a venue with no coordinates) yields NULL and sorts last (nulls last).
+--     NOT the min over the where-shown checkboxes. It is the SECONDARY sort key,
+--     breaking ties within the same date: a venue in the user's own city is
+--     exactly 0 and leads its date-group; farther venues sort after; an event with
+--     no venue (or a venue with no coordinates) yields NULL and sorts last.
 --   * "Not past" mirrors the client reader (src/lib/content.js): keep events whose
 --     start OR end is today-or-later, plus undated events. "Today" is the start of
 --     the day in Turkey wall-clock time (Europe/Istanbul, UTC+3), so the feed
@@ -131,12 +133,14 @@ begin
         or e.ends_at   >= cutoff
       )
     order by
-      -- Distance to the VENUE city: own-city venue = 0 and leads; farther venues
-      -- after; missing venue/coordinates → NULL sorts last.
-      public.haversine_km(me_lat, me_lon, vc.latitude, vc.longitude) asc nulls last,
-      -- Within the same proximity, soonest first; undated last.
+      -- PRIMARY key: soonest date first; undated events sort last. All events of
+      -- the same date group together (e.g. all of July 9 before any of July 10).
       e.starts_at asc nulls last,
-      -- Deterministic tie-break so equal-distance, equal-date events keep a stable
+      -- SECONDARY key: WITHIN the same date, closer venue first. Distance to the
+      -- VENUE city: own-city venue = 0 and leads; farther venues after; missing
+      -- venue/coordinates → NULL sorts last.
+      public.haversine_km(me_lat, me_lon, vc.latitude, vc.longitude) asc nulls last,
+      -- Deterministic tie-break so equal-date, equal-distance events keep a stable
       -- order across reloads (id is always present).
       e.id asc;
 end;
