@@ -68,7 +68,8 @@
       "title": "News today"
     },
     "markets": {
-      "title": "Markets today"
+      "title": "Markets today",
+      "none": "No market today."
     },
     "events": {
       "title": "What's on today"
@@ -307,7 +308,30 @@
       "places": "Places",
       "news": "News",
       "events": "Events",
-      "guides": "Guides"
+      "guides": "Guides",
+      "marketSchedule": "Market schedule"
+    },
+    "marketSchedule": {
+      "title": "Weekly market schedule",
+      "hint": "Set which district's market runs on each weekday. The “Markets today” block on the home screen shows the active day on its own. Leave a day off (e.g. Sunday) and it shows no market.",
+      "active": "Active",
+      "name": "District / market name",
+      "namePlaceholder": "e.g. Oba",
+      "hours": "Opening hours",
+      "hoursPlaceholder": "e.g. 08:00–18:00",
+      "address": "Address",
+      "latitude": "Latitude (optional)",
+      "longitude": "Longitude (optional)",
+      "nameRequired": "Enter a district / market name, or leave this day off.",
+      "days": {
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday",
+        "7": "Sunday"
+      }
     },
     "form": {
       "addTitle": "Add a place",

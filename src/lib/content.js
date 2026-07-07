@@ -68,6 +68,18 @@ function turkeyStartOfTodayISO() {
 }
 
 /**
+ * Today's weekday in Turkey time (UTC+3), ISO-8601: 1 = Monday … 7 = Sunday.
+ * Measured off Turkey wall-clock (not the browser) so the "today" market doesn't
+ * flip a few hours early/late for users in other timezones. Keep in sync with
+ * supabase/market-schedule.sql (day_of_week) and Admin.jsx (DAYS).
+ */
+export function turkeyDayOfWeek() {
+  const nowTurkey = new Date(Date.now() + TURKEY_OFFSET_MS)
+  const jsDay = nowTurkey.getUTCDay() // 0 = Sunday … 6 = Saturday
+  return jsDay === 0 ? 7 : jsDay // → 1 = Monday … 7 = Sunday
+}
+
+/**
  * Approved, city-scoped events that are NOT in the past — the public afisha feed
  * (Home rail + Events screen). An event is hidden the moment its date passes
  * (owner rule): we keep only rows whose start is today-or-later OR whose end is
@@ -231,32 +243,39 @@ export async function fetchPlaces(cityId, { categoryId, subcategoryId, columns =
 }
 
 /**
- * Approved "markets / bazaars" for the active city's Home rail (§4 screen 1).
- * Markets are places tagged with the top-level `markets` category, so the rail
- * shows ONLY markets — never other catalog places (dentists, cafés, cake shops…).
- * Promoted placements lead (§12), then by name. Returns [] when the `markets`
- * category isn't seeded yet or the city has no markets.
+ * Today's market for the active city's Home "Markets today" rail (§4 screen 1).
  *
- * TODO (owner rule §): also surface grocery/food shops that have an ACTIVE
- * discount / promo, but ONLY those — there is no discount field on `places`
- * today, so we show markets only and do NOT invent a signal. Add the field
- * (e.g. `places.has_active_deal` + validity dates) first, then widen this query.
+ * Markets in Alanya rotate weekly — a different district each weekday. Rather
+ * than the owner creating a "market" place every day, the weekly schedule is set
+ * once (public.market_schedule, supabase/market-schedule.sql) and this returns
+ * the ACTIVE row for the CURRENT weekday in Turkey time (UTC+3), with its `name`
+ * translated into `lang` if a translation exists. Returns null when today's
+ * weekday is inactive/unset (e.g. Sunday) or the city has no schedule — the Home
+ * block then shows a tidy "no market today" placeholder.
+ *
+ * NOTE: this deliberately no longer uses the `markets` catalog CATEGORY — the
+ * rail now lives by the weekly schedule, not by places tagged `markets`.
  *
  * @param {string} cityId  active city id (required)
- * @param {{ columns?: string, limit?: number }} [opts]
+ * @param {string} [lang]  UI language to localize the district name into
+ * @param {{ columns?: string }} [opts]
  */
-export async function fetchMarkets(cityId, { columns = '*', limit } = {}) {
-  if (!cityId) return []
-  const category = await fetchCategoryBySlug('markets')
-  if (!category) return []
-  let query = publicContentQuery('places', cityId, { columns })
-    .eq('category_id', category.id)
-    .order('is_promoted', { ascending: false })
-    .order('name', { ascending: true })
-  if (limit) query = query.limit(limit)
-  const { data, error } = await query
+export async function fetchTodayMarket(cityId, lang, { columns = '*' } = {}) {
+  if (!cityId) return null
+  const dow = turkeyDayOfWeek()
+  const { data, error } = await supabase
+    .from('market_schedule')
+    .select(columns)
+    .eq('city_id', cityId)
+    .eq('day_of_week', dow)
+    .eq('is_active', true)
+    .maybeSingle()
   if (error) throw error
-  return data ?? []
+  if (!data) return null
+  // Localize the district name (hours/address are not translated, §8). Only the
+  // active row's translations are readable by the public (RLS via content_is_approved).
+  const [localized] = await withTranslations('market_schedule', [data], lang)
+  return localized
 }
 
 /**

@@ -43,6 +43,9 @@ import {
   requestTranslation,
   fetchAdminTranslations,
   saveTranslations,
+  fetchMarketSchedule,
+  upsertMarketScheduleDay,
+  deleteMarketScheduleDay,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 
@@ -50,7 +53,7 @@ import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 // its own config, but failing fast here gives a friendlier message).
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
-const TABS = ['places', 'news', 'events', 'guides']
+const TABS = ['places', 'news', 'events', 'guides', 'marketSchedule']
 
 export default function Admin() {
   const { t } = useTranslation()
@@ -79,6 +82,7 @@ function AdminPanel() {
     news: <NewsSection />,
     events: <EventsSection />,
     guides: <GuidesSection />,
+    marketSchedule: <MarketScheduleSection />,
   }
 
   return (
@@ -1761,5 +1765,260 @@ function GuidesSection() {
         />
       </section>
     </>
+  )
+}
+
+// ============================================================================
+// Market schedule (CLAUDE.md §4 screen 1) — the weekly market rotation.
+// ============================================================================
+// One card per weekday (Mon→Sun, ISO 1..7 — the week starts Monday). Each day is
+// its own market: district/name, photo, hours, address (+ optional coords for a
+// route) and an active toggle. The Home "Markets today" rail shows the ACTIVE
+// row for the current weekday in Turkey time. A day left unsaved (or toggled
+// off, e.g. Sunday) simply shows no market. Names translate via the shared panel.
+
+// ISO weekday numbers in display order (Monday first). Labels come from i18n.
+const DAYS = [1, 2, 3, 4, 5, 6, 7]
+
+// Text input value -> number or null (blank/invalid coords become null).
+function toNum(value) {
+  const s = (value ?? '').trim()
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
+function formFromMarket(row) {
+  return {
+    id: row?.id ?? null,
+    name: row?.name ?? '',
+    image_url: row?.image_url ?? '',
+    hours: row?.hours ?? '',
+    address: row?.address ?? '',
+    latitude: row?.latitude != null ? String(row.latitude) : '',
+    longitude: row?.longitude != null ? String(row.longitude) : '',
+    is_active: row ? Boolean(row.is_active) : true,
+  }
+}
+
+function MarketScheduleSection() {
+  const { t } = useTranslation()
+  const { cityId } = useApp()
+  const [state, setState] = useState({ status: 'loading', rows: [] })
+
+  // Refetch the schedule. Resolves through the async callbacks only (no
+  // synchronous setState in the mount effect); state already starts as 'loading'.
+  const reload = useCallback(() => {
+    if (!cityId) return
+    fetchMarketSchedule(cityId)
+      .then((rows) => setState({ status: 'ready', rows }))
+      .catch(() => setState({ status: 'error', rows: [] }))
+  }, [cityId])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  // Index the existing rows by weekday so each day card gets its own (or null).
+  const byDay = useMemo(() => {
+    const m = new Map()
+    for (const row of state.rows) m.set(row.day_of_week, row)
+    return m
+  }, [state.rows])
+
+  return (
+    <>
+      <section className="card admin__form-card">
+        <h2 className="admin__section-title">{t('admin.marketSchedule.title')}</h2>
+        <p className="admin-field__hint muted">{t('admin.marketSchedule.hint')}</p>
+      </section>
+
+      {state.status === 'loading' ? (
+        <p className="muted">{t('admin.list.loading')}</p>
+      ) : state.status === 'error' ? (
+        <p className="admin-form__error">{t('admin.list.error')}</p>
+      ) : (
+        DAYS.map((dow) => (
+          <DayScheduleCard
+            key={dow}
+            dow={dow}
+            row={byDay.get(dow) ?? null}
+            cityId={cityId}
+            onSaved={reload}
+          />
+        ))
+      )}
+    </>
+  )
+}
+
+// One weekday's market: editable card with its own save / delete / translations.
+function DayScheduleCard({ dow, row, cityId, onSaved }) {
+  const { t } = useTranslation()
+  const [form, setForm] = useState(() => formFromMarket(row))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  // Re-sync the card when its underlying row changes (e.g. after a reload).
+  useEffect(() => {
+    setForm(formFromMarket(row))
+  }, [row])
+
+  const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }))
+  const dayName = t(`admin.marketSchedule.days.${dow}`)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (saving) return
+    const name = form.name.trim()
+    if (!name) {
+      setError(t('admin.marketSchedule.nameRequired'))
+      return
+    }
+    if (!cityId) {
+      setError(t('admin.form.error'))
+      return
+    }
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      await upsertMarketScheduleDay({
+        // Keep the id on update so translations stay attached to the same row.
+        ...(form.id ? { id: form.id } : {}),
+        city_id: cityId,
+        day_of_week: dow,
+        name,
+        image_url: form.image_url.trim() || null,
+        hours: form.hours.trim() || null,
+        address: form.address.trim() || null,
+        latitude: toNum(form.latitude),
+        longitude: toNum(form.longitude),
+        is_active: form.is_active,
+      })
+      setSuccess(t('admin.form.savedEdit', { name: dayName }))
+      onSaved()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!form.id) return
+    if (!window.confirm(t('admin.actions.deleteConfirm'))) return
+    setError('')
+    setSuccess('')
+    try {
+      await deleteMarketScheduleDay(form.id)
+      onSaved()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    }
+  }
+
+  return (
+    <section className="card admin__form-card">
+      <form className="admin-form" onSubmit={handleSubmit}>
+        <div className="admin-row__title-line">
+          <h3 className="admin__section-title">{dayName}</h3>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => setField('is_active', e.target.checked)}
+            />
+            <span>{t('admin.marketSchedule.active')}</span>
+          </label>
+        </div>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.marketSchedule.name')}</span>
+          <input
+            className="admin-field__input"
+            type="text"
+            value={form.name}
+            onChange={(e) => setField('name', e.target.value)}
+            placeholder={t('admin.marketSchedule.namePlaceholder')}
+          />
+        </label>
+
+        <PhotoField value={form.image_url} onChange={(v) => setField('image_url', v)} />
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.marketSchedule.hours')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.hours}
+              onChange={(e) => setField('hours', e.target.value)}
+              placeholder={t('admin.marketSchedule.hoursPlaceholder')}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.marketSchedule.address')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.address}
+              onChange={(e) => setField('address', e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.marketSchedule.latitude')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              inputMode="decimal"
+              value={form.latitude}
+              onChange={(e) => setField('latitude', e.target.value)}
+              placeholder="36.5438"
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.marketSchedule.longitude')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              inputMode="decimal"
+              value={form.longitude}
+              onChange={(e) => setField('longitude', e.target.value)}
+              placeholder="31.9997"
+            />
+          </label>
+        </div>
+
+        <TranslationsPanel
+          entityType="market_schedule"
+          entityId={form.id}
+          fields={[{ name: 'name', label: t('admin.marketSchedule.name'), value: form.name }]}
+        />
+
+        <FormBanners error={error} success={success} />
+
+        <div className="admin-form__actions">
+          {form.id && (
+            <button
+              type="button"
+              className="admin-btn admin-btn--ghost admin-action--delete"
+              onClick={handleDelete}
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              {t('admin.actions.delete')}
+            </button>
+          )}
+          <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
+            <Plus size={16} aria-hidden="true" />
+            {saving ? t('admin.form.saving') : t('admin.form.submitSave')}
+          </button>
+        </div>
+      </form>
+    </section>
   )
 }

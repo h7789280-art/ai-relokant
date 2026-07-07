@@ -31,7 +31,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchCity, fetchContent, fetchMarkets, fetchUpcomingEvents } from '../lib/content.js'
+import { fetchCity, fetchContent, fetchTodayMarket, fetchUpcomingEvents } from '../lib/content.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
@@ -103,8 +103,22 @@ function formatDateTime(value) {
   }).format(d)
 }
 
+// A Google Maps link for a scheduled market — by coordinates when present,
+// otherwise by its address text. Null when there's nothing to route to (the card
+// then simply isn't clickable). Gives the owner-mentioned "route" affordance.
+function marketRouteUrl(row) {
+  if (row?.latitude != null && row?.longitude != null) {
+    return `https://www.google.com/maps/search/?api=1&query=${row.latitude},${row.longitude}`
+  }
+  if (row?.address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.address)}`
+  }
+  return null
+}
+
 export default function Home() {
-  const { t } = useTranslation()
+  const { t, i18n: i18nInstance } = useTranslation()
+  const lang = i18nInstance.language
   const navigate = useNavigate()
   const { selection, cityId } = useApp()
 
@@ -154,21 +168,22 @@ export default function Home() {
   const news = useContentFeed('news', cityId, NEWS_OPTS)
   const events = useContentFeed('events', cityId, EVENTS_OPTS, fetchEventsFeed)
 
-  // Markets: ONLY places tagged with the `markets` category (bazaars / food
-  // markets) — never the whole catalog (§4). Own effect (not useContentFeed)
-  // because it resolves the markets category before querying places. Errors →
-  // empty, so a flaky network just shows the placeholder.
+  // Markets today: driven by the weekly market schedule (§4 screen 1), NOT the
+  // `markets` catalog category anymore. Shows the ACTIVE row for the current
+  // weekday in Turkey time (UTC+3); an inactive/unset day (e.g. Sunday) yields no
+  // row and the block falls back to a "no market today" placeholder. Re-runs when
+  // the language changes so the district name stays localized. Errors → empty.
   const [markets, setMarkets] = useState({ status: 'loading', rows: [] })
   useEffect(() => {
     if (!cityId) return
     let active = true
-    fetchMarkets(cityId, { limit: 8 })
-      .then((rows) => active && setMarkets({ status: 'ready', rows }))
+    fetchTodayMarket(cityId, lang)
+      .then((row) => active && setMarkets({ status: 'ready', rows: row ? [row] : [] }))
       .catch(() => active && setMarkets({ status: 'ready', rows: [] }))
     return () => {
       active = false
     }
-  }, [cityId])
+  }, [cityId, lang])
 
   // The search bar and chips currently just open the AI chat (§4 — wired to the
   // chat tab for now). The question is handed over via router state so Chat can
@@ -382,16 +397,15 @@ export default function Home() {
         icon={Store}
         title={t('home.markets.title')}
         feed={markets}
-        empty={t('home.empty')}
-        onSeeAll={() => navigate('/catalog')}
+        empty={t('home.markets.none')}
         renderItem={(row) => (
           <FeedCard
             key={row.id}
             image={row.image_url}
             phIcon={Store}
             title={row.name}
-            meta={row.address}
-            onClick={() => navigate(`/catalog/place/${row.id}`)}
+            meta={[row.hours, row.address].filter(Boolean).join(' · ') || null}
+            onClick={marketRouteUrl(row) ? () => window.open(marketRouteUrl(row), '_blank', 'noopener') : undefined}
           />
         )}
       />
@@ -436,7 +450,7 @@ function Feed({ icon, title, feed, empty, onSeeAll, renderItem }) {
       <div className="feed__head">
         <Icon className="feed__icon" size={18} strokeWidth={2} aria-hidden="true" />
         <h2 className="feed__title">{title}</h2>
-        {feed.rows.length > 0 && (
+        {onSeeAll && feed.rows.length > 0 && (
           <button type="button" className="feed__all" onClick={onSeeAll}>
             {t('home.seeAll')}
             <ChevronRight size={15} aria-hidden="true" />
