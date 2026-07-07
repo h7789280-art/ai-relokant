@@ -21,6 +21,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { fetchPlace, withTranslations } from '../lib/content.js'
+import { directionsUrl } from '../lib/maps.js'
 import FavoriteButton from '../components/FavoriteButton.jsx'
 import i18n from '../i18n/index.js'
 
@@ -28,17 +29,6 @@ import i18n from '../i18n/index.js'
 function whatsappLink(number) {
   const digits = String(number).replace(/\D/g, '')
   return digits ? `https://wa.me/${digits}` : null
-}
-
-// Google Maps directions: prefer exact coordinates, else the textual address.
-function directionsLink(place) {
-  if (place.latitude != null && place.longitude != null) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`
-  }
-  if (place.address) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.address)}`
-  }
-  return null
 }
 
 // Social handles are stored verbatim as the admin typed them — an @handle, a
@@ -135,7 +125,7 @@ export default function Place() {
 
   const place = state.place
   const wa = place.whatsapp ? whatsappLink(place.whatsapp) : null
-  const route = directionsLink(place)
+  const route = directionsUrl(place)
   const hours = hourRows(place.hours)
   const instagram = place.instagram ? instagramLink(place.instagram) : null
   const telegram = place.telegram ? telegramLink(place.telegram) : null
@@ -233,7 +223,20 @@ export default function Place() {
           <MapPin className="place__detail-icon" size={18} aria-hidden="true" />
           <div>
             <h2 className="place__detail-label">{t('place.address')}</h2>
-            <p className="place__detail-value">{place.address}</p>
+            {/* Tap the address to open a route in maps (§4) — same target as the
+                "Route" button above. Plain text when there's nothing to route to. */}
+            {route ? (
+              <a
+                className="place__detail-value place__detail-link"
+                href={route}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {place.address}
+              </a>
+            ) : (
+              <p className="place__detail-value">{place.address}</p>
+            )}
           </div>
         </section>
       )}

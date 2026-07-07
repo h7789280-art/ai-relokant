@@ -44,7 +44,7 @@ import {
   fetchAdminTranslations,
   saveTranslations,
   fetchMarketSchedule,
-  upsertMarketScheduleDay,
+  saveMarketScheduleRow,
   deleteMarketScheduleDay,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
@@ -1771,11 +1771,13 @@ function GuidesSection() {
 // ============================================================================
 // Market schedule (CLAUDE.md §4 screen 1) — the weekly market rotation.
 // ============================================================================
-// One card per weekday (Mon→Sun, ISO 1..7 — the week starts Monday). Each day is
-// its own market: district/name, photo, hours, address (+ optional coords for a
-// route) and an active toggle. The Home "Markets today" rail shows the ACTIVE
-// row for the current weekday in Turkey time. A day left unsaved (or toggled
-// off, e.g. Sunday) simply shows no market. Names translate via the shared panel.
+// One group per weekday (Mon→Sun, ISO 1..7 — the week starts Monday). A weekday
+// can host SEVERAL markets in different districts, so each day lists any number
+// of market cards plus an "add market" button. Each card is its own market:
+// district/name, photo, hours, address (+ optional coords for a route) and an
+// active toggle. The Home "Markets today" rail shows the ACTIVE rows for the
+// current weekday in Turkey time. A day with no cards (or all toggled off, e.g.
+// Sunday) simply shows no market. Names translate via the shared panel.
 
 // ISO weekday numbers in display order (Monday first). Labels come from i18n.
 const DAYS = [1, 2, 3, 4, 5, 6, 7]
@@ -1805,6 +1807,9 @@ function MarketScheduleSection() {
   const { t } = useTranslation()
   const { cityId } = useApp()
   const [state, setState] = useState({ status: 'loading', rows: [] })
+  // Blank, not-yet-saved cards the owner has added, keyed by a local id so each
+  // keeps its own form state until saved. Shape: [{ key, dow }].
+  const [drafts, setDrafts] = useState([])
 
   // Refetch the schedule. Resolves through the async callbacks only (no
   // synchronous setState in the mount effect); state already starts as 'loading'.
@@ -1819,12 +1824,22 @@ function MarketScheduleSection() {
     reload()
   }, [reload])
 
-  // Index the existing rows by weekday so each day card gets its own (or null).
+  // Group the saved rows by weekday so each day lists its own markets (or none).
   const byDay = useMemo(() => {
     const m = new Map()
-    for (const row of state.rows) m.set(row.day_of_week, row)
+    for (const dow of DAYS) m.set(dow, [])
+    for (const row of state.rows) m.get(row.day_of_week)?.push(row)
     return m
   }, [state.rows])
+
+  const addDraft = (dow) => setDrafts((d) => [...d, { key: crypto.randomUUID(), dow }])
+  const removeDraft = (key) => setDrafts((d) => d.filter((x) => x.key !== key))
+
+  // A saved draft becomes a real row on the next reload — drop the blank card.
+  const onDraftSaved = (key) => {
+    removeDraft(key)
+    reload()
+  }
 
   return (
     <>
@@ -1838,22 +1853,62 @@ function MarketScheduleSection() {
       ) : state.status === 'error' ? (
         <p className="admin-form__error">{t('admin.list.error')}</p>
       ) : (
-        DAYS.map((dow) => (
-          <DayScheduleCard
-            key={dow}
-            dow={dow}
-            row={byDay.get(dow) ?? null}
-            cityId={cityId}
-            onSaved={reload}
-          />
-        ))
+        DAYS.map((dow) => {
+          const dayRows = byDay.get(dow) ?? []
+          const dayDrafts = drafts.filter((d) => d.dow === dow)
+          return (
+            <section key={dow} className="card admin__form-card admin-day">
+              <div className="admin-row__title-line">
+                <h3 className="admin__section-title">
+                  {t(`admin.marketSchedule.days.${dow}`)}
+                </h3>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={() => addDraft(dow)}
+                >
+                  <Plus size={15} aria-hidden="true" />
+                  {t('admin.marketSchedule.addMarket')}
+                </button>
+              </div>
+
+              {dayRows.length === 0 && dayDrafts.length === 0 && (
+                <p className="admin-field__hint muted">{t('admin.marketSchedule.dayEmpty')}</p>
+              )}
+
+              {dayRows.map((row) => (
+                <MarketCard
+                  key={row.id}
+                  dow={dow}
+                  row={row}
+                  cityId={cityId}
+                  onSaved={reload}
+                  onDeleted={reload}
+                />
+              ))}
+
+              {dayDrafts.map((draft) => (
+                <MarketCard
+                  key={draft.key}
+                  dow={dow}
+                  row={null}
+                  cityId={cityId}
+                  onSaved={() => onDraftSaved(draft.key)}
+                  onDeleted={() => removeDraft(draft.key)}
+                />
+              ))}
+            </section>
+          )
+        })
       )}
     </>
   )
 }
 
-// One weekday's market: editable card with its own save / delete / translations.
-function DayScheduleCard({ dow, row, cityId, onSaved }) {
+// One market: editable card with its own save / delete / translations. `row` is
+// null for a not-yet-saved market the owner just added; saving inserts it, and
+// `onSaved` lets the parent swap the blank card for the real (reloaded) row.
+function MarketCard({ dow, row, cityId, onSaved, onDeleted }) {
   const { t } = useTranslation()
   const [form, setForm] = useState(() => formFromMarket(row))
   const [saving, setSaving] = useState(false)
@@ -1866,7 +1921,6 @@ function DayScheduleCard({ dow, row, cityId, onSaved }) {
   }, [row])
 
   const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }))
-  const dayName = t(`admin.marketSchedule.days.${dow}`)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -1884,7 +1938,7 @@ function DayScheduleCard({ dow, row, cityId, onSaved }) {
     setError('')
     setSuccess('')
     try {
-      await upsertMarketScheduleDay({
+      await saveMarketScheduleRow({
         // Keep the id on update so translations stay attached to the same row.
         ...(form.id ? { id: form.id } : {}),
         city_id: cityId,
@@ -1897,7 +1951,7 @@ function DayScheduleCard({ dow, row, cityId, onSaved }) {
         longitude: toNum(form.longitude),
         is_active: form.is_active,
       })
-      setSuccess(t('admin.form.savedEdit', { name: dayName }))
+      setSuccess(t('admin.form.savedEdit', { name }))
       onSaved()
     } catch (err) {
       setError(describeError(err) || t('admin.form.error'))
@@ -1906,24 +1960,28 @@ function DayScheduleCard({ dow, row, cityId, onSaved }) {
     }
   }
 
+  // Delete a saved market (physical + its translations). For an unsaved draft
+  // there's nothing to delete server-side — just drop the card via onDeleted.
   async function handleDelete() {
-    if (!form.id) return
+    if (!form.id) {
+      onDeleted()
+      return
+    }
     if (!window.confirm(t('admin.actions.deleteConfirm'))) return
     setError('')
     setSuccess('')
     try {
       await deleteMarketScheduleDay(form.id)
-      onSaved()
+      onDeleted()
     } catch (err) {
       setError(describeError(err) || t('admin.form.error'))
     }
   }
 
   return (
-    <section className="card admin__form-card">
+    <div className="admin-market-card">
       <form className="admin-form" onSubmit={handleSubmit}>
         <div className="admin-row__title-line">
-          <h3 className="admin__section-title">{dayName}</h3>
           <label className="admin-toggle">
             <input
               type="checkbox"
@@ -2003,22 +2061,20 @@ function DayScheduleCard({ dow, row, cityId, onSaved }) {
         <FormBanners error={error} success={success} />
 
         <div className="admin-form__actions">
-          {form.id && (
-            <button
-              type="button"
-              className="admin-btn admin-btn--ghost admin-action--delete"
-              onClick={handleDelete}
-            >
-              <Trash2 size={15} aria-hidden="true" />
-              {t('admin.actions.delete')}
-            </button>
-          )}
+          <button
+            type="button"
+            className="admin-btn admin-btn--ghost admin-action--delete"
+            onClick={handleDelete}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            {form.id ? t('admin.actions.delete') : t('admin.marketSchedule.removeDraft')}
+          </button>
           <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
             <Plus size={16} aria-hidden="true" />
             {saving ? t('admin.form.saving') : t('admin.form.submitSave')}
           </button>
         </div>
       </form>
-    </section>
+    </div>
   )
 }

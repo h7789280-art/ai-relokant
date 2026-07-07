@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, MapPin, Clock } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchUpcomingEvents, withTranslations } from '../lib/content.js'
+import { directionsUrl } from '../lib/maps.js'
 import i18n from '../i18n/index.js'
 
 // Oldest-first by start date keeps the agenda reading top-to-bottom; undated
@@ -115,6 +116,13 @@ function renderGroups(rows, t) {
 
 function EventCard({ event }) {
   const time = formatTime(event.starts_at)
+  // Tap the location to open a route in maps (§4) — by coordinates when the event
+  // has them, otherwise by its location text. Same helper as places / markets.
+  const route = directionsUrl({
+    latitude: event.latitude,
+    longitude: event.longitude,
+    address: event.location,
+  })
   return (
     <article className="event-card">
       {event.image_url ? (
@@ -133,12 +141,23 @@ function EventCard({ event }) {
               {time}
             </span>
           )}
-          {event.location && (
-            <span className="event-card__meta-item">
-              <MapPin size={14} aria-hidden="true" />
-              {event.location}
-            </span>
-          )}
+          {event.location &&
+            (route ? (
+              <a
+                className="event-card__meta-item event-card__meta-link"
+                href={route}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MapPin size={14} aria-hidden="true" />
+                {event.location}
+              </a>
+            ) : (
+              <span className="event-card__meta-item">
+                <MapPin size={14} aria-hidden="true" />
+                {event.location}
+              </span>
+            ))}
         </div>
         {event.description && <p className="event-card__desc">{event.description}</p>}
       </div>

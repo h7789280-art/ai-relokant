@@ -323,6 +323,9 @@
       "latitude": "Latitude (optional)",
       "longitude": "Longitude (optional)",
       "nameRequired": "Enter a district / market name, or leave this day off.",
+      "addMarket": "Add market",
+      "removeDraft": "Remove",
+      "dayEmpty": "No market this day.",
       "days": {
         "1": "Monday",
         "2": "Tuesday",

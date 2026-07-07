@@ -31,7 +31,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchCity, fetchContent, fetchTodayMarket, fetchUpcomingEvents } from '../lib/content.js'
+import { fetchCity, fetchContent, fetchTodayMarkets, fetchUpcomingEvents } from '../lib/content.js'
+import { directionsUrl } from '../lib/maps.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
@@ -103,19 +104,6 @@ function formatDateTime(value) {
   }).format(d)
 }
 
-// A Google Maps link for a scheduled market — by coordinates when present,
-// otherwise by its address text. Null when there's nothing to route to (the card
-// then simply isn't clickable). Gives the owner-mentioned "route" affordance.
-function marketRouteUrl(row) {
-  if (row?.latitude != null && row?.longitude != null) {
-    return `https://www.google.com/maps/search/?api=1&query=${row.latitude},${row.longitude}`
-  }
-  if (row?.address) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.address)}`
-  }
-  return null
-}
-
 export default function Home() {
   const { t, i18n: i18nInstance } = useTranslation()
   const lang = i18nInstance.language
@@ -169,16 +157,17 @@ export default function Home() {
   const events = useContentFeed('events', cityId, EVENTS_OPTS, fetchEventsFeed)
 
   // Markets today: driven by the weekly market schedule (§4 screen 1), NOT the
-  // `markets` catalog category anymore. Shows the ACTIVE row for the current
-  // weekday in Turkey time (UTC+3); an inactive/unset day (e.g. Sunday) yields no
-  // row and the block falls back to a "no market today" placeholder. Re-runs when
-  // the language changes so the district name stays localized. Errors → empty.
+  // `markets` catalog category anymore. Shows ALL ACTIVE rows for the current
+  // weekday in Turkey time (UTC+3) — a day can host several markets in different
+  // districts, shown side by side in the rail. An inactive/unset day (e.g. Sunday)
+  // yields no rows and the block falls back to a "no market today" placeholder.
+  // Re-runs when the language changes so the district names stay localized.
   const [markets, setMarkets] = useState({ status: 'loading', rows: [] })
   useEffect(() => {
     if (!cityId) return
     let active = true
-    fetchTodayMarket(cityId, lang)
-      .then((row) => active && setMarkets({ status: 'ready', rows: row ? [row] : [] }))
+    fetchTodayMarkets(cityId, lang)
+      .then((rows) => active && setMarkets({ status: 'ready', rows }))
       .catch(() => active && setMarkets({ status: 'ready', rows: [] }))
     return () => {
       active = false
@@ -405,7 +394,11 @@ export default function Home() {
             phIcon={Store}
             title={row.name}
             meta={[row.hours, row.address].filter(Boolean).join(' · ') || null}
-            onClick={marketRouteUrl(row) ? () => window.open(marketRouteUrl(row), '_blank', 'noopener') : undefined}
+            onClick={
+              directionsUrl(row)
+                ? () => window.open(directionsUrl(row), '_blank', 'noopener')
+                : undefined
+            }
           />
         )}
       />

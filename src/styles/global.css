@@ -1762,6 +1762,14 @@ button {
   font-size: var(--text-base);
 }
 
+/* Address rendered as a tappable "open route in maps" link (§4). */
+a.place__detail-link {
+  display: inline-block;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .place__hours {
   list-style: none;
   margin: 0;
@@ -1934,6 +1942,17 @@ button {
 
 .event-card__meta-item svg {
   color: var(--color-text-subtle);
+}
+
+/* Event location as a tappable "open route in maps" link (§4). */
+a.event-card__meta-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a.event-card__meta-link svg {
+  color: var(--color-accent);
 }
 
 .event-card__desc {
@@ -3856,6 +3875,21 @@ button {
 /* --- Photo upload --- */
 .admin-photo {
   gap: var(--space-2);
+}
+
+/* Market schedule: a weekday group holds any number of market sub-cards, each
+   its own bordered form so several markets on one day stay visually distinct. */
+.admin-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-market-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--color-surface);
 }
 
 .admin-photo__preview {

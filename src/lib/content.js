@@ -243,25 +243,27 @@ export async function fetchPlaces(cityId, { categoryId, subcategoryId, columns =
 }
 
 /**
- * Today's market for the active city's Home "Markets today" rail (§4 screen 1).
+ * Today's markets for the active city's Home "Markets today" rail (§4 screen 1).
  *
- * Markets in Alanya rotate weekly — a different district each weekday. Rather
- * than the owner creating a "market" place every day, the weekly schedule is set
- * once (public.market_schedule, supabase/market-schedule.sql) and this returns
- * the ACTIVE row for the CURRENT weekday in Turkey time (UTC+3), with its `name`
- * translated into `lang` if a translation exists. Returns null when today's
- * weekday is inactive/unset (e.g. Sunday) or the city has no schedule — the Home
- * block then shows a tidy "no market today" placeholder.
+ * Markets in Alanya rotate weekly — different districts each weekday. Rather than
+ * the owner creating a "market" place every day, the weekly schedule is set once
+ * (public.market_schedule, supabase/market-schedule.sql) and this returns ALL
+ * ACTIVE rows for the CURRENT weekday in Turkey time (UTC+3), each with its
+ * `name` translated into `lang` if a translation exists. A single weekday can
+ * host several markets (different districts) — the caller shows them side by side.
+ * Returns [] when today's weekday is inactive/unset (e.g. Sunday) or the city has
+ * no schedule — the Home block then shows a tidy "no market today" placeholder.
  *
  * NOTE: this deliberately no longer uses the `markets` catalog CATEGORY — the
  * rail now lives by the weekly schedule, not by places tagged `markets`.
  *
  * @param {string} cityId  active city id (required)
- * @param {string} [lang]  UI language to localize the district name into
+ * @param {string} [lang]  UI language to localize the district names into
  * @param {{ columns?: string }} [opts]
+ * @returns {Promise<Array>} active market rows for today (localized)
  */
-export async function fetchTodayMarket(cityId, lang, { columns = '*' } = {}) {
-  if (!cityId) return null
+export async function fetchTodayMarkets(cityId, lang, { columns = '*' } = {}) {
+  if (!cityId) return []
   const dow = turkeyDayOfWeek()
   const { data, error } = await supabase
     .from('market_schedule')
@@ -269,13 +271,12 @@ export async function fetchTodayMarket(cityId, lang, { columns = '*' } = {}) {
     .eq('city_id', cityId)
     .eq('day_of_week', dow)
     .eq('is_active', true)
-    .maybeSingle()
+    .order('name', { ascending: true })
   if (error) throw error
-  if (!data) return null
-  // Localize the district name (hours/address are not translated, §8). Only the
-  // active row's translations are readable by the public (RLS via content_is_approved).
-  const [localized] = await withTranslations('market_schedule', [data], lang)
-  return localized
+  if (!data?.length) return []
+  // Localize the district names (hours/address are not translated, §8). Only the
+  // active rows' translations are readable by the public (RLS via content_is_approved).
+  return withTranslations('market_schedule', data, lang)
 }
 
 /**

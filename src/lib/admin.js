@@ -222,15 +222,17 @@ export async function purgePastEvents(cityId, { bufferDays = 7 } = {}) {
 }
 
 // ---- Weekly market schedule (CLAUDE.md §4 screen 1, §5, §8) ----------------
-// The owner sets one market per weekday for the city; the Home rail then shows
-// the current weekday's row on its own (fetchTodayMarket in content.js). This is
-// owner-only reference data (an `is_active` flag, no moderation status). Every
-// read/write is gated by the RLS in supabase/market-schedule.sql (admins only for
-// inactive rows + all writes). city_id is set by the caller from the active city.
+// The owner sets the markets for each weekday (a weekday may have SEVERAL, in
+// different districts); the Home rail then shows the current weekday's active
+// rows (fetchTodayMarkets in content.js). This is owner-only reference data (an
+// `is_active` flag, no moderation status). Every read/write is gated by the RLS
+// in supabase/market-schedule.sql (admins only for inactive rows + all writes).
+// city_id is set by the caller from the active city.
 
 /**
- * All 7 (or fewer) schedule rows for a city, ANY active state, ordered Mon→Sun
- * (day_of_week 1..7). Admins only for inactive rows via RLS. Returns [].
+ * All schedule rows for a city, ANY active state, ordered Mon→Sun (day_of_week
+ * 1..7) then by name so same-day markets keep a stable order. Admins only for
+ * inactive rows via RLS. Returns [].
  *
  * @param {string} cityId  active city id (required)
  */
@@ -241,23 +243,26 @@ export async function fetchMarketSchedule(cityId) {
     .select('*')
     .eq('city_id', cityId)
     .order('day_of_week', { ascending: true })
+    .order('name', { ascending: true })
   if (error) throw error
   return data ?? []
 }
 
 /**
- * Upsert one weekday's market (create or replace by the unique (city_id,
- * day_of_week) pair). `payload` must carry city_id + day_of_week. Returns the row.
+ * Save one market row. A weekday can now hold SEVERAL markets (different
+ * districts), so there is no unique (city_id, day_of_week) key to upsert on —
+ * instead we INSERT when the payload has no id, and UPDATE by id when it does.
+ * `payload` must carry city_id + day_of_week. Returns the saved row.
  */
-export async function upsertMarketScheduleDay(payload) {
+export async function saveMarketScheduleRow(payload) {
   if (!payload?.city_id || !payload?.day_of_week) {
-    throw new Error('upsertMarketScheduleDay: city_id and day_of_week are required')
+    throw new Error('saveMarketScheduleRow: city_id and day_of_week are required')
   }
-  const { data, error } = await supabase
-    .from('market_schedule')
-    .upsert(payload, { onConflict: 'city_id,day_of_week' })
-    .select('*')
-    .single()
+  const { id, ...fields } = payload
+  const query = id
+    ? supabase.from('market_schedule').update(fields).eq('id', id)
+    : supabase.from('market_schedule').insert(fields)
+  const { data, error } = await query.select('*').single()
   if (error) throw error
   return data
 }
