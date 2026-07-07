@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Neler var",
-    "subtitle": "Şehrinizdeki etkinlikler, tarihe göre",
+    "subtitle": "Ülke genelindeki etkinlikler, en yakın önce",
     "empty": "Henüz etkinlik yok.",
-    "undated": "Tarih daha sonra açıklanacak"
+    "undated": "Tarih daha sonra açıklanacak",
+    "filter": {
+      "all": "Tüm şehirler",
+      "label": "Şehir",
+      "aria": "Etkinlikleri şehre göre filtrele"
+    }
   },
   "news": {
     "title": "Şehir haberleri",

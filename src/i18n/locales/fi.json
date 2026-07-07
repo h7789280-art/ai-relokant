@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Mitä tapahtuu",
-    "subtitle": "Tapahtumat kaupungissasi päivämäärän mukaan",
+    "subtitle": "Tapahtumat koko maassa, lähimmät ensin",
     "empty": "Ei vielä tapahtumia.",
-    "undated": "Päivämäärä ilmoitetaan myöhemmin"
+    "undated": "Päivämäärä ilmoitetaan myöhemmin",
+    "filter": {
+      "all": "Kaikki kaupungit",
+      "label": "Kaupunki",
+      "aria": "Suodata tapahtumia kaupungin mukaan"
+    }
   },
   "news": {
     "title": "Kaupungin uutiset",

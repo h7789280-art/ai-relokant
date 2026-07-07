@@ -1,21 +1,35 @@
-// Events / what's on (CLAUDE.md §4, screen 5). City-scoped, approved-only feed
-// (Stage-2 helpers), grouped by date so the list reads as an agenda. Reached
-// from Home ("What's on today → See all") and direct navigation. Each card
-// shows title, date/time, location, photo and a short description. Empty →
-// a tidy "nothing yet" placeholder.
-import { useEffect, useState } from 'react'
+// Events / what's on (CLAUDE.md §4, screen 5). REGIONAL afisha (Stage C part 2):
+// by default it shows the whole COUNTRY's upcoming events, ordered by proximity
+// to the active city (own city first, then nearer → farther) — the sort is done
+// server-side (fetchRegionalEvents → events_by_country_proximity). A compact
+// city-filter ribbon at the top can narrow the feed to a SINGLE city (then it's
+// the classic city-scoped, date-grouped agenda via fetchUpcomingEvents). Reached
+// from Home ("What's on today → See all") and direct navigation. Each card shows
+// title, date/time, location, photo and a short description. Empty → a tidy
+// "nothing yet" placeholder. Only the afisha is regional; places / news stay
+// city-scoped (§5).
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, MapPin, Clock, Ticket, ChevronRight } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  Clock,
+  Ticket,
+  ChevronRight,
+  ChevronDown,
+  Check,
+} from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchUpcomingEvents, withTranslations } from '../lib/content.js'
+import { fetchRegionalEvents, fetchUpcomingEvents, fetchCities, withTranslations } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
 import { formatEventPrice } from '../lib/eventPrice.js'
 import i18n from '../i18n/index.js'
 
-// Oldest-first by start date keeps the agenda reading top-to-bottom; undated
-// rows sink to the end (nullsFirst:false in fetchContent).
-const EVENTS_OPTS = { order: { column: 'starts_at', ascending: true } }
+// When a single city is picked, oldest-first by start date keeps the agenda
+// reading top-to-bottom; undated rows sink to the end (nullsFirst:false).
+const CITY_OPTS = { order: { column: 'starts_at', ascending: true } }
 
 // Sentinel for "no day grouped yet" — distinct from every real key (a Y-M-D
 // string) and from null (which undated rows produce).
@@ -47,23 +61,63 @@ function formatTime(value) {
   }).format(d)
 }
 
+// Short date badge for the regional (proximity-sorted) list, where cards are NOT
+// grouped under a day header — each card carries its own date, e.g. "20 Jul".
+function formatDateBadge(value) {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return new Intl.DateTimeFormat(i18n.language, {
+    day: 'numeric',
+    month: 'short',
+  }).format(d)
+}
+
 export default function Events() {
   const { t, i18n: i18nInstance } = useTranslation()
   const navigate = useNavigate()
-  const { cityId } = useApp()
+  const { selection, cityId } = useApp()
+  const lang = i18nInstance.language
+
+  // null → REGIONAL view (whole country by proximity); a city id → that city only.
+  const [filterCityId, setFilterCityId] = useState(null)
   const [state, setState] = useState({ status: 'loading', rows: [] })
 
+  // Cities of the current country for the filter ribbon (active only — mirrors
+  // the city picker; you can't scope to a "(soon)" city). Reference data.
+  const [cities, setCities] = useState([])
+  useEffect(() => {
+    const countryId = selection?.countryId
+    if (!countryId) return
+    let active = true
+    fetchCities(countryId)
+      .then((rows) => active && setCities(rows.filter((c) => c.is_active)))
+      .catch(() => active && setCities([]))
+    return () => {
+      active = false
+    }
+  }, [selection?.countryId])
+
+  // Load the feed: regional-by-proximity when no city is picked, else the classic
+  // city-scoped agenda. Both are approved-only and hide past events.
   useEffect(() => {
     if (!cityId) return
     let active = true
-    fetchUpcomingEvents(cityId, EVENTS_OPTS)
-      .then((rows) => withTranslations('events', rows, i18nInstance.language))
+    const load = filterCityId
+      ? fetchUpcomingEvents(filterCityId, CITY_OPTS)
+      : fetchRegionalEvents(cityId)
+    // No synchronous "loading" reset here (keeps the previous rows briefly while
+    // re-fetching, matching Home's feed hook) — the resolve below swaps them in.
+    load
+      .then((rows) => withTranslations('events', rows, lang))
       .then((rows) => active && setState({ status: 'ready', rows }))
       .catch(() => active && setState({ status: 'ready', rows: [] }))
     return () => {
       active = false
     }
-  }, [cityId, i18nInstance.language])
+  }, [cityId, filterCityId, lang])
+
+  const regional = !filterCityId
 
   return (
     <main className="app-shell listing">
@@ -76,6 +130,12 @@ export default function Events() {
         <p className="catalog__subtitle">{t('events.subtitle')}</p>
       </header>
 
+      <CityFilter
+        cities={cities}
+        value={filterCityId}
+        onChange={setFilterCityId}
+      />
+
       {state.status === 'loading' ? (
         <div className="listing__group">
           <div className="catalog__skeleton catalog__skeleton--row" />
@@ -83,15 +143,111 @@ export default function Events() {
         </div>
       ) : state.rows.length === 0 ? (
         <p className="catalog__empty">{t('events.empty')}</p>
+      ) : regional ? (
+        // Proximity order must be preserved → a flat list, each card dated.
+        <div className="listing__cards">
+          {state.rows.map((row) => (
+            <EventCard key={row.id} event={row} showDate />
+          ))}
+        </div>
       ) : (
+        // Single city → the classic date-grouped agenda.
         <div className="listing__groups">{renderGroups(state.rows, t)}</div>
       )}
     </main>
   )
 }
 
+// Compact dropdown ribbon (§4 — not a page, not a big header): shows the current
+// scope ("All cities" or a city name) and drops a short list of the country's
+// cities. Picking a city narrows the feed; "All cities" restores the regional
+// view. Closes on outside click / Escape.
+function CityFilter({ cities, value, onChange }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  // Nothing to filter (single-city country, or cities not loaded yet) → hide it.
+  if (!cities.length) return null
+
+  const current = value ? cities.find((c) => c.id === value)?.name : null
+  const label = current ?? t('events.filter.all')
+
+  const pick = (id) => {
+    onChange(id)
+    setOpen(false)
+  }
+
+  return (
+    <div className="afisha-filter" ref={ref}>
+      <button
+        type="button"
+        className="afisha-filter__toggle"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={t('events.filter.aria')}
+      >
+        <MapPin size={15} strokeWidth={2} aria-hidden="true" />
+        <span className="afisha-filter__label">{label}</span>
+        <ChevronDown size={15} strokeWidth={2} aria-hidden="true" />
+      </button>
+      {open && (
+        <ul className="afisha-filter__menu" role="listbox">
+          <FilterRow
+            label={t('events.filter.all')}
+            selected={!value}
+            onClick={() => pick(null)}
+          />
+          {cities.map((c) => (
+            <FilterRow
+              key={c.id}
+              label={c.name}
+              selected={c.id === value}
+              onClick={() => pick(c.id)}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FilterRow({ label, selected, onClick }) {
+  return (
+    <li role="option" aria-selected={selected}>
+      <button
+        type="button"
+        className={`afisha-filter__option${selected ? ' is-on' : ''}`}
+        onClick={onClick}
+      >
+        <span className="afisha-filter__option-label">{label}</span>
+        <span className="afisha-filter__check" aria-hidden="true">
+          {selected && <Check size={15} strokeWidth={2.5} />}
+        </span>
+      </button>
+    </li>
+  )
+}
+
 // Walk the (already date-sorted) rows, emitting a day header whenever the day
-// changes, then the event cards beneath it.
+// changes, then the event cards beneath it. Used for the single-city agenda.
 function renderGroups(rows, t) {
   const out = []
   let currentKey = NO_DAY
@@ -115,10 +271,13 @@ function renderGroups(rows, t) {
   return out
 }
 
-function EventCard({ event }) {
+function EventCard({ event, showDate = false }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const time = formatTime(event.starts_at)
+  // In the regional (proximity) list cards aren't grouped by day, so each shows
+  // its own date; the agenda view has a day header instead and omits this.
+  const date = showDate ? formatDateBadge(event.starts_at) : null
   const price = formatEventPrice(event, t)
   // Tap the location to open a route in maps (§4) — by coordinates when the event
   // has them, otherwise by its location text. Same helper as places / markets.
@@ -155,6 +314,12 @@ function EventCard({ event }) {
       <div className="event-card__body">
         <h3 className="event-card__title">{event.title}</h3>
         <div className="event-card__meta">
+          {date && (
+            <span className="event-card__meta-item">
+              <CalendarDays size={14} aria-hidden="true" />
+              {date}
+            </span>
+          )}
           {time && (
             <span className="event-card__meta-item">
               <Clock size={14} aria-hidden="true" />

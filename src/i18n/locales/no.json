@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "På programmet",
-    "subtitle": "Arrangementer i byen din, etter dato",
+    "subtitle": "Arrangementer i hele landet, nærmest først",
     "empty": "Ingen arrangementer ennå.",
-    "undated": "Dato kunngjøres senere"
+    "undated": "Dato kunngjøres senere",
+    "filter": {
+      "all": "Alle byer",
+      "label": "By",
+      "aria": "Filtrer arrangementer etter by"
+    }
   },
   "news": {
     "title": "Bynyheter",

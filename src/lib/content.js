@@ -144,6 +144,37 @@ export async function fetchUpcomingEvents(cityId, { columns = '*', limit, order 
 }
 
 /**
+ * REGIONAL afisha (Stage C part 2): approved, not-past events of the active
+ * city's whole COUNTRY, ordered by PROXIMITY to the active city (own city first,
+ * then nearer → farther), and within the same proximity by soonest date.
+ *
+ * The proximity sort — including the min-distance of a multi-city event to the
+ * user's city and the not-past cutoff (Turkey time) — is computed SERVER-SIDE by
+ * the Postgres function events_by_country_proximity (supabase/events-regional.sql),
+ * so the ordering is consistent and phones don't crunch haversine. The hard
+ * country boundary (§5) lives there too: only same-country events come back, so
+ * Dubai never sees a Turkish event. Each event appears once (no duplication).
+ *
+ * This is the DEFAULT afisha view (Home rail + Events screen "All cities"). The
+ * per-city view still uses fetchUpcomingEvents (city-scoped). RLS gates the rows
+ * to approved-only inside the function.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {{ limit?: number }} [opts]
+ * @returns {Promise<Array>} events ordered by proximity then date (throws on error)
+ */
+export async function fetchRegionalEvents(cityId, { limit } = {}) {
+  if (!cityId) return []
+  // The function already filters (approved / not-past / same country) and orders
+  // (proximity, then date) — we only cap the row count. Order is preserved.
+  let query = supabase.rpc('events_by_country_proximity', { p_city_id: cityId })
+  if (limit) query = query.limit(limit)
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+/**
  * Fetch translations for a set of content rows in a single language and merge
  * them onto the rows. Only approved-parent translations are returned (RLS), so
  * this is safe to call with public rows.

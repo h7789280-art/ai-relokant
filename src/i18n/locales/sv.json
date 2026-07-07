@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "På gång",
-    "subtitle": "Evenemang i din stad, efter datum",
+    "subtitle": "Evenemang i hela landet, närmast först",
     "empty": "Inga evenemang ännu.",
-    "undated": "Datum meddelas senare"
+    "undated": "Datum meddelas senare",
+    "filter": {
+      "all": "Alla städer",
+      "label": "Stad",
+      "aria": "Filtrera evenemang efter stad"
+    }
   },
   "news": {
     "title": "Stadens nyheter",

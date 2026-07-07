@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Veranstaltungen",
-    "subtitle": "Veranstaltungen in Ihrer Stadt, nach Datum",
+    "subtitle": "Veranstaltungen im ganzen Land, nächstgelegene zuerst",
     "empty": "Noch keine Veranstaltungen.",
-    "undated": "Datum wird bekannt gegeben"
+    "undated": "Datum wird bekannt gegeben",
+    "filter": {
+      "all": "Alle Städte",
+      "label": "Stadt",
+      "aria": "Veranstaltungen nach Stadt filtern"
+    }
   },
   "news": {
     "title": "Stadtnachrichten",

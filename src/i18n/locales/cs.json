@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Co se děje",
-    "subtitle": "Události ve vašem městě podle data",
+    "subtitle": "Akce po celé zemi, nejbližší první",
     "empty": "Zatím žádné události.",
-    "undated": "Datum bude upřesněno"
+    "undated": "Datum bude upřesněno",
+    "filter": {
+      "all": "Všechna města",
+      "label": "Město",
+      "aria": "Filtrovat akce podle města"
+    }
   },
   "news": {
     "title": "Zprávy z města",

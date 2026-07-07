@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Co się dzieje",
-    "subtitle": "Wydarzenia w Twoim mieście, według daty",
+    "subtitle": "Wydarzenia w całym kraju, najbliższe najpierw",
     "empty": "Brak wydarzeń.",
-    "undated": "Data zostanie ogłoszona"
+    "undated": "Data zostanie ogłoszona",
+    "filter": {
+      "all": "Wszystkie miasta",
+      "label": "Miasto",
+      "aria": "Filtruj wydarzenia według miasta"
+    }
   },
   "news": {
     "title": "Wiadomości miejskie",

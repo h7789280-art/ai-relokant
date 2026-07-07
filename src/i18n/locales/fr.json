@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "À l'affiche",
-    "subtitle": "Les événements de votre ville, par date",
+    "subtitle": "Événements dans tout le pays, les plus proches d'abord",
     "empty": "Aucun événement pour l'instant.",
-    "undated": "Date à confirmer"
+    "undated": "Date à confirmer",
+    "filter": {
+      "all": "Toutes les villes",
+      "label": "Ville",
+      "aria": "Filtrer les événements par ville"
+    }
   },
   "news": {
     "title": "Actualités de la ville",

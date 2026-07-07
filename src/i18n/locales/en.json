@@ -205,7 +205,7 @@
   },
   "events": {
     "title": "What's on",
-    "subtitle": "Events in your city, by date",
+    "subtitle": "Events across the country, nearest first",
     "empty": "No events yet.",
     "undated": "Date to be announced",
     "when": "Date & time",
@@ -219,9 +219,18 @@
       "from": "from {{from}} {{symbol}}",
       "to": "up to {{to}} {{symbol}}",
       "deposit": "Deposit {{amount}} {{symbol}} (applied to your order)",
-      "currency": { "TRY": "₺", "EUR": "€", "USD": "$" }
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
     },
-    "notFound": "Event not found."
+    "notFound": "Event not found.",
+    "filter": {
+      "all": "All cities",
+      "label": "City",
+      "aria": "Filter events by city"
+    }
   },
   "news": {
     "title": "City news",

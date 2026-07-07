@@ -31,7 +31,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchCity, fetchContent, fetchTodayMarkets, fetchUpcomingEvents } from '../lib/content.js'
+import { fetchCity, fetchContent, fetchTodayMarkets, fetchRegionalEvents } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
@@ -58,13 +58,16 @@ const CHIPS = [
 // Feed query options. Module-scoped so their identity is stable across renders
 // (they're used as effect deps in useContentFeed).
 const NEWS_OPTS = { limit: 8, order: { column: 'published_at', ascending: false } }
-const EVENTS_OPTS = { limit: 8, order: { column: 'starts_at', ascending: true } }
+const EVENTS_OPTS = { limit: 8 }
 
-// Events use the "upcoming only" reader so past events drop off the Home rail the
-// moment their date passes (Turkey time); other feeds use the plain reader. The
-// fetcher ignores `table` (events-only) but keeps the (table, cityId, opts)
-// shape so useContentFeed stays uniform. Module-scoped for a stable identity.
-const fetchEventsFeed = (_table, cityId, opts) => fetchUpcomingEvents(cityId, opts)
+// The Home afisha rail is REGIONAL (Stage C part 2): upcoming events of the whole
+// country, ordered by proximity to the active city (own city first), computed
+// server-side — see fetchRegionalEvents. Past events drop off automatically
+// (Turkey-time cutoff in the function). The fetcher ignores `table` (events-only)
+// but keeps the (table, cityId, opts) shape so useContentFeed stays uniform.
+// Module-scoped for a stable identity. No per-city filter here — that lives on
+// the full Events screen (§ requirement).
+const fetchEventsFeed = (_table, cityId, opts) => fetchRegionalEvents(cityId, opts)
 
 // Small async-state hook for one content feed. Treats errors like "empty" so a
 // flaky network never breaks the screen — it just shows the placeholder (§4).

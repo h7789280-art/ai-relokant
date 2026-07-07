@@ -169,9 +169,14 @@
   },
   "events": {
     "title": "Te doen",
-    "subtitle": "Evenementen in je stad, op datum",
+    "subtitle": "Evenementen in het hele land, dichtstbijzijnde eerst",
     "empty": "Nog geen evenementen.",
-    "undated": "Datum volgt nog"
+    "undated": "Datum volgt nog",
+    "filter": {
+      "all": "Alle steden",
+      "label": "Stad",
+      "aria": "Evenementen filteren op stad"
+    }
   },
   "news": {
     "title": "Stadsnieuws",
