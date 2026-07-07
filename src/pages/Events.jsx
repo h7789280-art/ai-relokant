@@ -6,10 +6,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, MapPin, Clock, ChevronRight } from 'lucide-react'
+import { ArrowLeft, CalendarDays, MapPin, Clock, Ticket, ChevronRight } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchUpcomingEvents, withTranslations } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
+import { formatEventPrice } from '../lib/eventPrice.js'
 import i18n from '../i18n/index.js'
 
 // Oldest-first by start date keeps the agenda reading top-to-bottom; undated
@@ -115,8 +116,10 @@ function renderGroups(rows, t) {
 }
 
 function EventCard({ event }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const time = formatTime(event.starts_at)
+  const price = formatEventPrice(event, t)
   // Tap the location to open a route in maps (§4) — by coordinates when the event
   // has them, otherwise by its location text. Same helper as places / markets.
   const route = directionsUrl({
@@ -176,6 +179,12 @@ function EventCard({ event }) {
                 {event.location}
               </span>
             ))}
+          {price && (
+            <span className="event-card__meta-item">
+              <Ticket size={14} aria-hidden="true" />
+              {price}
+            </span>
+          )}
         </div>
         {event.description && <p className="event-card__desc">{event.description}</p>}
       </div>

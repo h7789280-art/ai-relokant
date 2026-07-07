@@ -195,8 +195,18 @@
     "empty": "Событий пока нет.",
     "undated": "Дата уточняется",
     "when": "Дата и время",
+    "gathering": "Сбор в {{time}}",
     "location": "Место",
     "link": "Страница события",
+    "price": {
+      "label": "Билеты",
+      "free": "Бесплатно",
+      "range": "от {{from}} до {{to}} {{symbol}}",
+      "from": "от {{from}} {{symbol}}",
+      "to": "до {{to}} {{symbol}}",
+      "deposit": "Депозит {{amount}} {{symbol}} (идёт на заказ)",
+      "currency": { "TRY": "₺", "EUR": "€", "USD": "$" }
+    },
     "notFound": "Событие не найдено."
   },
   "news": {
@@ -419,9 +429,22 @@
       "description": "Описание",
       "startsAt": "Начало",
       "endsAt": "Окончание",
+      "gathering": "Сбор гостей",
       "location": "Место проведения",
       "locationPlaceholder": "напр. Аланийская крепость",
       "url": "Ссылка",
+      "price": "Цена билетов",
+      "priceType": {
+        "none": "Не указано",
+        "paid": "Платно",
+        "free": "Бесплатно",
+        "deposit": "Депозит"
+      },
+      "priceFrom": "От",
+      "priceTo": "До",
+      "priceDeposit": "Сумма депозита",
+      "priceCurrency": "Валюта",
+      "priceDepositHint": "Идёт на заказ (не отдельная плата).",
       "submitCreate": "Добавить событие"
     },
     "guides": {

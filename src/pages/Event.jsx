@@ -6,10 +6,50 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, MapPin, Navigation, ExternalLink } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  Navigation,
+  ExternalLink,
+  Clock,
+  Ticket,
+  Camera,
+  Send,
+  MessageCircle,
+} from 'lucide-react'
 import { fetchEvent, withTranslations } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
+import { formatEventPrice } from '../lib/eventPrice.js'
 import i18n from '../i18n/index.js'
+
+// Social handles are stored verbatim (an @handle or a full link), same as
+// places. Pull the handle out and rebuild a clean profile URL so the link
+// always lands right. Mirrors the helpers in src/pages/Place.jsx.
+function instagramLink(value) {
+  const handle = String(value)
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^(www\.)?instagram\.com\//i, '')
+    .replace(/^@/, '')
+    .split(/[/?#]/)[0]
+  return handle ? `https://instagram.com/${handle}` : null
+}
+
+function telegramLink(value) {
+  const handle = String(value)
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^(www\.)?(t\.me|telegram\.me)\//i, '')
+    .replace(/^@/, '')
+    .split(/[/?#]/)[0]
+  return handle ? `https://t.me/${handle}` : null
+}
+
+function whatsappLink(number) {
+  const digits = String(number).replace(/\D/g, '')
+  return digits ? `https://wa.me/${digits}` : null
+}
 
 function formatDay(value) {
   const d = new Date(value)
@@ -109,6 +149,14 @@ export default function Event() {
 
   const event = state.event
   const when = formatWhen(event.starts_at, event.ends_at)
+  // "Gathering / doors" time — shown before the start. Only its time matters
+  // (the day is the event's day); null when unset/invalid so we hide it.
+  const gatheringTime = formatTime(event.gathering_at)
+  const gathering = gatheringTime ? t('events.gathering', { time: gatheringTime }) : null
+  const price = formatEventPrice(event, t)
+  const instagram = event.instagram ? instagramLink(event.instagram) : null
+  const telegram = event.telegram ? telegramLink(event.telegram) : null
+  const whatsapp = event.whatsapp ? whatsappLink(event.whatsapp) : null
   // Tap the location to open a route in maps (§4) — by coordinates when present,
   // else by the location text. Same helper as places / markets.
   const route = directionsUrl({
@@ -153,12 +201,55 @@ export default function Event() {
         </div>
       )}
 
+      {/* Social / contact links — shown only when filled. */}
+      {(instagram || telegram || whatsapp) && (
+        <div className="place__actions place__socials">
+          {instagram && (
+            <a className="place-action" href={instagram} target="_blank" rel="noopener noreferrer">
+              <Camera size={20} aria-hidden="true" />
+              <span>{t('place.instagram')}</span>
+            </a>
+          )}
+          {telegram && (
+            <a className="place-action" href={telegram} target="_blank" rel="noopener noreferrer">
+              <Send size={20} aria-hidden="true" />
+              <span>{t('place.telegram')}</span>
+            </a>
+          )}
+          {whatsapp && (
+            <a className="place-action" href={whatsapp} target="_blank" rel="noopener noreferrer">
+              <MessageCircle size={20} aria-hidden="true" />
+              <span>{t('place.whatsapp')}</span>
+            </a>
+          )}
+        </div>
+      )}
+
       {when && (
         <section className="place__section place__detail">
           <CalendarDays className="place__detail-icon" size={18} aria-hidden="true" />
           <div>
             <h2 className="place__detail-label">{t('events.when')}</h2>
             <p className="place__detail-value">{when}</p>
+          </div>
+        </section>
+      )}
+
+      {gathering && (
+        <section className="place__section place__detail">
+          <Clock className="place__detail-icon" size={18} aria-hidden="true" />
+          <div>
+            <p className="place__detail-value">{gathering}</p>
+          </div>
+        </section>
+      )}
+
+      {price && (
+        <section className="place__section place__detail">
+          <Ticket className="place__detail-icon" size={18} aria-hidden="true" />
+          <div>
+            <h2 className="place__detail-label">{t('events.price.label')}</h2>
+            <p className="place__detail-value">{price}</p>
           </div>
         </section>
       )}

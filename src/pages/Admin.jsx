@@ -48,6 +48,7 @@ import {
   deleteMarketScheduleDay,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
+import { EVENT_CURRENCIES, currencySymbol } from '../lib/eventPrice.js'
 
 // Client-side guard on the photo upload (the bucket also enforces type/size via
 // its own config, but failing fast here gives a friendlier message).
@@ -1452,12 +1453,26 @@ const emptyEvent = () => ({
   title: '',
   description: '',
   starts_at: '',
+  gathering_at: '',
   ends_at: '',
   location: '',
   url: '',
+  instagram: '',
+  telegram: '',
+  whatsapp: '',
   image_url: '',
   status: 'approved',
+  // Ticket price. '' = not set (nothing shown); otherwise 'paid'/'free'/'deposit'.
+  price_type: '',
+  price_from: '',
+  price_to: '',
+  price_deposit: '',
+  price_currency: 'TRY',
 })
+
+// numeric columns come back from PostgREST as strings; keep them as-is for the
+// input, just guard against null.
+const numToInput = (v) => (v === null || v === undefined ? '' : String(v))
 
 function formFromEvent(ev) {
   return {
@@ -1465,11 +1480,20 @@ function formFromEvent(ev) {
     title: ev.title ?? '',
     description: ev.description ?? '',
     starts_at: toDateTimeLocal(ev.starts_at),
+    gathering_at: toDateTimeLocal(ev.gathering_at),
     ends_at: toDateTimeLocal(ev.ends_at),
     location: ev.location ?? '',
     url: ev.url ?? '',
+    instagram: ev.instagram ?? '',
+    telegram: ev.telegram ?? '',
+    whatsapp: ev.whatsapp ?? '',
     image_url: ev.image_url ?? '',
     status: ev.status ?? 'approved',
+    price_type: ev.price_type ?? '',
+    price_from: numToInput(ev.price_from),
+    price_to: numToInput(ev.price_to),
+    price_deposit: numToInput(ev.price_deposit),
+    price_currency: ev.price_currency ?? 'TRY',
   }
 }
 
@@ -1529,16 +1553,35 @@ function EventsSection() {
       sec.setError(t('admin.form.titleRequired'))
       return
     }
+    // Blank / non-numeric price inputs become null. Only the amounts that belong
+    // to the chosen mode are kept — switching mode clears the others so stale
+    // numbers never linger on the row.
+    const toNum = (v) => {
+      const s = String(v).trim()
+      if (!s) return null
+      const n = Number(s)
+      return Number.isNaN(n) ? null : n
+    }
+    const type = form.price_type || null
     const payload = {
       title,
       description: form.description.trim() || null,
       starts_at: inputToISO(form.starts_at),
+      gathering_at: inputToISO(form.gathering_at),
       ends_at: inputToISO(form.ends_at),
       location: form.location.trim() || null,
       url: form.url.trim() || null,
+      instagram: form.instagram.trim() || null,
+      telegram: form.telegram.trim() || null,
+      whatsapp: form.whatsapp.trim() || null,
       image_url: form.image_url.trim() || null,
       status: form.status,
       verified_at: form.status === 'approved' ? new Date().toISOString() : null,
+      price_type: type,
+      price_from: type === 'paid' ? toNum(form.price_from) : null,
+      price_to: type === 'paid' ? toNum(form.price_to) : null,
+      price_deposit: type === 'deposit' ? toNum(form.price_deposit) : null,
+      price_currency: form.price_currency || 'TRY',
     }
     const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
     if (!saved) return
@@ -1591,6 +1634,7 @@ function EventsSection() {
             />
           </label>
 
+          {/* Start · Gathering ("doors", before the start) · End. */}
           <div className="admin-form__row">
             <label className="admin-field">
               <span className="admin-field__label">{t('admin.events.startsAt')}</span>
@@ -1599,6 +1643,15 @@ function EventsSection() {
                 type="datetime-local"
                 value={form.starts_at}
                 onChange={(e) => setField('starts_at', e.target.value)}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.events.gathering')}</span>
+              <input
+                className="admin-field__input"
+                type="datetime-local"
+                value={form.gathering_at}
+                onChange={(e) => setField('gathering_at', e.target.value)}
               />
             </label>
             <label className="admin-field">
@@ -1633,6 +1686,134 @@ function EventsSection() {
               placeholder={t('admin.form.websitePlaceholder')}
             />
           </label>
+
+          {/* Socials — same meaning / handling as the place form. */}
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.instagram')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.instagram}
+              onChange={(e) => setField('instagram', e.target.value)}
+              placeholder={t('admin.form.instagramPlaceholder')}
+            />
+          </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.telegram')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                value={form.telegram}
+                onChange={(e) => setField('telegram', e.target.value)}
+                placeholder={t('admin.form.telegramPlaceholder')}
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.whatsapp')}</span>
+              <input
+                className="admin-field__input"
+                type="tel"
+                value={form.whatsapp}
+                onChange={(e) => setField('whatsapp', e.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Ticket price — one mode at a time (see supabase/events-fields.sql).
+              Amounts show only for the mode that needs them. */}
+          <div className="admin-field">
+            <span className="admin-field__label">{t('admin.events.price')}</span>
+            <div className="admin-seg">
+              {['', 'paid', 'free', 'deposit'].map((opt) => (
+                <button
+                  key={opt || 'none'}
+                  type="button"
+                  className={`admin-btn ${
+                    form.price_type === opt ? 'admin-btn--primary' : 'admin-btn--ghost'
+                  }`}
+                  onClick={() => setField('price_type', opt)}
+                >
+                  {t(`admin.events.priceType.${opt || 'none'}`)}
+                </button>
+              ))}
+            </div>
+
+            {form.price_type === 'paid' && (
+              <div className="admin-form__row">
+                <label className="admin-field">
+                  <span className="admin-field__label">{t('admin.events.priceFrom')}</span>
+                  <input
+                    className="admin-field__input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.price_from}
+                    onChange={(e) => setField('price_from', e.target.value)}
+                  />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field__label">{t('admin.events.priceTo')}</span>
+                  <input
+                    className="admin-field__input"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.price_to}
+                    onChange={(e) => setField('price_to', e.target.value)}
+                  />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field__label">{t('admin.events.priceCurrency')}</span>
+                  <select
+                    className="admin-field__input"
+                    value={form.price_currency}
+                    onChange={(e) => setField('price_currency', e.target.value)}
+                  >
+                    {EVENT_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {currencySymbol(c, t)} {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+
+            {form.price_type === 'deposit' && (
+              <>
+                <div className="admin-form__row">
+                  <label className="admin-field">
+                    <span className="admin-field__label">{t('admin.events.priceDeposit')}</span>
+                    <input
+                      className="admin-field__input"
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={form.price_deposit}
+                      onChange={(e) => setField('price_deposit', e.target.value)}
+                    />
+                  </label>
+                  <label className="admin-field">
+                    <span className="admin-field__label">{t('admin.events.priceCurrency')}</span>
+                    <select
+                      className="admin-field__input"
+                      value={form.price_currency}
+                      onChange={(e) => setField('price_currency', e.target.value)}
+                    >
+                      {EVENT_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {currencySymbol(c, t)} {c}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <span className="admin-field__hint muted">{t('admin.events.priceDepositHint')}</span>
+              </>
+            )}
+          </div>
 
           <PhotoField value={form.image_url} onChange={(v) => setField('image_url', v)} />
 

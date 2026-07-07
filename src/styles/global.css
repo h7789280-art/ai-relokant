@@ -3873,6 +3873,14 @@ a.event-card__meta-link svg {
   gap: var(--space-2);
 }
 
+/* Segmented price-type selector (Not set / Paid / Free / Deposit). */
+.admin-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
 .admin-form__error {
   margin: 0;
   font-size: var(--text-sm);
