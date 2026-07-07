@@ -31,7 +31,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
-import { fetchCity, fetchContent } from '../lib/content.js'
+import { fetchCity, fetchContent, fetchMarkets } from '../lib/content.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
 import { fetchRates } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
@@ -57,7 +57,6 @@ const CHIPS = [
 // (they're used as effect deps in useContentFeed).
 const NEWS_OPTS = { limit: 8, order: { column: 'published_at', ascending: false } }
 const EVENTS_OPTS = { limit: 8, order: { column: 'starts_at', ascending: true } }
-const MARKETS_OPTS = { limit: 8 }
 
 // Small async-state hook for one content feed. Treats errors like "empty" so a
 // flaky network never breaks the screen — it just shows the placeholder (§4).
@@ -147,8 +146,23 @@ export default function Home() {
 
   // --- content feeds ---------------------------------------------------------
   const news = useContentFeed('news', cityId, NEWS_OPTS)
-  const markets = useContentFeed('places', cityId, MARKETS_OPTS)
   const events = useContentFeed('events', cityId, EVENTS_OPTS)
+
+  // Markets: ONLY places tagged with the `markets` category (bazaars / food
+  // markets) — never the whole catalog (§4). Own effect (not useContentFeed)
+  // because it resolves the markets category before querying places. Errors →
+  // empty, so a flaky network just shows the placeholder.
+  const [markets, setMarkets] = useState({ status: 'loading', rows: [] })
+  useEffect(() => {
+    if (!cityId) return
+    let active = true
+    fetchMarkets(cityId, { limit: 8 })
+      .then((rows) => active && setMarkets({ status: 'ready', rows }))
+      .catch(() => active && setMarkets({ status: 'ready', rows: [] }))
+    return () => {
+      active = false
+    }
+  }, [cityId])
 
   // The search bar and chips currently just open the AI chat (§4 — wired to the
   // chat tab for now). The question is handed over via router state so Chat can

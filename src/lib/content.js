@@ -187,6 +187,35 @@ export async function fetchPlaces(cityId, { categoryId, subcategoryId, columns =
 }
 
 /**
+ * Approved "markets / bazaars" for the active city's Home rail (§4 screen 1).
+ * Markets are places tagged with the top-level `markets` category, so the rail
+ * shows ONLY markets — never other catalog places (dentists, cafés, cake shops…).
+ * Promoted placements lead (§12), then by name. Returns [] when the `markets`
+ * category isn't seeded yet or the city has no markets.
+ *
+ * TODO (owner rule §): also surface grocery/food shops that have an ACTIVE
+ * discount / promo, but ONLY those — there is no discount field on `places`
+ * today, so we show markets only and do NOT invent a signal. Add the field
+ * (e.g. `places.has_active_deal` + validity dates) first, then widen this query.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {{ columns?: string, limit?: number }} [opts]
+ */
+export async function fetchMarkets(cityId, { columns = '*', limit } = {}) {
+  if (!cityId) return []
+  const category = await fetchCategoryBySlug('markets')
+  if (!category) return []
+  let query = publicContentQuery('places', cityId, { columns })
+    .eq('category_id', category.id)
+    .order('is_promoted', { ascending: false })
+    .order('name', { ascending: true })
+  if (limit) query = query.limit(limit)
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+/**
  * A single approved place by id (for the place card). The approved filter is
  * also enforced by RLS, but we keep it explicit. Returns null when not found.
  */
