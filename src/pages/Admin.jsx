@@ -1934,8 +1934,10 @@ function EventsSection({ geo }) {
             />
           </label>
 
-          {/* Start · Gathering ("doors", before the start) · End. */}
-          <div className="admin-form__row">
+          {/* Start · Gathering ("doors", before the start) · End.
+             Stacked vertically (full-width each) so the datetime-local pickers
+             never get squeezed / clipped on narrow phone widths. */}
+          <div className="admin-form__row admin-form__row--stack">
             <label className="admin-field">
               <span className="admin-field__label">{t('admin.events.startsAt')}</span>
               <input

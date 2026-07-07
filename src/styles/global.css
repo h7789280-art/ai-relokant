@@ -1009,7 +1009,11 @@ button {
   white-space: nowrap;
 }
 
-/* Horizontal rail — bleeds to the card edges so cards can scroll past them. */
+/* Horizontal rail — bleeds to the card edges so cards can scroll past them.
+   overflow-x:auto silently forces the y-axis to clip too (see .home__chips), so
+   the BLOCK padding must reserve real room top & bottom INSIDE the clip region —
+   otherwise the card's bottom (photo shadow, title, meta) gets sliced by the
+   padding-box edge and reads as "cut off with no air below". */
 .feed__rail {
   display: flex;
   gap: var(--space-3);
@@ -1018,7 +1022,7 @@ button {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--space-4));
-  padding: var(--space-1) var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-3);
 }
 
 .feed__rail::-webkit-scrollbar {
@@ -3966,6 +3970,13 @@ a.event-card__meta-link svg {
 .admin-form__row .admin-field {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Stacked variant: fields sit full-width one under another instead of side by
+   side. Used for the event date-time pickers (Start / Gathering / End), which
+   get clipped when squeezed into one row on narrow phone screens. */
+.admin-form__row--stack {
+  flex-direction: column;
 }
 
 .admin-field {
