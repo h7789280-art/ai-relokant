@@ -43,6 +43,7 @@ import {
   createContent,
   updateContent,
   deleteContent,
+  setContentCities,
   purgePastEvents,
   uploadPlacePhoto,
   requestTranslation,
@@ -60,6 +61,10 @@ import { EVENT_CURRENCIES, currencySymbol } from '../lib/eventPrice.js'
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
 const TABS = ['places', 'news', 'events', 'guides', 'marketSchedule']
+
+// Content types shown in SEVERAL cities of one country (Stage B) — the form uses
+// a city-checkbox picker and writes a link table instead of a single city_id.
+const MULTI_CITY_TABLES = ['news', 'guides']
 
 export default function Admin() {
   const { t } = useTranslation()
@@ -284,6 +289,70 @@ function CountryCityFields({ geo, cityId, onCityChange }) {
         </select>
       </label>
     </div>
+  )
+}
+
+// Country selector + a grid of city CHECKBOXES for that country (Stage B, multi-
+// city news / guides). The record is shown in EVERY checked city, and all checked
+// cities must be of ONE country (§5 — the hard boundary). Switching the country
+// clears the checked cities so two countries can never be mixed; inactive
+// ("(soon)") cities are shown too, so content can be staged before launch.
+// `countryId` / `cityIds` are the current form values; `onChange({ countryId,
+// cityIds })` updates them together.
+function CountryCitiesField({ geo, countryId, cityIds, onChange }) {
+  const { t } = useTranslation()
+  const { countries, cities } = geo
+  const countryCities = cities.filter((c) => c.country_id === countryId)
+  const soon = (row) => (row.is_active ? '' : ` ${t('admin.form.soon')}`)
+
+  const handleCountry = (nextCountryId) => {
+    // Changing country resets the checked cities — a record can't span countries.
+    onChange({ countryId: nextCountryId, cityIds: [] })
+  }
+  const toggleCity = (id) => {
+    const next = cityIds.includes(id)
+      ? cityIds.filter((c) => c !== id)
+      : [...cityIds, id]
+    onChange({ countryId, cityIds: next })
+  }
+
+  return (
+    <>
+      <label className="admin-field">
+        <span className="admin-field__label">{t('admin.form.country')}</span>
+        <select
+          className="admin-field__input"
+          value={countryId}
+          onChange={(e) => handleCountry(e.target.value)}
+        >
+          {countries.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {soon(c)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <fieldset className="admin-field admin-langs">
+        <legend className="admin-field__label">{t('admin.form.cities')}</legend>
+        <div className="admin-langs__grid">
+          {countryCities.map((c) => (
+            <label key={c.id} className="admin-lang">
+              <input
+                type="checkbox"
+                checked={cityIds.includes(c.id)}
+                onChange={() => toggleCity(c.id)}
+              />
+              <span>
+                {c.name}
+                {soon(c)}
+              </span>
+            </label>
+          ))}
+        </div>
+        <span className="admin-field__hint muted">{t('admin.form.citiesHint')}</span>
+      </fieldset>
+    </>
   )
 }
 
@@ -582,14 +651,22 @@ function useContentSection(table) {
     reload()
   }, [reload])
 
-  // Save a built payload. The payload now carries its own `city_id` (chosen in the
-  // form via CountryCityFields, Stage A) instead of the active city — so the owner
-  // can file a record under any city. Returns the saved row on success (truthy →
-  // the caller resets, or keeps the form with the new id to translate), null on
-  // failure.
-  async function save({ payload, isEdit, id, name }) {
+  const isMultiCity = MULTI_CITY_TABLES.includes(table)
+
+  // Save a built payload. For single-city tables (events) the payload carries its
+  // own `city_id` (Stage A). For multi-city tables (news / guides, Stage B) the
+  // payload has NO city_id; instead `cityIds` lists the cities to show it in, and
+  // we replace the row's links after it saves. Returns the saved row on success
+  // (truthy → the caller resets, or keeps the form with the new id to translate),
+  // null on failure.
+  async function save({ payload, cityIds, isEdit, id, name }) {
     if (saving) return null
-    if (!payload?.city_id) {
+    if (isMultiCity) {
+      if (!cityIds?.length) {
+        setError(t('admin.form.citiesRequired'))
+        return null
+      }
+    } else if (!payload?.city_id) {
       setError(t('admin.form.cityRequired'))
       return null
     }
@@ -602,6 +679,9 @@ function useContentSection(table) {
       const saved = isEdit
         ? await updateContent(table, id, payload)
         : await createContent(table, payload)
+      if (isMultiCity && saved?.id) {
+        await setContentCities(table, saved.id, cityIds)
+      }
       setSuccess(t(isEdit ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       reload()
       return saved
@@ -1298,9 +1378,12 @@ function PlacesSection({ geo }) {
 // News
 // ============================================================================
 
-const emptyNews = (cityId = '') => ({
+// Multi-city (Stage B): no single city_id — the form tracks the country and the
+// set of checked cities (city_ids); the row is written to a link table.
+const emptyNews = () => ({
   id: null,
-  city_id: cityId,
+  country_id: '',
+  city_ids: [],
   title: '',
   summary: '',
   body: '',
@@ -1315,7 +1398,8 @@ const emptyNews = (cityId = '') => ({
 function formFromNews(n) {
   return {
     id: n.id,
-    city_id: n.city_id ?? '',
+    country_id: '', // derived from the linked cities by the caller (needs geo)
+    city_ids: Array.isArray(n.city_ids) ? n.city_ids : [],
     title: n.title ?? '',
     summary: n.summary ?? '',
     body: n.body ?? '',
@@ -1328,21 +1412,44 @@ function formFromNews(n) {
   }
 }
 
+// Default a NEW multi-city form to the active city (and its country) once geo has
+// loaded, mirroring the Stage-A "new record defaults to the active city" feel.
+// Editing an existing row (form.id set) or a form the owner already touched
+// (country_id set) is left alone.
+function useDefaultCity(geo, activeCityId, form, setForm) {
+  useEffect(() => {
+    if (form.id || form.country_id) return
+    const active = geo.cities.find((c) => c.id === activeCityId)
+    if (!active) return
+    setForm((f) => ({ ...f, country_id: active.country_id, city_ids: [active.id] }))
+  }, [geo, activeCityId, form.id, form.country_id, setForm])
+}
+
+// Names of the cities a multi-city row is shown in, for the moderation list.
+function cityNamesOf(geo, cityIds) {
+  if (!cityIds?.length) return ''
+  const byId = new Map(geo.cities.map((c) => [c.id, c.name]))
+  return cityIds.map((id) => byId.get(id) ?? '—').join(', ')
+}
+
 function NewsSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('news')
-  const [form, setForm] = useState(() => emptyNews(sec.cityId))
+  const [form, setForm] = useState(() => emptyNews())
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
+  useDefaultCity(geo, sec.cityId, form, setForm)
 
   const startEdit = (row) => {
     sec.setError('')
     sec.setSuccess('')
-    setForm(formFromNews(row))
+    const cityIds = Array.isArray(row.city_ids) ? row.city_ids : []
+    const firstCity = geo.cities.find((c) => c.id === cityIds[0])
+    setForm({ ...formFromNews(row), country_id: firstCity?.country_id ?? '', city_ids: cityIds })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyNews(sec.cityId))
+    setForm(emptyNews())
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -1366,7 +1473,8 @@ function NewsSection({ geo }) {
       return
     }
     const payload = {
-      city_id: form.city_id,
+      // No city_id — visibility is the set of linked cities (Stage B), written by
+      // sec.save via cityIds below.
       title,
       summary: form.summary.trim() || null,
       body: form.body.trim() || null,
@@ -1380,7 +1488,13 @@ function NewsSection({ geo }) {
         (form.status === 'approved' ? new Date().toISOString() : null),
       status: form.status,
     }
-    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    const saved = await sec.save({
+      payload,
+      cityIds: form.city_ids,
+      isEdit: editing,
+      id: form.id,
+      name: title,
+    })
     if (!saved) return
     if (translateAfter && !editing && saved.id) {
       setForm((f) => ({ ...f, id: saved.id }))
@@ -1416,10 +1530,13 @@ function NewsSection({ geo }) {
             />
           </label>
 
-          <CountryCityFields
+          <CountryCitiesField
             geo={geo}
-            cityId={form.city_id}
-            onCityChange={(v) => setField('city_id', v)}
+            countryId={form.country_id}
+            cityIds={form.city_ids}
+            onChange={({ countryId, cityIds }) =>
+              setForm((f) => ({ ...f, country_id: countryId, city_ids: cityIds }))
+            }
           />
 
           <label className="admin-field">
@@ -1539,7 +1656,11 @@ function NewsSection({ geo }) {
         <ModerationList
           state={sec.state}
           titleOf={(r) => r.title}
-          metaOf={(r) => [r.summary, r.source_name]}
+          metaOf={(r) => [
+            t('admin.form.citiesIn', { cities: cityNamesOf(geo, r.city_ids) }),
+            r.summary,
+            r.source_name,
+          ]}
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}
@@ -1996,9 +2117,11 @@ function EventsSection({ geo }) {
 // Guides
 // ============================================================================
 
-const emptyGuide = (cityId = '') => ({
+// Multi-city (Stage B): country + set of checked cities, same as news.
+const emptyGuide = () => ({
   id: null,
-  city_id: cityId,
+  country_id: '',
+  city_ids: [],
   title: '',
   body: '',
   source_url: '',
@@ -2009,7 +2132,8 @@ const emptyGuide = (cityId = '') => ({
 function formFromGuide(g) {
   return {
     id: g.id,
-    city_id: g.city_id ?? '',
+    country_id: '', // derived from the linked cities by the caller (needs geo)
+    city_ids: Array.isArray(g.city_ids) ? g.city_ids : [],
     title: g.title ?? '',
     body: g.body ?? '',
     source_url: g.source_url ?? '',
@@ -2021,18 +2145,21 @@ function formFromGuide(g) {
 function GuidesSection({ geo }) {
   const { t } = useTranslation()
   const sec = useContentSection('guides')
-  const [form, setForm] = useState(() => emptyGuide(sec.cityId))
+  const [form, setForm] = useState(() => emptyGuide())
   const setField = (f, v) => setForm((s) => ({ ...s, [f]: v }))
   const editing = Boolean(form.id)
+  useDefaultCity(geo, sec.cityId, form, setForm)
 
   const startEdit = (row) => {
     sec.setError('')
     sec.setSuccess('')
-    setForm(formFromGuide(row))
+    const cityIds = Array.isArray(row.city_ids) ? row.city_ids : []
+    const firstCity = geo.cities.find((c) => c.id === cityIds[0])
+    setForm({ ...formFromGuide(row), country_id: firstCity?.country_id ?? '', city_ids: cityIds })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const resetForm = () => {
-    setForm(emptyGuide(sec.cityId))
+    setForm(emptyGuide())
     sec.setError('')
   }
   // Drop the edit form if we're deleting the row it holds.
@@ -2056,7 +2183,7 @@ function GuidesSection({ geo }) {
       return
     }
     const payload = {
-      city_id: form.city_id,
+      // No city_id — visibility is the set of linked cities (Stage B).
       title,
       body: form.body.trim() || null,
       source_url: form.source_url.trim() || null,
@@ -2065,7 +2192,13 @@ function GuidesSection({ geo }) {
         (form.status === 'approved' ? new Date().toISOString() : null),
       status: form.status,
     }
-    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    const saved = await sec.save({
+      payload,
+      cityIds: form.city_ids,
+      isEdit: editing,
+      id: form.id,
+      name: title,
+    })
     if (!saved) return
     if (translateAfter && !editing && saved.id) {
       setForm((f) => ({ ...f, id: saved.id }))
@@ -2101,10 +2234,13 @@ function GuidesSection({ geo }) {
             />
           </label>
 
-          <CountryCityFields
+          <CountryCitiesField
             geo={geo}
-            cityId={form.city_id}
-            onCityChange={(v) => setField('city_id', v)}
+            countryId={form.country_id}
+            cityIds={form.city_ids}
+            onChange={({ countryId, cityIds }) =>
+              setForm((f) => ({ ...f, country_id: countryId, city_ids: cityIds }))
+            }
           />
 
           <label className="admin-field">
@@ -2190,7 +2326,10 @@ function GuidesSection({ geo }) {
         <ModerationList
           state={sec.state}
           titleOf={(r) => r.title}
-          metaOf={(r) => [r.body ? r.body.slice(0, 80) : null]}
+          metaOf={(r) => [
+            t('admin.form.citiesIn', { cities: cityNamesOf(geo, r.city_ids) }),
+            r.body ? r.body.slice(0, 80) : null,
+          ]}
           onApprove={sec.approve}
           onReject={sec.reject}
           onEdit={startEdit}

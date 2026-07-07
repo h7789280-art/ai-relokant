@@ -94,6 +94,15 @@ export async function deletePlace(id) {
 // Tables the admin moderation screen manages besides `places`.
 const ADMIN_CONTENT_TABLES = ['news', 'events', 'guides']
 
+// Multi-city content (Stage B): news / guides link to several cities of one
+// country through a join table, instead of a single city_id. Each entry is
+// { table: '<join table>', fk: '<parent id column>' }. Places / events stay
+// single-city. See supabase/news-guides-multi-city.sql.
+const CONTENT_CITY_JOINS = {
+  news: { table: 'news_cities', fk: 'news_id' },
+  guides: { table: 'guide_cities', fk: 'guide_id' },
+}
+
 function assertContentTable(table) {
   if (!ADMIN_CONTENT_TABLES.includes(table)) {
     throw new Error(`admin: "${table}" is not a moderated content table`)
@@ -111,6 +120,31 @@ function assertContentTable(table) {
 export async function fetchAdminContent(table, cityId) {
   assertContentTable(table)
   if (!cityId) return []
+  const join = CONTENT_CITY_JOINS[table]
+  if (join) {
+    // Multi-city (news / guides): list rows LINKED to the active city, but embed
+    // ALL of each row's city links so the moderation list can show every city an
+    // item is visible in. Two steps: the ids linked to the active city, then the
+    // rows with their full link set.
+    const { data: links, error: linkErr } = await supabase
+      .from(join.table)
+      .select(join.fk)
+      .eq('city_id', cityId)
+    if (linkErr) throw linkErr
+    const ids = [...new Set((links ?? []).map((l) => l[join.fk]))]
+    if (!ids.length) return []
+    const { data, error } = await supabase
+      .from(table)
+      .select(`*, ${join.table}(city_id)`)
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map((row) => {
+      const { [join.table]: cityLinks, ...rest } = row
+      return { ...rest, city_ids: (cityLinks ?? []).map((c) => c.city_id) }
+    })
+  }
+  // Single-city (events): filter directly on city_id, as before.
   const { data, error } = await supabase
     .from(table)
     .select('*')
@@ -118,6 +152,50 @@ export async function fetchAdminContent(table, cityId) {
     .order('created_at', { ascending: false })
   if (error) throw error
   return data ?? []
+}
+
+/**
+ * Replace the set of cities a multi-city row (news / guide) is shown in. Diffs
+ * against the current links and applies the minimum change, deleting removed
+ * links BEFORE inserting new ones — so switching the record to another country
+ * never momentarily mixes two countries (which the DB same-country trigger would
+ * reject). The trigger is the hard guarantee; the caller also keeps the picker to
+ * one country. `city_ids` of a deleted row are cleaned up by the FK cascade, so
+ * there is no delete-time counterpart to this.
+ *
+ * @param {('news'|'guides')} table
+ * @param {string} id           parent row id
+ * @param {string[]} cityIds    the cities the row should be visible in
+ */
+export async function setContentCities(table, id, cityIds) {
+  const join = CONTENT_CITY_JOINS[table]
+  if (!join) throw new Error(`setContentCities: "${table}" is not multi-city`)
+  if (!id) throw new Error('setContentCities: id is required')
+  const desired = [...new Set((cityIds ?? []).filter(Boolean))]
+
+  const { data: existingRows, error: readErr } = await supabase
+    .from(join.table)
+    .select('city_id')
+    .eq(join.fk, id)
+  if (readErr) throw readErr
+  const existing = (existingRows ?? []).map((r) => r.city_id)
+
+  const toDelete = existing.filter((c) => !desired.includes(c))
+  const toAdd = desired.filter((c) => !existing.includes(c))
+
+  if (toDelete.length) {
+    const { error } = await supabase
+      .from(join.table)
+      .delete()
+      .eq(join.fk, id)
+      .in('city_id', toDelete)
+    if (error) throw error
+  }
+  if (toAdd.length) {
+    const rows = toAdd.map((city_id) => ({ [join.fk]: id, city_id }))
+    const { error } = await supabase.from(join.table).insert(rows)
+    if (error) throw error
+  }
 }
 
 /** Create a content row. `city_id` is set by the caller. Returns the new row. */

@@ -9,6 +9,12 @@ import { supabase } from './supabase'
 // Content tables that are city-scoped AND moderated.
 export const CONTENT_TABLES = ['places', 'events', 'guides', 'news', 'ads']
 
+// Multi-city content (Stage B): one news item / guide can be shown in SEVERAL
+// cities of the same country via a link table, instead of a single city_id.
+// Each maps to its join table (foreign key `<table_singular>_id`, `city_id`).
+// Places / events stay single-city. See supabase/news-guides-multi-city.sql.
+const MULTI_CITY_JOINS = { news: 'news_cities', guides: 'guide_cities' }
+
 /**
  * Base query builder for a public content read: filtered by city_id and
  * status = 'approved'. Returns a Supabase query builder you can further refine
@@ -41,7 +47,24 @@ export function publicContentQuery(table, cityId, { columns = '*' } = {}) {
  * @returns {Promise<Array>} rows (throws on error)
  */
 export async function fetchContent(table, cityId, { columns = '*', limit, order } = {}) {
-  let query = publicContentQuery(table, cityId, { columns })
+  let query
+  const join = MULTI_CITY_JOINS[table]
+  if (join) {
+    // Multi-city read (Stage B): keep only rows LINKED to the active city, via an
+    // inner join on the link table. (fk, city_id) is unique, so a row shows up at
+    // most once in its city — no duplication. Country scoping is automatic: a
+    // Turkish item's links don't contain a UAE city, so Dubai never sees it.
+    if (!cityId) {
+      throw new Error(`fetchContent: cityId is required for "${table}"`)
+    }
+    query = supabase
+      .from(table)
+      .select(`${columns}, ${join}!inner(city_id)`)
+      .eq('status', 'approved')
+      .eq(`${join}.city_id`, cityId)
+  } else {
+    query = publicContentQuery(table, cityId, { columns })
+  }
   if (order) {
     // nullsFirst:false keeps undated rows out of the way of the freshest items.
     query = query.order(order.column, { ascending: order.ascending ?? false, nullsFirst: false })
