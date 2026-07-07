@@ -377,6 +377,7 @@
       "verified": "Verified",
       "submitCreate": "Add place",
       "submitSave": "Save changes",
+      "saveAndTranslate": "Save and translate",
       "saving": "Saving…",
       "cancel": "Cancel",
       "error": "Couldn't save. Please try again.",

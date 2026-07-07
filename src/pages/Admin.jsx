@@ -12,7 +12,7 @@
 // with status + quick moderation actions (approve / reject / edit). Approving a
 // row is all it takes for it to show up in the matching public section — both
 // read the same approved, city-scoped base.
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
 import {
@@ -496,25 +496,29 @@ function useContentSection(table) {
     reload()
   }, [reload])
 
-  // Save a built payload. Returns true on success so the caller can reset.
+  // Save a built payload. Returns the saved row on success (truthy → the caller
+  // resets, or keeps the form with the new id to translate), null on failure.
   async function save({ payload, isEdit, id, name }) {
-    if (saving) return false
+    if (saving) return null
     if (!cityId) {
       setError(t('admin.form.error'))
-      return false
+      return null
     }
     setSaving(true)
     setError('')
     setSuccess('')
     try {
-      if (isEdit) await updateContent(table, id, payload)
-      else await createContent(table, { ...payload, city_id: cityId })
+      // Return the saved row so the caller can, on create, keep the form loaded
+      // with the fresh id and open the translations panel ("Save and translate").
+      const saved = isEdit
+        ? await updateContent(table, id, payload)
+        : await createContent(table, { ...payload, city_id: cityId })
       setSuccess(t(isEdit ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       reload()
-      return true
+      return saved
     } catch (err) {
       setError(describeError(err) || t('admin.form.error'))
-      return false
+      return null
     } finally {
       setSaving(false)
     }
@@ -730,8 +734,15 @@ function PlacesSection() {
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  // On "Save and translate" for a brand-new row we keep the form loaded with the
+  // freshly created id (so the translations panel activates) and scroll to it.
+  const translationsRef = useRef(null)
+  const scrollToTranslations = () =>
+    requestAnimationFrame(() =>
+      translationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    )
+
+  async function submitPlace(translateAfter) {
     if (saving) return
     const name = form.name.trim()
     if (!name) {
@@ -769,9 +780,15 @@ function PlacesSection() {
     setError('')
     setSuccess('')
     try {
-      if (wasEditing) await updatePlace(form.id, payload)
-      else await createPlace(payload)
-      resetForm()
+      const saved = wasEditing ? await updatePlace(form.id, payload) : await createPlace(payload)
+      // "Save and translate" on a NEW place: keep the form loaded with the new id
+      // so the translations panel opens for it. Otherwise reset as before.
+      if (translateAfter && !wasEditing && saved?.id) {
+        setForm((f) => ({ ...f, id: saved.id }))
+        scrollToTranslations()
+      } else {
+        resetForm()
+      }
       setSuccess(t(wasEditing ? 'admin.form.savedEdit' : 'admin.form.savedCreate', { name }))
       loadPlaces()
     } catch (err) {
@@ -779,6 +796,11 @@ function PlacesSection() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    submitPlace(false)
   }
 
   async function patch(place, changes) {
@@ -1027,19 +1049,32 @@ function PlacesSection() {
 
           <FormBanners error={error} success={success} />
 
-          <TranslationsPanel
-            entityType="places"
-            entityId={form.id}
-            fields={[
-              { name: 'name', label: t('admin.form.name'), value: form.name },
-              { name: 'description', label: t('admin.form.description'), value: form.description },
-            ]}
-          />
+          <div ref={translationsRef}>
+            <TranslationsPanel
+              entityType="places"
+              entityId={form.id}
+              fields={[
+                { name: 'name', label: t('admin.form.name'), value: form.name },
+                { name: 'description', label: t('admin.form.description'), value: form.description },
+              ]}
+            />
+          </div>
 
           <div className="admin-form__actions">
             {editing && (
               <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
                 {t('admin.form.cancel')}
+              </button>
+            )}
+            {!editing && (
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost"
+                onClick={() => submitPlace(true)}
+                disabled={saving}
+              >
+                <Languages size={16} aria-hidden="true" />
+                {t('admin.form.saveAndTranslate')}
               </button>
             )}
             <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
@@ -1216,8 +1251,15 @@ function NewsSection() {
     sec.remove(id)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  // "Save and translate": keep a brand-new row loaded (with its fresh id) so the
+  // translations panel opens, then scroll to it. See useContentSection.save.
+  const translationsRef = useRef(null)
+  const scrollToTranslations = () =>
+    requestAnimationFrame(() =>
+      translationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    )
+
+  async function submitNews(translateAfter) {
     const title = form.title.trim()
     if (!title) {
       sec.setError(t('admin.form.titleRequired'))
@@ -1237,8 +1279,19 @@ function NewsSection() {
         (form.status === 'approved' ? new Date().toISOString() : null),
       status: form.status,
     }
-    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
-    if (ok) resetForm()
+    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (!saved) return
+    if (translateAfter && !editing && saved.id) {
+      setForm((f) => ({ ...f, id: saved.id }))
+      scrollToTranslations()
+    } else {
+      resetForm()
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    submitNews(false)
   }
 
   return (
@@ -1331,15 +1384,17 @@ function NewsSection() {
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
-          <TranslationsPanel
-            entityType="news"
-            entityId={form.id}
-            fields={[
-              { name: 'title', label: t('admin.news.title'), value: form.title },
-              { name: 'summary', label: t('admin.news.summary'), value: form.summary },
-              { name: 'body', label: t('admin.news.body'), value: form.body },
-            ]}
-          />
+          <div ref={translationsRef}>
+            <TranslationsPanel
+              entityType="news"
+              entityId={form.id}
+              fields={[
+                { name: 'title', label: t('admin.news.title'), value: form.title },
+                { name: 'summary', label: t('admin.news.summary'), value: form.summary },
+                { name: 'body', label: t('admin.news.body'), value: form.body },
+              ]}
+            />
+          </div>
 
           <FormBanners error={sec.error} success={sec.success} />
 
@@ -1347,6 +1402,17 @@ function NewsSection() {
             {editing && (
               <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
                 {t('admin.form.cancel')}
+              </button>
+            )}
+            {!editing && (
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost"
+                onClick={() => submitNews(true)}
+                disabled={sec.saving}
+              >
+                <Languages size={16} aria-hidden="true" />
+                {t('admin.form.saveAndTranslate')}
               </button>
             )}
             <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
@@ -1449,8 +1515,15 @@ function EventsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sec.cityId])
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  // "Save and translate": keep a brand-new row loaded (with its fresh id) so the
+  // translations panel opens, then scroll to it. See useContentSection.save.
+  const translationsRef = useRef(null)
+  const scrollToTranslations = () =>
+    requestAnimationFrame(() =>
+      translationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    )
+
+  async function submitEvent(translateAfter) {
     const title = form.title.trim()
     if (!title) {
       sec.setError(t('admin.form.titleRequired'))
@@ -1467,8 +1540,19 @@ function EventsSection() {
       status: form.status,
       verified_at: form.status === 'approved' ? new Date().toISOString() : null,
     }
-    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
-    if (ok) resetForm()
+    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (!saved) return
+    if (translateAfter && !editing && saved.id) {
+      setForm((f) => ({ ...f, id: saved.id }))
+      scrollToTranslations()
+    } else {
+      resetForm()
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    submitEvent(false)
   }
 
   const fmtMeta = (ev) => {
@@ -1554,14 +1638,16 @@ function EventsSection() {
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
-          <TranslationsPanel
-            entityType="events"
-            entityId={form.id}
-            fields={[
-              { name: 'title', label: t('admin.events.title'), value: form.title },
-              { name: 'description', label: t('admin.events.description'), value: form.description },
-            ]}
-          />
+          <div ref={translationsRef}>
+            <TranslationsPanel
+              entityType="events"
+              entityId={form.id}
+              fields={[
+                { name: 'title', label: t('admin.events.title'), value: form.title },
+                { name: 'description', label: t('admin.events.description'), value: form.description },
+              ]}
+            />
+          </div>
 
           <FormBanners error={sec.error} success={sec.success} />
 
@@ -1569,6 +1655,17 @@ function EventsSection() {
             {editing && (
               <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
                 {t('admin.form.cancel')}
+              </button>
+            )}
+            {!editing && (
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost"
+                onClick={() => submitEvent(true)}
+                disabled={sec.saving}
+              >
+                <Languages size={16} aria-hidden="true" />
+                {t('admin.form.saveAndTranslate')}
               </button>
             )}
             <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
@@ -1646,8 +1743,15 @@ function GuidesSection() {
     sec.remove(id)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  // "Save and translate": keep a brand-new row loaded (with its fresh id) so the
+  // translations panel opens, then scroll to it. See useContentSection.save.
+  const translationsRef = useRef(null)
+  const scrollToTranslations = () =>
+    requestAnimationFrame(() =>
+      translationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    )
+
+  async function submitGuide(translateAfter) {
     const title = form.title.trim()
     if (!title) {
       sec.setError(t('admin.form.titleRequired'))
@@ -1662,8 +1766,19 @@ function GuidesSection() {
         (form.status === 'approved' ? new Date().toISOString() : null),
       status: form.status,
     }
-    const ok = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
-    if (ok) resetForm()
+    const saved = await sec.save({ payload, isEdit: editing, id: form.id, name: title })
+    if (!saved) return
+    if (translateAfter && !editing && saved.id) {
+      setForm((f) => ({ ...f, id: saved.id }))
+      scrollToTranslations()
+    } else {
+      resetForm()
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    submitGuide(false)
   }
 
   return (
@@ -1723,14 +1838,16 @@ function GuidesSection() {
 
           <StatusField value={form.status} onChange={(v) => setField('status', v)} />
 
-          <TranslationsPanel
-            entityType="guides"
-            entityId={form.id}
-            fields={[
-              { name: 'title', label: t('admin.guides.title'), value: form.title },
-              { name: 'body', label: t('admin.guides.body'), value: form.body },
-            ]}
-          />
+          <div ref={translationsRef}>
+            <TranslationsPanel
+              entityType="guides"
+              entityId={form.id}
+              fields={[
+                { name: 'title', label: t('admin.guides.title'), value: form.title },
+                { name: 'body', label: t('admin.guides.body'), value: form.body },
+              ]}
+            />
+          </div>
 
           <FormBanners error={sec.error} success={sec.success} />
 
@@ -1738,6 +1855,17 @@ function GuidesSection() {
             {editing && (
               <button type="button" className="admin-btn admin-btn--ghost" onClick={resetForm}>
                 {t('admin.form.cancel')}
+              </button>
+            )}
+            {!editing && (
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost"
+                onClick={() => submitGuide(true)}
+                disabled={sec.saving}
+              >
+                <Languages size={16} aria-hidden="true" />
+                {t('admin.form.saveAndTranslate')}
               </button>
             )}
             <button type="submit" className="admin-btn admin-btn--primary" disabled={sec.saving}>
