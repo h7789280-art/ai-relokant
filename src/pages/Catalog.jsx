@@ -28,6 +28,7 @@ const CATEGORY_IMAGE = {
   documents: 'documents',
   home: 'armchair',
   shops: 'shops',
+  markets: 'markets',
   food: 'food',
   transport: 'transport',
   kids: 'kids_teddy',
