@@ -770,6 +770,7 @@ const emptyPlace = (cityId = '') => ({
   name: '',
   description: '',
   address: '',
+  maps_url: '',
   phone: '',
   whatsapp: '',
   instagram: '',
@@ -792,6 +793,7 @@ function formFromPlace(p) {
     name: p.name ?? '',
     description: p.description ?? '',
     address: p.address ?? '',
+    maps_url: p.maps_url ?? '',
     phone: p.phone ?? '',
     whatsapp: p.whatsapp ?? '',
     instagram: p.instagram ?? '',
@@ -932,6 +934,7 @@ function PlacesSection({ geo }) {
       name,
       description: form.description.trim() || null,
       address: form.address.trim() || null,
+      maps_url: form.maps_url.trim() || null,
       phone: form.phone.trim() || null,
       whatsapp: form.whatsapp.trim() || null,
       instagram: form.instagram.trim() || null,
@@ -1045,6 +1048,18 @@ function PlacesSection({ geo }) {
               value={form.address}
               onChange={(e) => setField('address', e.target.value)}
             />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.mapsUrl')}</span>
+            <input
+              className="admin-field__input"
+              type="url"
+              value={form.maps_url}
+              onChange={(e) => setField('maps_url', e.target.value)}
+              placeholder="https://maps.app.goo.gl/…"
+            />
+            <span className="admin-field__hint">{t('admin.form.mapsUrlHint')}</span>
           </label>
 
           <div className="admin-form__row">
@@ -1692,6 +1707,7 @@ const emptyEvent = () => ({
   gathering_at: '',
   ends_at: '',
   location: '',
+  maps_url: '',
   url: '',
   instagram: '',
   telegram: '',
@@ -1722,6 +1738,7 @@ function formFromEvent(ev) {
     gathering_at: toDateTimeLocal(ev.gathering_at),
     ends_at: toDateTimeLocal(ev.ends_at),
     location: ev.location ?? '',
+    maps_url: ev.maps_url ?? '',
     url: ev.url ?? '',
     instagram: ev.instagram ?? '',
     telegram: ev.telegram ?? '',
@@ -1823,6 +1840,7 @@ function EventsSection({ geo }) {
       gathering_at: inputToISO(form.gathering_at),
       ends_at: inputToISO(form.ends_at),
       location: form.location.trim() || null,
+      maps_url: form.maps_url.trim() || null,
       url: form.url.trim() || null,
       instagram: form.instagram.trim() || null,
       telegram: form.telegram.trim() || null,
@@ -1976,6 +1994,18 @@ function EventsSection({ geo }) {
               onChange={(e) => setField('location', e.target.value)}
               placeholder={t('admin.events.locationPlaceholder')}
             />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.mapsUrl')}</span>
+            <input
+              className="admin-field__input"
+              type="url"
+              value={form.maps_url}
+              onChange={(e) => setField('maps_url', e.target.value)}
+              placeholder="https://maps.app.goo.gl/…"
+            />
+            <span className="admin-field__hint">{t('admin.form.mapsUrlHint')}</span>
           </label>
 
           <label className="admin-field">
@@ -2452,6 +2482,7 @@ function formFromMarket(row, defaultCityId = '') {
     image_url: row?.image_url ?? '',
     hours: row?.hours ?? '',
     address: row?.address ?? '',
+    maps_url: row?.maps_url ?? '',
     latitude: row?.latitude != null ? String(row.latitude) : '',
     longitude: row?.longitude != null ? String(row.longitude) : '',
     is_active: row ? Boolean(row.is_active) : true,
@@ -2605,6 +2636,7 @@ function MarketCard({ dow, row, cityId, geo, onSaved, onDeleted }) {
         image_url: form.image_url.trim() || null,
         hours: form.hours.trim() || null,
         address: form.address.trim() || null,
+        maps_url: form.maps_url.trim() || null,
         latitude: toNum(form.latitude),
         longitude: toNum(form.longitude),
         is_active: form.is_active,
@@ -2690,6 +2722,18 @@ function MarketCard({ dow, row, cityId, geo, onSaved, onDeleted }) {
             />
           </label>
         </div>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.form.mapsUrl')}</span>
+          <input
+            className="admin-field__input"
+            type="url"
+            value={form.maps_url}
+            onChange={(e) => setField('maps_url', e.target.value)}
+            placeholder="https://maps.app.goo.gl/…"
+          />
+          <span className="admin-field__hint">{t('admin.form.mapsUrlHint')}</span>
+        </label>
 
         <div className="admin-form__row">
           <label className="admin-field">

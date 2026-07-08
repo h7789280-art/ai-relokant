@@ -396,6 +396,8 @@
       "namePlaceholder": "e.g. Smile Dental Clinic",
       "description": "Description",
       "address": "Address",
+      "mapsUrl": "Google Maps link",
+      "mapsUrlHint": "Paste a link from Google Maps (Share → Copy link). Used for the route instead of the address.",
       "phone": "Phone",
       "whatsapp": "WhatsApp",
       "instagram": "Instagram",

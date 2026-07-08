@@ -412,9 +412,10 @@ function EventCard({ event, showDate = false }) {
   // its own date; the agenda view has a day header instead and omits this.
   const date = showDate ? formatDateBadge(event.starts_at) : null
   const price = formatEventPrice(event, t)
-  // Tap the location to open a route in maps (§4) — by coordinates when the event
-  // has them, otherwise by its location text. Same helper as places / markets.
+  // Tap the location to open in maps (§4, §5.8) — a pasted maps link first, else
+  // by coordinates, else by the location text. Same helper as places / markets.
   const route = directionsUrl({
+    maps_url: event.maps_url,
     latitude: event.latitude,
     longitude: event.longitude,
     address: event.location,

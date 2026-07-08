@@ -396,6 +396,8 @@
       "namePlaceholder": "напр. Стоматология «Улыбка»",
       "description": "Описание",
       "address": "Адрес",
+      "mapsUrl": "Ссылка на Google Maps",
+      "mapsUrlHint": "Вставьте ссылку из Google Maps (Поделиться → Копировать ссылку). Используется для маршрута вместо адреса.",
       "phone": "Телефон",
       "whatsapp": "WhatsApp",
       "instagram": "Instagram",

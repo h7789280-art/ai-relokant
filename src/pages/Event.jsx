@@ -157,9 +157,10 @@ export default function Event() {
   const instagram = event.instagram ? instagramLink(event.instagram) : null
   const telegram = event.telegram ? telegramLink(event.telegram) : null
   const whatsapp = event.whatsapp ? whatsappLink(event.whatsapp) : null
-  // Tap the location to open a route in maps (§4) — by coordinates when present,
-  // else by the location text. Same helper as places / markets.
+  // Tap the location to open in maps (§4, §5.8) — a pasted maps link first, else
+  // by coordinates, else by the location text. Same helper as places / markets.
   const route = directionsUrl({
+    maps_url: event.maps_url,
     latitude: event.latitude,
     longitude: event.longitude,
     address: event.location,
