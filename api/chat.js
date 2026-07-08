@@ -116,6 +116,166 @@ async function fetchCityContext(cityId) {
   }
 }
 
+// ---- Grounding: events / news / guides / markets (CLAUDE.md §5.3, §6) -------
+//
+// Stage 1 of widening the AI's field of view: besides places, the model now also
+// sees the SAME events/news/guides/markets a user sees on their city's screens.
+// The hard invariant (§5.3/§5.4): everything is built ONLY from the trusted
+// city_id in the request body, using the EXACT same visibility functions the
+// screens use, so the AI's field of view matches the screens and the
+// city/country boundary can't leak:
+//   * events  → RPC events_by_country_proximity (event_cities visibility +
+//               country boundary live inside it) — never a raw select * on events.
+//   * news    → news_cities !inner join on city_id + status=approved.
+//   * guides  → guide_cities !inner join on city_id + status=approved.
+//   * markets → market_schedule for today's Turkey weekday, is_active only.
+// All read under the anon key + RLS, and all fail SOFT (return []) so a reader
+// error degrades to "no verified info" instead of breaking chat.
+
+// Public PostgREST base (anon key + URL, both public — RLS gates every read,
+// §6/§9). Returns null when unconfigured so callers can bail to [].
+function publicRest() {
+  const url = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !anonKey) return null
+  return {
+    base: url.replace(/\/$/, ''),
+    headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+  }
+}
+
+// Small helper: GET a PostgREST endpoint and return a rows array, or [] on any
+// failure. Keeps each reader below to a single clear line.
+async function restRows(endpoint, headers) {
+  try {
+    const res = await fetch(endpoint, { headers })
+    if (!res.ok) return []
+    const rows = await res.json().catch(() => null)
+    return Array.isArray(rows) ? rows : []
+  } catch {
+    return []
+  }
+}
+
+// Turkey is UTC+3 all year (no DST since 2016). We measure "today" by Turkey
+// wall-clock everywhere in the afisha/markets, so a day doesn't flip a few hours
+// early/late for users in other timezones (mirrors src/lib/content.js).
+const TURKEY_OFFSET_MS = 3 * 60 * 60 * 1000
+
+// Today's weekday in Turkey time, ISO-8601: 1 = Monday … 7 = Sunday. Pure port of
+// turkeyDayOfWeek() from src/lib/content.js — keep the two in sync.
+function turkeyDayOfWeek() {
+  const nowTurkey = new Date(Date.now() + TURKEY_OFFSET_MS)
+  const jsDay = nowTurkey.getUTCDay() // 0 = Sunday … 6 = Saturday
+  return jsDay === 0 ? 7 : jsDay
+}
+
+// Format an ISO instant as Turkey-local { date: 'YYYY-MM-DD', time: 'HH:MM' } so
+// the model states event times in the city's own clock. Null on missing/bad input.
+function turkeyDateTime(iso) {
+  if (!iso) return null
+  const ms = new Date(iso).getTime()
+  if (Number.isNaN(ms)) return null
+  const d = new Date(ms + TURKEY_OFFSET_MS)
+  return { date: d.toISOString().slice(0, 10), time: d.toISOString().slice(11, 16) }
+}
+
+// Cap constants — keep the prompt cheap (§6). Small N per type on purpose.
+const MAX_EVENTS = 10
+const MAX_NEWS = 5
+const MAX_GUIDES = 10
+
+// Regional afisha the user's city actually shows — the SAME source as Events.jsx
+// (RPC events_by_country_proximity: event_cities visibility + country boundary +
+// not-past cutoff + proximity order all live server-side). No dates passed
+// (p_from/p_to default NULL) → the full upcoming feed, capped to the soonest few.
+// We then resolve venue city NAMES for the formatter in one extra read.
+async function fetchUpcomingEvents(cityId) {
+  const rest = publicRest()
+  if (!rest || !cityId) return []
+  // POST the RPC with its args as a JSON body (the standard PostgREST RPC call);
+  // ?limit caps the returned set. The RPC's own ORDER BY is preserved.
+  let rows = []
+  try {
+    const res = await fetch(`${rest.base}/rest/v1/rpc/events_by_country_proximity?limit=${MAX_EVENTS}`, {
+      method: 'POST',
+      headers: { ...rest.headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_city_id: cityId }),
+    })
+    if (!res.ok) return []
+    const data = await res.json().catch(() => null)
+    rows = Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+  if (!rows.length) return rows
+
+  // Resolve venue city names in ONE read so the formatter can say where each
+  // event physically happens (the RPC returns only venue_city_id).
+  const venueIds = [...new Set(rows.map((e) => e.venue_city_id).filter(Boolean))]
+  if (venueIds.length) {
+    const inList = venueIds.map((id) => `"${id}"`).join(',')
+    const cityRows = await restRows(
+      `${rest.base}/rest/v1/cities?id=in.(${encodeURIComponent(inList)})&select=id,name`,
+      rest.headers,
+    )
+    const nameById = new Map(cityRows.map((c) => [c.id, c.name]))
+    for (const e of rows) e.venue_city_name = nameById.get(e.venue_city_id) || null
+  }
+  return rows
+}
+
+// Freshest approved news SHOWN in the active city — the same visibility as
+// fetchContent('news'): a news_cities !inner join on city_id (+ status=approved),
+// NOT the legacy city_id column. The link table can't cross a country (§5.4), so
+// the boundary holds. Newest first.
+async function fetchCityNews(cityId) {
+  const rest = publicRest()
+  if (!rest || !cityId) return []
+  const select = 'title,summary,source_name,published_at,news_cities!inner(city_id)'
+  const endpoint =
+    `${rest.base}/rest/v1/news` +
+    `?status=eq.approved` +
+    `&news_cities.city_id=eq.${encodeURIComponent(cityId)}` +
+    `&select=${encodeURIComponent(select)}` +
+    `&order=published_at.desc.nullslast` +
+    `&limit=${MAX_NEWS}`
+  return restRows(endpoint, rest.headers)
+}
+
+// Approved guides SHOWN in the active city — the same visibility as
+// fetchContent('guides'): a guide_cities !inner join on city_id (+ approved), NOT
+// the legacy city_id column. Titles + a short body snippet only (§6 prompt size).
+async function fetchCityGuides(cityId) {
+  const rest = publicRest()
+  if (!rest || !cityId) return []
+  const select = 'title,body,disclaimer,guide_cities!inner(city_id)'
+  const endpoint =
+    `${rest.base}/rest/v1/guides` +
+    `?status=eq.approved` +
+    `&guide_cities.city_id=eq.${encodeURIComponent(cityId)}` +
+    `&select=${encodeURIComponent(select)}` +
+    `&limit=${MAX_GUIDES}`
+  return restRows(endpoint, rest.headers)
+}
+
+// Today's markets for the city — the same rule as fetchTodayMarkets: active rows
+// for the CURRENT Turkey weekday only. However many there are today (0..few).
+async function fetchTodayMarketsProxy(cityId) {
+  const rest = publicRest()
+  if (!rest || !cityId) return []
+  const dow = turkeyDayOfWeek()
+  const select = 'name,hours,address,day_of_week'
+  const endpoint =
+    `${rest.base}/rest/v1/market_schedule` +
+    `?city_id=eq.${encodeURIComponent(cityId)}` +
+    `&day_of_week=eq.${dow}` +
+    `&is_active=eq.true` +
+    `&select=${encodeURIComponent(select)}` +
+    `&order=name.asc`
+  return restRows(endpoint, rest.headers)
+}
+
 // ---- Auth + per-user daily limit (CLAUDE.md §6) -----------------------------
 //
 // The client sends the user's Supabase access token in `Authorization: Bearer`.
@@ -274,9 +434,79 @@ function formatPlace(p, n) {
   return lines.join('\n')
 }
 
+// Ticket price as a short human phrase, or null when the event has no pricing.
+// Proper names / amounts are passed through verbatim (§8) — no invention.
+function formatPrice(e) {
+  const cur = e.price_currency || 'TRY'
+  if (e.price_type === 'free') return 'Free'
+  if (e.price_type === 'deposit' && e.price_deposit != null) {
+    return `Deposit ${e.price_deposit} ${cur}`
+  }
+  if (e.price_type === 'paid') {
+    const from = e.price_from
+    const to = e.price_to
+    if (from != null && to != null) return `${from}–${to} ${cur}`
+    if (from != null) return `from ${from} ${cur}`
+    if (to != null) return `up to ${to} ${cur}`
+    return 'Paid'
+  }
+  return null
+}
+
+// Render one regional-afisha event compactly. Title carries proper names (artist
+// / brand) verbatim in latin, exactly as stored (§8) — do not transliterate.
+function formatEvent(e, n) {
+  const lines = [`${n}. ${e.title || 'Untitled event'}`]
+  const dt = turkeyDateTime(e.starts_at)
+  if (dt) lines.push(`   When: ${dt.date} ${dt.time} (Turkey time)`)
+  else lines.push('   When: date to be announced')
+  const venue = [e.location, e.venue_city_name].filter(Boolean).join(', ')
+  if (venue) lines.push(`   Venue: ${venue}`)
+  const price = formatPrice(e)
+  if (price) lines.push(`   Price: ${price}`)
+  return lines.join('\n')
+}
+
+// Render one news item: headline + the short summary (what happened / who it
+// affects). Source name is a trust signal, shown when present (§11).
+function formatNews(nw, n) {
+  const lines = [`${n}. ${nw.title || 'Untitled'}`]
+  if (nw.summary) lines.push(`   ${nw.summary}`)
+  if (nw.source_name) lines.push(`   Source: ${nw.source_name}`)
+  return lines.join('\n')
+}
+
+// Render one guide: title + a short body snippet (guides are long markdown, so we
+// truncate to keep the prompt cheap, §6). Disclaimer noted so the model relays it.
+function formatGuide(g, n) {
+  const lines = [`${n}. ${g.title || 'Untitled guide'}`]
+  if (g.body) {
+    const snippet = String(g.body).replace(/\s+/g, ' ').trim().slice(0, 240)
+    if (snippet) lines.push(`   ${snippet}${g.body.length > 240 ? '…' : ''}`)
+  }
+  if (g.disclaimer) lines.push('   (Has an official disclaimer — remind the user to verify with official sources.)')
+  return lines.join('\n')
+}
+
+// Render one market: district name + weekday + hours + address.
+function formatMarket(m, n) {
+  const lines = [`${n}. ${m.name || 'Market'}`]
+  if (m.hours) lines.push(`   Hours: ${m.hours}`)
+  if (m.address) lines.push(`   Address: ${m.address}`)
+  return lines.join('\n')
+}
+
+// Build one "SECTION HEADER: …" block from a row list + its formatter. When the
+// list is empty we emit an explicit "(none …)" marker so the model KNOWS there is
+// no data and must not invent any (§6 grounding), instead of the section vanishing.
+function sourceSection(header, rows, formatter, emptyNote) {
+  if (!rows.length) return ['', `${header}: (none — ${emptyNote})`]
+  return ['', `${header} (${rows.length}):`, ...rows.map((r, i) => formatter(r, i + 1))]
+}
+
 // Build the grounded system instruction: persona + the strict source-of-truth
 // rules (§6/§11) + the approved place list (or an explicit "empty" marker).
-function systemInstruction(lang, places, cityContext) {
+function systemInstruction(lang, places, cityContext, extra = {}) {
   const langName = LANGUAGE_NAMES[lang] || lang || 'English'
 
   // Persona location = the user's ACTUAL active city/country. Neutral fallback if
@@ -302,26 +532,45 @@ function systemInstruction(lang, places, cityContext) {
     '- Label VERIFIED places as verified — it is a trust signal, not an ad.',
     '- Keep answers short and natural. When you list a place, include the details',
     '  that are present (address, phone/WhatsApp, hours, languages).',
+    '- Besides places you also have VERIFIED EVENTS, CITY NEWS, GUIDES and',
+    '  MARKETS TODAY below. Use them the SAME way: answer about events, news,',
+    '  guides or markets ONLY from these lists. Never invent an event, date, time,',
+    '  price, news item, headline or market. If a section says "(none …)", tell the',
+    '  user honestly there is no verified information for that yet — do not guess.',
+    '- Keep proper names (artists, brands) exactly as written — do not translate or',
+    '  transliterate them; only your surrounding text is in the user\'s language.',
+    '- Events/news may also be promoted or partner-placed; the same honesty applies',
+    '  — never present a paid/promoted item as an organic recommendation.',
+    '- For guides on legal/official topics (residence permit, taxes, documents),',
+    '  remind the user the info is for reference and to verify with official sources.',
     `- ALWAYS reply in the user's language: ${langName}.`,
   ]
 
-  let source
+  let placeSource
   if (places.length === 0) {
-    source = [
+    placeSource = [
       '',
       'VERIFIED CITYMATE PLACES: (none available for this city right now)',
       'Because the list is empty, tell the user there is no verified information',
       'yet and avoid naming any specific business.',
     ]
   } else {
-    source = [
+    placeSource = [
       '',
       `VERIFIED CITYMATE PLACES (${places.length}), already ordered by priority:`,
       ...places.map((p, i) => formatPlace(p, i + 1)),
     ]
   }
 
-  return [...rules, ...source].join('\n')
+  const { events = [], news = [], guides = [], markets = [] } = extra
+  const otherSources = [
+    ...sourceSection('VERIFIED EVENTS', events, formatEvent, 'no upcoming events shown in this city'),
+    ...sourceSection('CITY NEWS', news, formatNews, 'no recent news for this city'),
+    ...sourceSection('GUIDES', guides, formatGuide, 'no guides for this city yet'),
+    ...sourceSection('MARKETS TODAY', markets, formatMarket, 'no market scheduled today'),
+  ]
+
+  return [...rules, ...placeSource, ...otherSources].join('\n')
 }
 
 // Read + JSON-parse the request body. Vercel usually pre-parses JSON into
@@ -394,11 +643,20 @@ export default async function handler(req, res) {
     return
   }
 
-  // Ground the answer on the active city's approved places before calling Gemini,
-  // and resolve the city/country names so the persona introduces the right city.
-  const [allPlaces, cityContext] = await Promise.all([
+  // Ground the answer on EVERYTHING the active city's screens show — approved
+  // places, the regional afisha, city news, guides and today's markets — before
+  // calling Gemini, plus the city/country names for the persona. All read under
+  // the same trusted city_id with the SAME visibility functions the screens use
+  // (§5.3/§5.4), so the AI's field of view matches the screens and the boundary
+  // can't leak. Each reader fails soft to [] — a miss degrades to "no verified
+  // info", never a crash.
+  const [allPlaces, cityContext, events, news, guides, markets] = await Promise.all([
     fetchApprovedPlaces(cityId),
     fetchCityContext(cityId),
+    fetchUpcomingEvents(cityId),
+    fetchCityNews(cityId),
+    fetchCityGuides(cityId),
+    fetchTodayMarketsProxy(cityId),
   ])
   const places = selectPlaces(allPlaces, queryTokens(messages))
 
@@ -407,7 +665,9 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction(lang, places, cityContext) }] },
+        system_instruction: {
+          parts: [{ text: systemInstruction(lang, places, cityContext, { events, news, guides, markets }) }],
+        },
         contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
       }),
