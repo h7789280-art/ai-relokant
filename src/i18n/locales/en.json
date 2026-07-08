@@ -269,6 +269,7 @@
     "inputPlaceholder": "Ask CityMate…",
     "send": "Send",
     "typing": "CityMate is typing…",
+    "clear": "Clear chat",
     "error": "Couldn't get a reply. Please try again.",
     "limitReached": "You've reached today's free message limit. Come back tomorrow — I'll be right here to help. 🙂"
   },

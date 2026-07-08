@@ -6,11 +6,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
-import { Bot, ArrowUp } from 'lucide-react'
+import { Bot, ArrowUp, Trash2 } from 'lucide-react'
 import AuthGate from '../components/AuthGate.jsx'
 import { Markdown } from '../lib/markdown.jsx'
 import { useApp } from '../context/appContext.js'
 import { supabase } from '../lib/supabase.js'
+import { loadChatHistory, saveChatHistory, clearChatHistory } from '../lib/chatHistory.js'
 
 function ChatRoom() {
   const { t, i18n } = useTranslation()
@@ -20,12 +21,21 @@ function ChatRoom() {
   // A pre-filled question handed over from Home ("Ask CityMate" bar / chips)
   // lands in the input, ready to send (read once so re-renders don't refill it).
   const [input, setInput] = useState(() => location.state?.question || '')
-  const [messages, setMessages] = useState([]) // { role: 'user' | 'assistant', text }
+  // Restore the last conversation from the device (CLAUDE.md §4.2). This is a
+  // pure re-render of past bubbles — it never re-calls /api/chat and never spends
+  // a daily message (§6). A network request only happens inside send().
+  const [messages, setMessages] = useState(loadChatHistory) // { role: 'user' | 'assistant', text }
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
 
   const listRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Persist the transcript locally on every change, capped to the last N
+  // messages (sliding window, oldest dropped). Draw-only — see chatHistory.js.
+  useEffect(() => {
+    saveChatHistory(messages)
+  }, [messages])
 
   // Keep the newest message (and the typing indicator) in view.
   useEffect(() => {
@@ -81,6 +91,15 @@ function ChatRoom() {
     }
   }
 
+  // Wipe the saved conversation and return to the empty "Ask CityMate" welcome.
+  // Local-only: no server call, no effect on the daily limit.
+  function clearChat() {
+    clearChatHistory()
+    setMessages([])
+    setError(null)
+    inputRef.current?.focus()
+  }
+
   function onKeyDown(e) {
     // Enter sends; Shift+Enter inserts a newline.
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -93,6 +112,15 @@ function ChatRoom() {
 
   return (
     <main className="app-shell chat">
+      {!empty && (
+        <div className="chat__toolbar">
+          <button type="button" className="chat__clear" onClick={clearChat}>
+            <Trash2 size={15} strokeWidth={2} aria-hidden="true" />
+            {t('chat.clear')}
+          </button>
+        </div>
+      )}
+
       <div className="chat__log" ref={listRef}>
         {empty && (
           <div className="chat__welcome">

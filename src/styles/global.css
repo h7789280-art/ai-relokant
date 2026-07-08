@@ -2570,6 +2570,33 @@ a.event-card__meta-link svg {
   padding-bottom: var(--space-3);
 }
 
+/* --- Clear-chat toolbar (only shown once there are messages) --- */
+.chat__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.chat__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chat__clear:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text, #111827);
+}
+
 .chat__log {
   flex: 1 1 auto;
   display: flex;
