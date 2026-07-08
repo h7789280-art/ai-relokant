@@ -23,6 +23,7 @@
     "empty": "Täällä ei ole vielä mitään.",
     "weather": {
       "title": "Sää",
+      "subtitle": "Sää – {{city}}",
       "water": "Vesi",
       "unavailable": "Sää ei saatavilla",
       "codes": {

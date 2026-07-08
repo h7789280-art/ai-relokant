@@ -4584,26 +4584,133 @@ a.event-card__meta-link svg {
 
 /* ==========================================================================
    Detailed weather screen (WeatherDetails.jsx) — today by hour, 10-day, water.
-   Reuses the .place shell (back button + head). Light cards, rounded, matching
-   the Home weather card language (§4).
+   Airy blue sky palette: a city photo hero feathering into a soft sea-blue
+   gradient page, colorful Meteocons, plump rounded cards (§4).
    ========================================================================== */
+.wx {
+  position: relative;
+  /* The hero eats the shell's top padding; re-add breathing room at the bottom. */
+  padding-top: 0;
+}
+
+/* Full-screen sea-to-sky wash sitting behind every card, so the page never reads
+   as flat grey. Fixed + feathered at the base so it blends into the app bg. */
+.wx::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #cfe9ff 0%,
+    #e2f1ff 34%,
+    #eef6ff 62%,
+    var(--color-bg) 100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* --- City photo hero --- */
+/* Full-bleed: cancels the app-shell padding (incl. safe-area inset) so the photo
+   meets the screen edges, then feathers into the blue page at its base. */
+.wx-hero {
+  position: relative;
+  isolation: isolate;
+  margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
+    calc(-1 * var(--space-4)) var(--space-2);
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-6);
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-position: center 34%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Darken the top for the back button + brighten legibility, then melt the photo
+   into the page bg at the bottom (no hard edge). */
+.wx-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 26, 46, 0.34) 0%,
+    rgba(8, 26, 46, 0.05) 32%,
+    rgba(207, 233, 255, 0) 60%,
+    rgba(207, 233, 255, 0.55) 88%,
+    #cfe9ff 100%
+  );
+  z-index: -1;
+}
+
+.wx-hero__back {
+  position: absolute;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  left: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.wx-hero__text {
+  position: relative;
+}
+
+.wx-hero__city {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(8, 22, 40, 0.5);
+}
+
+.wx-hero__subtitle {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(8, 22, 40, 0.45);
+}
+
 .wx__section {
   margin-top: var(--space-5);
 }
 
 .wx__title {
   margin: 0 0 var(--space-3);
-  font-size: var(--text-base);
-  font-weight: 700;
-  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: #10395f;
 }
 
-/* Today, hour by hour — horizontal rail of compact cards. */
+/* Colorful Meteocons render as square images; they carry their own padding. */
+.wx-ico {
+  display: block;
+  object-fit: contain;
+}
+
+/* Today, hour by hour — horizontal rail of plump cards. */
 .wx__hours {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
   overflow-x: auto;
-  padding-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-3);
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -4617,23 +4724,41 @@ a.event-card__meta-link svg {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  min-width: 62px;
+  gap: 6px;
+  min-width: 74px;
   padding: var(--space-3) var(--space-2);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(23, 84, 138, 0.1);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* The current hour leads the rail with an accent gradient. */
+.wx-hour--now {
+  background: linear-gradient(160deg, #2f97ff 0%, #1877e6 100%);
+  border-color: transparent;
+  box-shadow: 0 10px 22px rgba(24, 119, 230, 0.34);
+}
+
+.wx-hour--now .wx-hour__time,
+.wx-hour--now .wx-hour__temp {
+  color: #fff;
+}
+
+.wx-hour--now .wx-hour__precip {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .wx-hour__time {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-muted);
 }
 
 .wx-hour__temp {
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--color-text);
 }
@@ -4643,18 +4768,21 @@ a.event-card__meta-link svg {
   align-items: center;
   gap: 3px;
   font-size: var(--text-xs);
-  color: var(--color-accent);
+  font-weight: 600;
+  color: #1877e6;
 }
 
-/* 10-day forecast — one row per day. */
+/* 10-day forecast — one row per day, on a single soft card. */
 .wx__days {
   list-style: none;
   margin: 0;
-  padding: 0;
-  background: var(--color-surface);
+  padding: var(--space-1) var(--space-2);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(23, 84, 138, 0.12);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 .wx-day {
@@ -4662,17 +4790,17 @@ a.event-card__meta-link svg {
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: 10px var(--space-3);
 }
 
 .wx-day + .wx-day {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(23, 84, 138, 0.08);
 }
 
 .wx-day__name {
   display: flex;
   flex-direction: column;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text);
   text-transform: capitalize;
 }
@@ -4687,8 +4815,7 @@ a.event-card__meta-link svg {
 .wx-day__cond {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  color: var(--color-accent);
+  gap: 6px;
   min-width: 0;
 }
 
@@ -4716,29 +4843,49 @@ a.event-card__meta-link svg {
   color: var(--color-text-subtle);
 }
 
-/* Water temperature. */
+/* Water temperature — a soft aqua card, not a bare white box. */
 .wx-water {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  background: var(--color-surface);
+  background: linear-gradient(150deg, #e6f6ff 0%, #d0ecff 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  color: var(--color-accent);
+  box-shadow: 0 10px 26px rgba(23, 84, 138, 0.14);
+}
+
+.wx-water__icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.wx-water__body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
 }
 
 .wx-water__temp {
   font-size: var(--text-2xl);
   font-weight: 700;
-  color: var(--color-text);
+  color: #0d4f7a;
 }
 
-/* On wide screens the desc column can breathe; hide it on very narrow phones so
-   the temperatures never get squeezed. */
+.wx-water__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #3d7aa6;
+}
+
+/* On very narrow phones hide the day description so the temps never get squeezed. */
 @media (max-width: 360px) {
   .wx-day__desc {
     display: none;
+  }
+
+  .wx-hero__city {
+    font-size: 34px;
   }
 }
 

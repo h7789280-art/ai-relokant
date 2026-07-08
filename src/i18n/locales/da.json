@@ -23,6 +23,7 @@
     "empty": "Der er ikke noget her endnu.",
     "weather": {
       "title": "Vejr",
+      "subtitle": "Vejr i {{city}}",
       "water": "Vand",
       "unavailable": "Vejr ikke tilgængeligt",
       "codes": {

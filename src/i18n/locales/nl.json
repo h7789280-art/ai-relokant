@@ -23,6 +23,7 @@
     "empty": "Hier staat nog niets.",
     "weather": {
       "title": "Weer",
+      "subtitle": "Weer in {{city}}",
       "water": "Water",
       "unavailable": "Weer niet beschikbaar",
       "codes": {

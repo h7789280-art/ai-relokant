@@ -23,6 +23,7 @@
     "empty": "Jeszcze nic tu nie ma.",
     "weather": {
       "title": "Pogoda",
+      "subtitle": "Pogoda w {{city}}",
       "water": "Woda",
       "unavailable": "Pogoda niedostępna",
       "codes": {

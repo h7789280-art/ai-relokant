@@ -23,6 +23,7 @@
     "empty": "Hier ist noch nichts.",
     "weather": {
       "title": "Wetter",
+      "subtitle": "Wetter in {{city}}",
       "water": "Wasser",
       "unavailable": "Wetter nicht verfügbar",
       "codes": {

@@ -27,6 +27,7 @@
     "empty": "Пока пусто.",
     "weather": {
       "title": "Погода",
+      "subtitle": "Погода в {{city}}",
       "water": "Вода",
       "unavailable": "Погода недоступна",
       "codes": {

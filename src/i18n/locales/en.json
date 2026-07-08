@@ -27,6 +27,7 @@
     "empty": "Nothing here yet.",
     "weather": {
       "title": "Weather",
+      "subtitle": "Weather in {{city}}",
       "water": "Water",
       "unavailable": "Weather unavailable",
       "codes": {

@@ -23,6 +23,7 @@
     "empty": "Zatím tu nic není.",
     "weather": {
       "title": "Počasí",
+      "subtitle": "Počasí v {{city}}",
       "water": "Voda",
       "unavailable": "Počasí není dostupné",
       "codes": {

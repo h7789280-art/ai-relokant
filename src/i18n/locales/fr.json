@@ -23,6 +23,7 @@
     "empty": "Rien ici pour l'instant.",
     "weather": {
       "title": "Météo",
+      "subtitle": "Météo à {{city}}",
       "water": "Eau",
       "unavailable": "Météo indisponible",
       "codes": {

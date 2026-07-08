@@ -23,6 +23,7 @@
     "empty": "Burada henüz bir şey yok.",
     "weather": {
       "title": "Hava durumu",
+      "subtitle": "{{city}} hava durumu",
       "water": "Su",
       "unavailable": "Hava durumu bilgisi yok",
       "codes": {

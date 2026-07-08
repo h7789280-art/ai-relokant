@@ -23,6 +23,7 @@
     "empty": "Ingenting her ennå.",
     "weather": {
       "title": "Vær",
+      "subtitle": "Været i {{city}}",
       "water": "Vann",
       "unavailable": "Vær utilgjengelig",
       "codes": {

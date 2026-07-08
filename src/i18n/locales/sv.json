@@ -23,6 +23,7 @@
     "empty": "Inget här ännu.",
     "weather": {
       "title": "Väder",
+      "subtitle": "Väder i {{city}}",
       "water": "Vatten",
       "unavailable": "Väder ej tillgängligt",
       "codes": {
