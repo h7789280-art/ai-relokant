@@ -44,11 +44,12 @@ function weekdayLabel(dateStr) {
   return new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d)
 }
 
-// Localized short date ("9 Jul") for the daily rows.
+// Localized full date ("9 July") for the daily rows — full month name, spelt out
+// in the active language, identical for every city and screen width.
 function shortDate(dateStr) {
   const d = new Date(dateStr)
   if (Number.isNaN(d.getTime())) return ''
-  return new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' }).format(d)
+  return new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(d)
 }
 
 export default function WeatherDetails() {
