@@ -2430,8 +2430,15 @@ function GuidesSection({ geo }) {
 const DAYS = [1, 2, 3, 4, 5, 6, 7]
 
 // Text input value -> number or null (blank/invalid coords become null).
+// Robust to hand entry: a decimal COMMA (the separator on RU/TR keyboards, e.g.
+// "36,5438") is normalised to a dot, and stray whitespace is stripped, so a
+// legitimate coordinate is never silently dropped to null (which left the field
+// showing only its grey placeholder and the map routing to the address text).
 function toNum(value) {
-  const s = (value ?? '').trim()
+  const s = String(value ?? '')
+    .trim()
+    .replace(',', '.')
+    .replace(/\s+/g, '')
   if (!s) return null
   const n = Number(s)
   return Number.isFinite(n) ? n : null
