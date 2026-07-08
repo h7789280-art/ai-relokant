@@ -16,9 +16,15 @@ import { Link } from 'react-router-dom'
 // which have no card page) renders as plain text, so a hallucinated path can never
 // become a live, wrong navigation. Routes: /catalog/place/:id, /events/:id,
 // /news/:id, /guides/:id.
+//
+// The leading slash is OPTIONAL here: the model sometimes drops it and emits
+// "events/<id>" instead of "/events/<id>". We tolerate both on the render side
+// (and normalize to a leading-slash path before building the <Link>), so a valid
+// card link stays clickable regardless. The guard is unchanged — prefix must be
+// whitelisted AND the id must be a real UUID.
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 const INTERNAL_CARD_RE = new RegExp(
-  `^/(?:catalog/place|events|news|guides)/${UUID}$`,
+  `^/?(?:catalog/place|events|news|guides)/${UUID}$`,
   'i',
 )
 
@@ -37,18 +43,17 @@ function renderInline(text, keyBase) {
       // Link: m[1] = label, m[2] = url.
       const label = m[1]
       const url = m[2]
-      if (url.startsWith('/')) {
-        // Internal path — render a soft react-router <Link> ONLY if it passes the
-        // whitelist+UUID guard, else drop to plain label text (no broken nav).
-        if (INTERNAL_CARD_RE.test(url)) {
-          nodes.push(
-            <Link key={`${keyBase}-a${i}`} to={url}>
-              {label}
-            </Link>,
-          )
-        } else {
-          nodes.push(label)
-        }
+      if (INTERNAL_CARD_RE.test(url)) {
+        // Internal card path — passed the whitelist+UUID guard. Normalize the
+        // path (add a leading "/" if the model dropped it) before building the
+        // soft react-router <Link>, so "events/<id>" links exactly like
+        // "/events/<id>".
+        const to = url.startsWith('/') ? url : `/${url}`
+        nodes.push(
+          <Link key={`${keyBase}-a${i}`} to={to}>
+            {label}
+          </Link>,
+        )
       } else if (/^https?:\/\//i.test(url)) {
         // External link — open safely in a new tab.
         nodes.push(
