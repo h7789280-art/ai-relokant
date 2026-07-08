@@ -4629,18 +4629,16 @@ a.event-card__meta-link svg {
   background-repeat: no-repeat;
 }
 
-/* A gentle darkening under the back button up top, a CLEAR middle (no band across
-   the sky — legibility of the title is carried by its own text-shadow, below),
-   then a melt into the page bg at the bottom so there's no hard photo edge. */
+/* No darkening anywhere over the photo/sky — just a melt into the page bg at the
+   bottom so there's no hard photo edge. Fades from transparent to the light-blue
+   page colour, so it never reads as a dark/grey band. */
 .wx-hero::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(8, 26, 46, 0.34) 0%,
-    rgba(8, 26, 46, 0.1) 16%,
-    rgba(207, 233, 255, 0) 55%,
+    rgba(207, 233, 255, 0) 70%,
     rgba(207, 233, 255, 0.55) 90%,
     #cfe9ff 100%
   );
@@ -4673,22 +4671,6 @@ a.event-card__meta-link svg {
   max-width: 100%;
 }
 
-/* Very soft LOCAL glow hugging just the title (its own corner) — not a band
-   across the whole hero. Feathers to fully transparent well before the edges, so
-   on a bright sky it reads as a faint darkening under the letters, never a stripe. */
-.wx-hero__text::before {
-  content: '';
-  position: absolute;
-  inset: -12px -22px -10px -14px;
-  background: radial-gradient(
-    130% 120% at 22% 62%,
-    rgba(8, 22, 40, 0.26),
-    rgba(8, 22, 40, 0) 68%
-  );
-  z-index: -1;
-  pointer-events: none;
-}
-
 .wx-hero__city {
   margin: 0;
   font-family: var(--font-serif);
@@ -4696,14 +4678,9 @@ a.event-card__meta-link svg {
   font-weight: 600;
   line-height: 1.05;
   color: #fff;
-  /* Multi-layer halo — a tight crisp outline + a couple of soft dark glows — does
-     the heavy lifting so white stays legible on ANY background (bright sky, pale
-     sea) without a solid black plate behind it. */
-  text-shadow:
-    0 0 2px rgba(8, 22, 40, 0.6),
-    0 1px 3px rgba(8, 22, 40, 0.55),
-    0 2px 10px rgba(8, 22, 40, 0.5),
-    0 0 24px rgba(8, 22, 40, 0.4);
+  /* One very light, barely-there soft shadow for basic legibility — no dark plate
+     or band behind the title. (Per-city photos will carry legibility later.) */
+  text-shadow: 0 1px 3px rgba(8, 22, 40, 0.35);
 }
 
 .wx__section {
