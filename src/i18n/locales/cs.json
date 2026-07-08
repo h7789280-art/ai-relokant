@@ -41,7 +41,13 @@
       "wind": "Vítr",
       "humidity": "Vlhkost",
       "kmh": "km/h",
-      "percent": "%"
+      "percent": "%",
+      "details": "Podrobná předpověď",
+      "hourlyTitle": "Dnes po hodinách",
+      "dailyTitle": "Předpověď na 10 dní",
+      "waterTitle": "Teplota vody",
+      "now": "Teď",
+      "today": "Dnes"
     },
     "currency": {
       "title": "Směnný kurz",

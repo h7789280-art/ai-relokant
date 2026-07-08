@@ -41,7 +41,13 @@
       "wind": "Wind",
       "humidity": "Luchtvochtigheid",
       "kmh": "km/u",
-      "percent": "%"
+      "percent": "%",
+      "details": "Gedetailleerde voorspelling",
+      "hourlyTitle": "Vandaag per uur",
+      "dailyTitle": "10-daagse voorspelling",
+      "waterTitle": "Watertemperatuur",
+      "now": "Nu",
+      "today": "Vandaag"
     },
     "currency": {
       "title": "Wisselkoers",

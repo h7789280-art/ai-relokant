@@ -41,7 +41,13 @@
       "wind": "Tuuli",
       "humidity": "Kosteus",
       "kmh": "km/h",
-      "percent": "%"
+      "percent": "%",
+      "details": "Tarkka ennuste",
+      "hourlyTitle": "Tänään tunneittain",
+      "dailyTitle": "10 päivän ennuste",
+      "waterTitle": "Veden lämpötila",
+      "now": "Nyt",
+      "today": "Tänään"
     },
     "currency": {
       "title": "Valuuttakurssi",

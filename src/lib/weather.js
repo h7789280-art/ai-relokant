@@ -62,6 +62,100 @@ function currentHourUv(json) {
   return uv == null ? null : Math.round(uv)
 }
 
+// In-memory cache for the detailed forecast, keyed by rounded coordinates. The
+// details screen and any repeat visits (back → forward) reuse a fresh-enough
+// payload instead of re-hitting Open-Meteo. Short TTL so the data stays current.
+const DETAILS_TTL_MS = 10 * 60 * 1000
+const detailsCache = new Map()
+
+/**
+ * Detailed forecast for the weather-details screen (CLAUDE.md §4): today's
+ * HOURLY forecast (temperature, precipitation probability, WMO code per hour) and
+ * a 10-DAY forecast (max/min temperature + WMO code per day). One Forecast API
+ * call, `timezone=auto` so all timestamps are in the city's local wall-clock —
+ * matching how events/markets treat "today". Cached in-memory (10 min) per point.
+ *
+ * Returns:
+ *   {
+ *     hourly: Array<{ time: string, hour: number, temp: number|null,
+ *                     code: number, precip: number|null }>,  // remaining hours of TODAY
+ *     daily:  Array<{ date: string, code: number,
+ *                     max: number|null, min: number|null }>, // up to 10 days, today first
+ *   }
+ *
+ * @returns {Promise<{ hourly: Array, daily: Array }>}
+ */
+export async function fetchWeatherDetails(lat, lon) {
+  const key = `${Number(lat).toFixed(3)},${Number(lon).toFixed(3)}`
+  const cached = detailsCache.get(key)
+  if (cached && Date.now() - cached.at < DETAILS_TTL_MS) return cached.data
+
+  const params = new URLSearchParams({
+    latitude: lat,
+    longitude: lon,
+    current: 'temperature_2m,weather_code',
+    hourly: 'temperature_2m,precipitation_probability,weather_code',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min',
+    forecast_days: '10',
+    timezone: 'auto',
+  })
+  const res = await fetch(`${FORECAST_URL}?${params.toString()}`)
+  if (!res.ok) throw new Error(`weather details ${res.status}`)
+  const json = await res.json()
+
+  const data = { hourly: parseHourly(json), daily: parseDaily(json) }
+  detailsCache.set(key, { at: Date.now(), data })
+  return data
+}
+
+// Today's hourly forecast, from the current hour onward. Open-Meteo returns hours
+// in the city's local time (timezone=auto); we keep only those whose calendar day
+// equals `current.time`'s day and whose hour is >= the current hour — i.e. "the
+// rest of today", in the city's own clock (the same time basis events/markets use).
+function parseHourly(json) {
+  const now = json.current?.time // "YYYY-MM-DDTHH:mm"
+  const times = json.hourly?.time
+  const temps = json.hourly?.temperature_2m
+  const codes = json.hourly?.weather_code
+  const precip = json.hourly?.precipitation_probability
+  if (!now || !Array.isArray(times)) return []
+  const nowDay = now.slice(0, 10) // "YYYY-MM-DD"
+  const nowHour = now.slice(0, 13) // "YYYY-MM-DDTHH"
+  const out = []
+  for (let i = 0; i < times.length; i++) {
+    const t = times[i]
+    if (typeof t !== 'string') continue
+    if (t.slice(0, 10) !== nowDay) continue // only today
+    if (t.slice(0, 13) < nowHour) continue // from the current hour onward
+    const temp = temps?.[i]
+    const p = precip?.[i]
+    out.push({
+      time: t,
+      hour: Number(t.slice(11, 13)),
+      temp: temp == null ? null : Math.round(temp),
+      code: codes?.[i] ?? 0,
+      precip: p == null ? null : Math.round(p),
+    })
+  }
+  return out
+}
+
+// The 10-day daily forecast (today first). Each entry carries the ISO date, the
+// WMO code and rounded max/min air temperatures.
+function parseDaily(json) {
+  const dates = json.daily?.time
+  const codes = json.daily?.weather_code
+  const max = json.daily?.temperature_2m_max
+  const min = json.daily?.temperature_2m_min
+  if (!Array.isArray(dates)) return []
+  return dates.map((date, i) => ({
+    date,
+    code: codes?.[i] ?? 0,
+    max: max?.[i] == null ? null : Math.round(max[i]),
+    min: min?.[i] == null ? null : Math.round(min[i]),
+  }))
+}
+
 /**
  * Current sea-surface temperature (°C, rounded). Returns null for inland points
  * the Marine model doesn't cover — the UI simply hides the water reading then.
@@ -97,6 +191,30 @@ export function weatherCodeKey(code) {
   if (code >= 80 && code <= 82) return 'showers'
   if (code >= 95) return 'thunderstorm'
   return 'cloudy'
+}
+
+// The lucide icon name that best pictures each condition key from
+// weatherCodeKey(). Kept as a name→name map (not the component) so this module
+// stays icon-library-agnostic; the details screen resolves the name to a
+// lucide-react component. Single source of truth for "code → icon".
+const WEATHER_ICON_BY_KEY = {
+  clear: 'Sun',
+  mainlyClear: 'CloudSun',
+  cloudy: 'Cloud',
+  fog: 'CloudFog',
+  drizzle: 'CloudDrizzle',
+  rain: 'CloudRain',
+  snow: 'CloudSnow',
+  showers: 'CloudRainWind',
+  thunderstorm: 'CloudLightning',
+}
+
+/**
+ * Map a WMO weather code straight to a lucide-react icon *name* (e.g. 'CloudRain')
+ * via weatherCodeKey. Falls back to 'Cloud' for anything unmapped.
+ */
+export function weatherIconName(code) {
+  return WEATHER_ICON_BY_KEY[weatherCodeKey(code)] ?? 'Cloud'
 }
 
 /**

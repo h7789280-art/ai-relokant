@@ -41,7 +41,13 @@
       "wind": "Rüzgar",
       "humidity": "Nem",
       "kmh": "km/s",
-      "percent": "%"
+      "percent": "%",
+      "details": "Ayrıntılı tahmin",
+      "hourlyTitle": "Bugün saatlik",
+      "dailyTitle": "10 günlük tahmin",
+      "waterTitle": "Deniz suyu sıcaklığı",
+      "now": "Şimdi",
+      "today": "Bugün"
     },
     "currency": {
       "title": "Döviz kuru",

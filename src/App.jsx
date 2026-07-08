@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Home from './pages/Home.jsx'
+import WeatherDetails from './pages/WeatherDetails.jsx'
 import Catalog from './pages/Catalog.jsx'
 import CatalogCategory from './pages/CatalogCategory.jsx'
 import Place from './pages/Place.jsx'
@@ -56,6 +57,7 @@ export default function App() {
       {isOnboarded ? (
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/weather" element={<WeatherDetails />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/catalog/place/:placeId" element={<Place />} />
           <Route path="/catalog/:categorySlug" element={<CatalogCategory />} />

@@ -284,10 +284,22 @@ export default function Home() {
       {/* Weather + water and currency, side by side on wider screens. */}
       <div className="home__row">
         <section
-          className={`home-card weather-card${
+          className={`home-card weather-card weather-card--tappable${
             weather.status === 'ready' && weather.data ? ' weather-card--live' : ''
           }${weatherNight ? ' weather-card--night' : ''}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate('/weather')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              navigate('/weather')
+            }
+          }}
+          aria-label={t('home.weather.details')}
         >
+          {/* Affordance that this card opens the detailed forecast (§4). */}
+          <ChevronRight className="weather-card__more" size={18} aria-hidden="true" />
           {weather.status === 'loading' ? (
             <p className="home-card__muted">{t('common.loading')}</p>
           ) : weather.status === 'error' || !weather.data ? (

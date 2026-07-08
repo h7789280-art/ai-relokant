@@ -45,7 +45,13 @@
       "wind": "Ветер",
       "humidity": "Влажность",
       "kmh": "км/ч",
-      "percent": "%"
+      "percent": "%",
+      "details": "Подробный прогноз",
+      "hourlyTitle": "Сегодня по часам",
+      "dailyTitle": "На 10 дней",
+      "waterTitle": "Температура воды",
+      "now": "Сейчас",
+      "today": "Сегодня"
     },
     "currency": {
       "title": "Курс валют",

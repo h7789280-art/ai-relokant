@@ -41,7 +41,13 @@
       "wind": "Wiatr",
       "humidity": "Wilgotność",
       "kmh": "km/h",
-      "percent": "%"
+      "percent": "%",
+      "details": "Szczegółowa prognoza",
+      "hourlyTitle": "Dziś godzinowo",
+      "dailyTitle": "Prognoza na 10 dni",
+      "waterTitle": "Temperatura wody",
+      "now": "Teraz",
+      "today": "Dziś"
     },
     "currency": {
       "title": "Kurs walut",

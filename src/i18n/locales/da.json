@@ -41,7 +41,13 @@
       "wind": "Vind",
       "humidity": "Luftfugtighed",
       "kmh": "km/t",
-      "percent": "%"
+      "percent": "%",
+      "details": "Detaljeret vejrudsigt",
+      "hourlyTitle": "I dag time for time",
+      "dailyTitle": "10-dages udsigt",
+      "waterTitle": "Vandtemperatur",
+      "now": "Nu",
+      "today": "I dag"
     },
     "currency": {
       "title": "Valutakurs",

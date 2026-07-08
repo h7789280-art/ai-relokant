@@ -41,7 +41,13 @@
       "wind": "Вітер",
       "humidity": "Вологість",
       "kmh": "км/год",
-      "percent": "%"
+      "percent": "%",
+      "details": "Детальний прогноз",
+      "hourlyTitle": "Сьогодні за годинами",
+      "dailyTitle": "На 10 днів",
+      "waterTitle": "Температура води",
+      "now": "Зараз",
+      "today": "Сьогодні"
     },
     "currency": {
       "title": "Курс валют",

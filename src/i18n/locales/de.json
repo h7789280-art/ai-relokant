@@ -41,7 +41,13 @@
       "wind": "Wind",
       "humidity": "Luftfeuchtigkeit",
       "kmh": "km/h",
-      "percent": "%"
+      "percent": "%",
+      "details": "Detaillierte Vorhersage",
+      "hourlyTitle": "Heute stündlich",
+      "dailyTitle": "10-Tage-Vorhersage",
+      "waterTitle": "Wassertemperatur",
+      "now": "Jetzt",
+      "today": "Heute"
     },
     "currency": {
       "title": "Wechselkurs",

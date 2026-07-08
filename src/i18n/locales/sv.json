@@ -41,7 +41,13 @@
       "wind": "Vind",
       "humidity": "Luftfuktighet",
       "kmh": "km/h",
-      "percent": "%"
+      "percent": "%",
+      "details": "Detaljerad prognos",
+      "hourlyTitle": "Idag per timme",
+      "dailyTitle": "10-dagarsprognos",
+      "waterTitle": "Vattentemperatur",
+      "now": "Nu",
+      "today": "Idag"
     },
     "currency": {
       "title": "Växelkurs",
