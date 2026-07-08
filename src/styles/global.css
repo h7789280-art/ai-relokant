@@ -270,6 +270,24 @@ button {
 }
 
 .home__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Square logo badge sitting left of the wordmark. The PNG has its own rounded
+   corners and transparent margins, so no extra radius/shadow — just keep it
+   square and let it scale to a small icon. */
+.home__logo {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+}
+
+.home__heading-text {
   min-width: 0;
 }
 

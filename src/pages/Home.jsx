@@ -225,18 +225,21 @@ export default function Home() {
       <div className="home__hero">
         <header className="home__header">
           <div className="home__heading">
-            <h1 className="home__brand">{t('appName')}</h1>
-            {selection?.cityName && (
-              <button
-                type="button"
-                className="home__city"
-                onClick={() => setCityPickerOpen(true)}
-                aria-label={t('home.changeCity')}
-              >
-                {selection.cityName}
-                <ChevronDown size={16} aria-hidden="true" />
-              </button>
-            )}
+            <img src="/logo.png" alt="" className="home__logo" aria-hidden="true" />
+            <div className="home__heading-text">
+              <h1 className="home__brand">{t('appName')}</h1>
+              {selection?.cityName && (
+                <button
+                  type="button"
+                  className="home__city"
+                  onClick={() => setCityPickerOpen(true)}
+                  aria-label={t('home.changeCity')}
+                >
+                  {selection.cityName}
+                  <ChevronDown size={16} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </div>
           <button type="button" className="home__bell" aria-label={t('home.notifications')}>
             <Bell size={22} strokeWidth={1.9} aria-hidden="true" />
