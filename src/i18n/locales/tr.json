@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Türkçe",
   "welcome": {
-    "greeting": "Hoş geldiniz"
+    "greeting": "Hoş geldiniz",
+    "subtitle": "Yeni şehirdeki yerel dostunuz",
+    "countryLabel": "Ülke",
+    "cityLabel": "Şehir",
+    "languageLabel": "Dil",
+    "countryPlaceholder": "Bir ülke seçin",
+    "cityPlaceholder": "Bir şehir seçin",
+    "soon": "(yakında)",
+    "continue": "Devam et",
+    "loading": "Yükleniyor…",
+    "loadError": "Destinasyonlar yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin."
   },
   "home": {
     "tagline": "Yeni şehirdeki yerel dostunuz.",
@@ -26,18 +36,40 @@
         "showers": "Sağanak",
         "thunderstorm": "Gök gürültülü fırtına"
       },
-      "feelsLike": "Hissedilen"
+      "feelsLike": "Hissedilen",
+      "uv": "UV",
+      "wind": "Rüzgar",
+      "humidity": "Nem",
+      "kmh": "km/s",
+      "percent": "%"
     },
     "currency": {
       "title": "Döviz kuru",
       "unavailable": "Kur bilgisi yok",
-      "all": "Tüm kurlar"
+      "all": "Tüm kurlar",
+      "customize": "Para birimlerini seç",
+      "pickerTitle": "Para birimleri",
+      "pickerSubtitle": "Lira (₺) karşısında göstermek için en fazla {{max}} tane seçin.",
+      "limitHint": "En fazla {{max}} para birimi gösterebilirsiniz. Başka eklemek için birini kaldırın.",
+      "names": {
+        "USD": "ABD doları",
+        "EUR": "Euro",
+        "RUB": "Rus rublesi",
+        "GBP": "İngiliz sterlini",
+        "UAH": "Ukrayna grivnası",
+        "PLN": "Polonya zlotisi",
+        "CZK": "Çek korunası",
+        "SEK": "İsveç kronu",
+        "NOK": "Norveç kronu",
+        "DKK": "Danimarka kronu"
+      }
     },
     "news": {
       "title": "Bugünün haberleri"
     },
     "markets": {
-      "title": "Bugünkü pazarlar"
+      "title": "Bugünkü pazarlar",
+      "none": "Bugün pazar yok."
     },
     "events": {
       "title": "Bugün neler var"
@@ -58,6 +90,10 @@
       "shops": "Market ve ev eşyalarını nereden alabilirim?",
       "rent": "Alanya'da nasıl ev kiralarım?",
       "transport": "Alanya'da hangi ulaşım var ve nasıl kullanırım?"
+    },
+    "cityPicker": {
+      "title": "Şehir seçin",
+      "subtitle": "Mevcut ülkenizdeki şehirler."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Tüm şehirler",
       "label": "Şehir",
       "aria": "Etkinlikleri şehre göre filtrele"
+    },
+    "when": "Tarih ve saat",
+    "gathering": "Toplanma saati {{time}}",
+    "location": "Konum",
+    "link": "Etkinlik sayfası",
+    "notFound": "Etkinlik bulunamadı.",
+    "price": {
+      "label": "Biletler",
+      "free": "Ücretsiz",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "{{from}} {{symbol}} ve üzeri",
+      "to": "en fazla {{to}} {{symbol}}",
+      "deposit": "Depozito {{amount}} {{symbol}} (siparişinize mahsup edilir)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Etkinlikleri tarihe göre filtrele",
+      "all": "Tüm tarihler",
+      "today": "Bugün",
+      "weekend": "Hafta sonu",
+      "week": "Bu hafta",
+      "month": "Bu ay",
+      "custom": "Tarih seç",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "fromLabel": "{{date}} tarihinden",
+      "toLabel": "{{date}} tarihine kadar"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Gönder",
     "typing": "CityMate yazıyor…",
     "error": "Yanıt alınamadı. Lütfen tekrar deneyin.",
-    "limitReached": "Bugünkü ücretsiz mesaj limitine ulaştınız. Yarın tekrar gelin — yardım için burada olacağım. 🙂"
+    "limitReached": "Bugünkü ücretsiz mesaj limitine ulaştınız. Yarın tekrar gelin — yardım için burada olacağım. 🙂",
+    "clear": "Sohbeti temizle"
   },
   "nav": {
     "home": "Ana sayfa",
@@ -230,7 +298,35 @@
     "gateFavorites": "Yerleri favorilerinize kaydetmek için giriş yapın. Şehri keşfetmek ücretsiz kalır — hesap gerekmez.",
     "signedInAs": "Giriş yapan",
     "signOut": "Çıkış yap",
-    "guestNotice": "Misafir olarak geziniyorsunuz. Favorileri kaydetmek ve CityMate ile sohbet etmek için giriş yapın."
+    "guestNotice": "Misafir olarak geziniyorsunuz. Favorileri kaydetmek ve CityMate ile sohbet etmek için giriş yapın.",
+    "sessionExpired": "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.",
+    "forgotPassword": "Şifrenizi mi unuttunuz?",
+    "resendConfirmation": "Onay e-postasını yeniden gönder",
+    "resending": "Gönderiliyor…",
+    "resendSent": "E-posta gönderildi — gelen kutunuzu kontrol edin.",
+    "resetTitle": "Şifreyi sıfırla",
+    "resetSubtitle": "E-postanızı girin, yeni bir şifre belirlemeniz için size bir bağlantı gönderelim.",
+    "resetCta": "Sıfırlama bağlantısı gönder",
+    "resetSent": "{{email}} adresine bir şifre sıfırlama bağlantısı gönderdik. Yeni bir şifre belirlemek için açın.",
+    "backToSignIn": "Girişe dön",
+    "errors": {
+      "invalidCredentials": "E-posta veya şifre hatalı.",
+      "emailNotConfirmed": "E-postanız henüz onaylanmadı. Onay bağlantısı için gelen kutunuzu kontrol edin.",
+      "userExists": "Bu e-posta ile zaten bir hesabınız var. Bunun yerine giriş yapmayı deneyin.",
+      "switchToSignIn": "Girişe git",
+      "rateLimit": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
+      "weakPassword": "Şifre çok zayıf. En az 6 karakter kullanın.",
+      "invalidEmail": "Lütfen geçerli bir e-posta adresi girin.",
+      "sessionMissing": "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş. Yenisini isteyin."
+    },
+    "newPassword": {
+      "title": "Yeni şifre belirleyin",
+      "subtitle": "Hesabınız için yeni bir şifre seçin.",
+      "placeholder": "Yeni şifre",
+      "submit": "Yeni şifreyi kaydet",
+      "success": "Şifreniz güncellendi. Giriş yaptınız.",
+      "continue": "Uygulamaya devam et"
+    }
   },
   "admin": {
     "link": "Yönetim paneli",
@@ -349,7 +445,8 @@
     "settingsTitle": "Ayarlar",
     "language": "Arayüz dili",
     "city": "Şehir",
-    "soon": "(yakında)"
+    "soon": "(yakında)",
+    "country": "Ülke"
   },
   "install": {
     "title": "CityMate'i yükle",
@@ -374,6 +471,8 @@
     "cancel": "İptal",
     "save": "Kaydet",
     "search": "Ara",
-    "back": "Geri"
+    "back": "Geri",
+    "close": "Kapat",
+    "done": "Tamam"
   }
 }

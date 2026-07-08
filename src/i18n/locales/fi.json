@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Suomi",
   "welcome": {
-    "greeting": "Tervetuloa"
+    "greeting": "Tervetuloa",
+    "subtitle": "Paikallinen ystäväsi uudessa kaupungissa",
+    "countryLabel": "Maa",
+    "cityLabel": "Kaupunki",
+    "languageLabel": "Kieli",
+    "countryPlaceholder": "Valitse maa",
+    "cityPlaceholder": "Valitse kaupunki",
+    "soon": "(pian)",
+    "continue": "Jatka",
+    "loading": "Ladataan…",
+    "loadError": "Kohteita ei voitu ladata. Tarkista yhteytesi ja yritä uudelleen."
   },
   "home": {
     "tagline": "Paikallinen ystäväsi uudessa kaupungissa.",
@@ -26,18 +36,40 @@
         "showers": "Sadekuuroja",
         "thunderstorm": "Ukkosmyrsky"
       },
-      "feelsLike": "Tuntuu kuin"
+      "feelsLike": "Tuntuu kuin",
+      "uv": "UV",
+      "wind": "Tuuli",
+      "humidity": "Kosteus",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Valuuttakurssi",
       "unavailable": "Kurssit eivät saatavilla",
-      "all": "Kaikki kurssit"
+      "all": "Kaikki kurssit",
+      "customize": "Valitse valuutat",
+      "pickerTitle": "Valuutat",
+      "pickerSubtitle": "Valitse enintään {{max}} näytettäväksi liiraa (₺) vastaan.",
+      "limitHint": "Voit näyttää enintään {{max}} valuuttaa. Poista yksi lisätäksesi toisen.",
+      "names": {
+        "USD": "Yhdysvaltain dollari",
+        "EUR": "Euro",
+        "RUB": "Venäjän rupla",
+        "GBP": "Englannin punta",
+        "UAH": "Ukrainan hryvnia",
+        "PLN": "Puolan zloty",
+        "CZK": "Tšekin koruna",
+        "SEK": "Ruotsin kruunu",
+        "NOK": "Norjan kruunu",
+        "DKK": "Tanskan kruunu"
+      }
     },
     "news": {
       "title": "Uutiset tänään"
     },
     "markets": {
-      "title": "Torit tänään"
+      "title": "Torit tänään",
+      "none": "Ei toria tänään."
     },
     "events": {
       "title": "Mitä tapahtuu tänään"
@@ -58,6 +90,10 @@
       "shops": "Mistä voin ostaa ruokaa ja kodintarvikkeita?",
       "rent": "Miten vuokraan kodin Alanyassa?",
       "transport": "Mitä liikennevälineitä Alanyassa on ja miten niitä käytän?"
+    },
+    "cityPicker": {
+      "title": "Valitse kaupunki",
+      "subtitle": "Nykyisen maasi kaupungit."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Kaikki kaupungit",
       "label": "Kaupunki",
       "aria": "Suodata tapahtumia kaupungin mukaan"
+    },
+    "when": "Päivä ja aika",
+    "gathering": "Kokoontuminen klo {{time}}",
+    "location": "Sijainti",
+    "link": "Tapahtumasivu",
+    "notFound": "Tapahtumaa ei löytynyt.",
+    "price": {
+      "label": "Liput",
+      "free": "Ilmainen",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "alkaen {{from}} {{symbol}}",
+      "to": "enintään {{to}} {{symbol}}",
+      "deposit": "Ennakkomaksu {{amount}} {{symbol}} (hyvitetään tilauksestasi)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Suodata tapahtumat päivämäärän mukaan",
+      "all": "Kaikki päivät",
+      "today": "Tänään",
+      "weekend": "Viikonloppu",
+      "week": "Tällä viikolla",
+      "month": "Tässä kuussa",
+      "custom": "Valitse päivät",
+      "from": "Alkaen",
+      "to": "Asti",
+      "fromLabel": "Alkaen {{date}}",
+      "toLabel": "{{date}} asti"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Lähetä",
     "typing": "CityMate kirjoittaa…",
     "error": "Vastausta ei saatu. Yritä uudelleen.",
-    "limitReached": "Olet saavuttanut tämän päivän ilmaisten viestien rajan. Palaa huomenna — olen täällä auttamassa. 🙂"
+    "limitReached": "Olet saavuttanut tämän päivän ilmaisten viestien rajan. Palaa huomenna — olen täällä auttamassa. 🙂",
+    "clear": "Tyhjennä keskustelu"
   },
   "nav": {
     "home": "Etusivu",
@@ -230,7 +298,35 @@
     "gateFavorites": "Kirjaudu sisään tallentaaksesi paikkoja suosikkeihisi. Kaupungin selailu on aina ilmaista — tiliä ei tarvita.",
     "signedInAs": "Kirjautuneena",
     "signOut": "Kirjaudu ulos",
-    "guestNotice": "Selaat vieraana. Kirjaudu sisään tallentaaksesi suosikkeja ja keskustellaksesi CityMaten kanssa."
+    "guestNotice": "Selaat vieraana. Kirjaudu sisään tallentaaksesi suosikkeja ja keskustellaksesi CityMaten kanssa.",
+    "sessionExpired": "Istuntosi vanheni. Kirjaudu sisään uudelleen.",
+    "forgotPassword": "Unohditko salasanan?",
+    "resendConfirmation": "Lähetä vahvistussähköposti uudelleen",
+    "resending": "Lähetetään…",
+    "resendSent": "Sähköposti lähetetty — tarkista postilaatikkosi.",
+    "resetTitle": "Nollaa salasana",
+    "resetSubtitle": "Anna sähköpostisi, niin lähetämme linkin uuden salasanan asettamiseksi.",
+    "resetCta": "Lähetä nollauslinkki",
+    "resetSent": "Lähetimme salasanan nollauslinkin osoitteeseen {{email}}. Avaa se asettaaksesi uuden salasanan.",
+    "backToSignIn": "Takaisin kirjautumiseen",
+    "errors": {
+      "invalidCredentials": "Väärä sähköposti tai salasana.",
+      "emailNotConfirmed": "Sähköpostiasi ei ole vielä vahvistettu. Tarkista postilaatikkosi vahvistuslinkki.",
+      "userExists": "Sinulla on jo tili tällä sähköpostilla. Yritä kirjautua sisään.",
+      "switchToSignIn": "Siirry kirjautumiseen",
+      "rateLimit": "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
+      "weakPassword": "Salasana on liian heikko. Käytä vähintään 6 merkkiä.",
+      "invalidEmail": "Anna kelvollinen sähköpostiosoite.",
+      "sessionMissing": "Tämä nollauslinkki on virheellinen tai vanhentunut. Pyydä uusi."
+    },
+    "newPassword": {
+      "title": "Aseta uusi salasana",
+      "subtitle": "Valitse tilillesi uusi salasana.",
+      "placeholder": "Uusi salasana",
+      "submit": "Tallenna uusi salasana",
+      "success": "Salasanasi on päivitetty. Olet kirjautunut sisään.",
+      "continue": "Jatka sovellukseen"
+    }
   },
   "admin": {
     "link": "Hallintapaneeli",
@@ -349,7 +445,8 @@
     "settingsTitle": "Asetukset",
     "language": "Käyttöliittymän kieli",
     "city": "Kaupunki",
-    "soon": "(pian)"
+    "soon": "(pian)",
+    "country": "Maa"
   },
   "install": {
     "title": "Asenna CityMate",
@@ -374,6 +471,8 @@
     "cancel": "Peruuta",
     "save": "Tallenna",
     "search": "Hae",
-    "back": "Takaisin"
+    "back": "Takaisin",
+    "close": "Sulje",
+    "done": "Valmis"
   }
 }

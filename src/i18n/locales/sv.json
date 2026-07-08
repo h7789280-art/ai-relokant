@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Svenska",
   "welcome": {
-    "greeting": "Välkommen"
+    "greeting": "Välkommen",
+    "subtitle": "Din lokala vän i en ny stad",
+    "countryLabel": "Land",
+    "cityLabel": "Stad",
+    "languageLabel": "Språk",
+    "countryPlaceholder": "Välj ett land",
+    "cityPlaceholder": "Välj en stad",
+    "soon": "(snart)",
+    "continue": "Fortsätt",
+    "loading": "Laddar…",
+    "loadError": "Kunde inte ladda destinationer. Kontrollera din anslutning och försök igen."
   },
   "home": {
     "tagline": "Din lokala vän i en ny stad.",
@@ -26,18 +36,40 @@
         "showers": "Skurar",
         "thunderstorm": "Åskväder"
       },
-      "feelsLike": "Känns som"
+      "feelsLike": "Känns som",
+      "uv": "UV",
+      "wind": "Vind",
+      "humidity": "Luftfuktighet",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Växelkurs",
       "unavailable": "Kurser ej tillgängliga",
-      "all": "Alla kurser"
+      "all": "Alla kurser",
+      "customize": "Välj valutor",
+      "pickerTitle": "Valutor",
+      "pickerSubtitle": "Välj upp till {{max}} att visa mot liran (₺).",
+      "limitHint": "Du kan visa upp till {{max}} valutor. Ta bort en för att lägga till en annan.",
+      "names": {
+        "USD": "US-dollar",
+        "EUR": "Euro",
+        "RUB": "Rysk rubel",
+        "GBP": "Brittiskt pund",
+        "UAH": "Ukrainsk hryvnia",
+        "PLN": "Polsk zloty",
+        "CZK": "Tjeckisk koruna",
+        "SEK": "Svensk krona",
+        "NOK": "Norsk krona",
+        "DKK": "Dansk krona"
+      }
     },
     "news": {
       "title": "Nyheter idag"
     },
     "markets": {
-      "title": "Marknader idag"
+      "title": "Marknader idag",
+      "none": "Ingen marknad idag."
     },
     "events": {
       "title": "På gång idag"
@@ -58,6 +90,10 @@
       "shops": "Var kan jag köpa mat och hushållsvaror?",
       "rent": "Hur hyr jag en bostad i Alanya?",
       "transport": "Vilken transport finns det i Alanya och hur använder jag den?"
+    },
+    "cityPicker": {
+      "title": "Välj stad",
+      "subtitle": "Städer i ditt nuvarande land."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Alla städer",
       "label": "Stad",
       "aria": "Filtrera evenemang efter stad"
+    },
+    "when": "Datum och tid",
+    "gathering": "Insläpp {{time}}",
+    "location": "Plats",
+    "link": "Evenemangssida",
+    "notFound": "Evenemang hittades inte.",
+    "price": {
+      "label": "Biljetter",
+      "free": "Gratis",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "från {{from}} {{symbol}}",
+      "to": "upp till {{to}} {{symbol}}",
+      "deposit": "Handpenning {{amount}} {{symbol}} (dras av på din beställning)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Filtrera evenemang efter datum",
+      "all": "Alla datum",
+      "today": "Idag",
+      "weekend": "Helg",
+      "week": "Denna vecka",
+      "month": "Denna månad",
+      "custom": "Välj datum",
+      "from": "Från",
+      "to": "Till",
+      "fromLabel": "Från {{date}}",
+      "toLabel": "Till {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Skicka",
     "typing": "CityMate skriver…",
     "error": "Kunde inte få något svar. Försök igen.",
-    "limitReached": "Du har nått dagens gräns för gratis meddelanden. Kom tillbaka imorgon — då finns jag här för att hjälpa dig. 🙂"
+    "limitReached": "Du har nått dagens gräns för gratis meddelanden. Kom tillbaka imorgon — då finns jag här för att hjälpa dig. 🙂",
+    "clear": "Rensa chatt"
   },
   "nav": {
     "home": "Hem",
@@ -230,7 +298,35 @@
     "gateFavorites": "Logga in för att spara ställen bland dina favoriter. Att utforska staden är fortfarande gratis — inget konto behövs.",
     "signedInAs": "Inloggad som",
     "signOut": "Logga ut",
-    "guestNotice": "Du surfar som gäst. Logga in för att spara favoriter och chatta med CityMate."
+    "guestNotice": "Du surfar som gäst. Logga in för att spara favoriter och chatta med CityMate.",
+    "sessionExpired": "Din session har gått ut. Logga in igen.",
+    "forgotPassword": "Glömt lösenordet?",
+    "resendConfirmation": "Skicka bekräftelsemejlet igen",
+    "resending": "Skickar…",
+    "resendSent": "Mejl skickat — kolla din inkorg.",
+    "resetTitle": "Återställ lösenord",
+    "resetSubtitle": "Ange din e-post så skickar vi en länk för att ange ett nytt lösenord.",
+    "resetCta": "Skicka återställningslänk",
+    "resetSent": "Vi har skickat en länk för lösenordsåterställning till {{email}}. Öppna den för att ange ett nytt lösenord.",
+    "backToSignIn": "Tillbaka till inloggning",
+    "errors": {
+      "invalidCredentials": "Fel e-post eller lösenord.",
+      "emailNotConfirmed": "Din e-post är inte bekräftad ännu. Kolla din inkorg efter bekräftelselänken.",
+      "userExists": "Du har redan ett konto med den här e-posten. Prova att logga in istället.",
+      "switchToSignIn": "Gå till inloggning",
+      "rateLimit": "För många försök. Vänta en stund och försök igen.",
+      "weakPassword": "Lösenordet är för svagt. Använd minst 6 tecken.",
+      "invalidEmail": "Ange en giltig e-postadress.",
+      "sessionMissing": "Den här återställningslänken är ogiltig eller har gått ut. Begär en ny."
+    },
+    "newPassword": {
+      "title": "Ange ett nytt lösenord",
+      "subtitle": "Välj ett nytt lösenord för ditt konto.",
+      "placeholder": "Nytt lösenord",
+      "submit": "Spara nytt lösenord",
+      "success": "Ditt lösenord har uppdaterats. Du är inloggad.",
+      "continue": "Fortsätt till appen"
+    }
   },
   "admin": {
     "link": "Adminpanel",
@@ -349,7 +445,8 @@
     "settingsTitle": "Inställningar",
     "language": "Gränssnittsspråk",
     "city": "Stad",
-    "soon": "(snart)"
+    "soon": "(snart)",
+    "country": "Land"
   },
   "install": {
     "title": "Installera CityMate",
@@ -374,6 +471,8 @@
     "cancel": "Avbryt",
     "save": "Spara",
     "search": "Sök",
-    "back": "Tillbaka"
+    "back": "Tillbaka",
+    "close": "Stäng",
+    "done": "Klar"
   }
 }

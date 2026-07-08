@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Nederlands",
   "welcome": {
-    "greeting": "Welkom"
+    "greeting": "Welkom",
+    "subtitle": "Je lokale vriend in een nieuwe stad",
+    "countryLabel": "Land",
+    "cityLabel": "Stad",
+    "languageLabel": "Taal",
+    "countryPlaceholder": "Kies een land",
+    "cityPlaceholder": "Kies een stad",
+    "soon": "(binnenkort)",
+    "continue": "Doorgaan",
+    "loading": "Laden…",
+    "loadError": "Kon bestemmingen niet laden. Controleer je verbinding en probeer het opnieuw."
   },
   "home": {
     "tagline": "Je lokale vriend in een nieuwe stad.",
@@ -26,18 +36,40 @@
         "showers": "Buien",
         "thunderstorm": "Onweer"
       },
-      "feelsLike": "Gevoelstemperatuur"
+      "feelsLike": "Gevoelstemperatuur",
+      "uv": "UV",
+      "wind": "Wind",
+      "humidity": "Luchtvochtigheid",
+      "kmh": "km/u",
+      "percent": "%"
     },
     "currency": {
       "title": "Wisselkoers",
       "unavailable": "Koersen niet beschikbaar",
-      "all": "Alle koersen"
+      "all": "Alle koersen",
+      "customize": "Valuta's kiezen",
+      "pickerTitle": "Valuta's",
+      "pickerSubtitle": "Kies er maximaal {{max}} om te tonen tegenover de lira (₺).",
+      "limitHint": "Je kunt maximaal {{max}} valuta's tonen. Verwijder er een om een andere toe te voegen.",
+      "names": {
+        "USD": "Amerikaanse dollar",
+        "EUR": "Euro",
+        "RUB": "Russische roebel",
+        "GBP": "Brits pond",
+        "UAH": "Oekraïense hryvnia",
+        "PLN": "Poolse zloty",
+        "CZK": "Tsjechische kroon",
+        "SEK": "Zweedse kroon",
+        "NOK": "Noorse kroon",
+        "DKK": "Deense kroon"
+      }
     },
     "news": {
       "title": "Nieuws vandaag"
     },
     "markets": {
-      "title": "Markten vandaag"
+      "title": "Markten vandaag",
+      "none": "Vandaag geen markt."
     },
     "events": {
       "title": "Vandaag te doen"
@@ -58,6 +90,10 @@
       "shops": "Waar kan ik boodschappen en huishoudelijke spullen kopen?",
       "rent": "Hoe huur ik een huis in Alanya?",
       "transport": "Welk vervoer is er in Alanya en hoe gebruik ik het?"
+    },
+    "cityPicker": {
+      "title": "Kies stad",
+      "subtitle": "Steden in je huidige land."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Alle steden",
       "label": "Stad",
       "aria": "Evenementen filteren op stad"
+    },
+    "when": "Datum & tijd",
+    "gathering": "Ontvangst om {{time}}",
+    "location": "Locatie",
+    "link": "Evenementpagina",
+    "notFound": "Evenement niet gevonden.",
+    "price": {
+      "label": "Tickets",
+      "free": "Gratis",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "vanaf {{from}} {{symbol}}",
+      "to": "tot {{to}} {{symbol}}",
+      "deposit": "Aanbetaling {{amount}} {{symbol}} (verrekend met je bestelling)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Evenementen op datum filteren",
+      "all": "Alle data",
+      "today": "Vandaag",
+      "weekend": "Weekend",
+      "week": "Deze week",
+      "month": "Deze maand",
+      "custom": "Datums kiezen",
+      "from": "Van",
+      "to": "Tot",
+      "fromLabel": "Vanaf {{date}}",
+      "toLabel": "Tot {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Versturen",
     "typing": "CityMate is aan het typen…",
     "error": "Geen antwoord ontvangen. Probeer het opnieuw.",
-    "limitReached": "Je hebt het gratis berichtenlimiet voor vandaag bereikt. Kom morgen terug — dan sta ik weer voor je klaar. 🙂"
+    "limitReached": "Je hebt het gratis berichtenlimiet voor vandaag bereikt. Kom morgen terug — dan sta ik weer voor je klaar. 🙂",
+    "clear": "Chat wissen"
   },
   "nav": {
     "home": "Start",
@@ -230,7 +298,35 @@
     "gateFavorites": "Log in om plekken in je favorieten op te slaan. De stad verkennen blijft gratis — geen account nodig.",
     "signedInAs": "Ingelogd als",
     "signOut": "Uitloggen",
-    "guestNotice": "Je bekijkt de app als gast. Log in om favorieten op te slaan en te chatten met CityMate."
+    "guestNotice": "Je bekijkt de app als gast. Log in om favorieten op te slaan en te chatten met CityMate.",
+    "sessionExpired": "Je sessie is verlopen. Log opnieuw in.",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "resendConfirmation": "Bevestigingsmail opnieuw versturen",
+    "resending": "Versturen…",
+    "resendSent": "E-mail verstuurd — check je inbox.",
+    "resetTitle": "Wachtwoord opnieuw instellen",
+    "resetSubtitle": "Voer je e-mail in en we sturen je een link om een nieuw wachtwoord in te stellen.",
+    "resetCta": "Resetlink versturen",
+    "resetSent": "We hebben een link om je wachtwoord opnieuw in te stellen naar {{email}} gestuurd. Open die om een nieuw wachtwoord in te stellen.",
+    "backToSignIn": "Terug naar inloggen",
+    "errors": {
+      "invalidCredentials": "Verkeerd e-mailadres of wachtwoord.",
+      "emailNotConfirmed": "Je e-mail is nog niet bevestigd. Check je inbox voor de bevestigingslink.",
+      "userExists": "Je hebt al een account met dit e-mailadres. Probeer in te loggen.",
+      "switchToSignIn": "Ga naar inloggen",
+      "rateLimit": "Te veel pogingen. Wacht even en probeer het opnieuw.",
+      "weakPassword": "Het wachtwoord is te zwak. Gebruik minstens 6 tekens.",
+      "invalidEmail": "Voer een geldig e-mailadres in.",
+      "sessionMissing": "Deze resetlink is ongeldig of verlopen. Vraag een nieuwe aan."
+    },
+    "newPassword": {
+      "title": "Stel een nieuw wachtwoord in",
+      "subtitle": "Kies een nieuw wachtwoord voor je account.",
+      "placeholder": "Nieuw wachtwoord",
+      "submit": "Nieuw wachtwoord opslaan",
+      "success": "Je wachtwoord is bijgewerkt. Je bent ingelogd.",
+      "continue": "Doorgaan naar app"
+    }
   },
   "admin": {
     "link": "Adminpaneel",
@@ -349,7 +445,8 @@
     "settingsTitle": "Instellingen",
     "language": "Interfacetaal",
     "city": "Stad",
-    "soon": "(binnenkort)"
+    "soon": "(binnenkort)",
+    "country": "Land"
   },
   "install": {
     "title": "CityMate installeren",
@@ -374,6 +471,8 @@
     "cancel": "Annuleren",
     "save": "Opslaan",
     "search": "Zoeken",
-    "back": "Terug"
+    "back": "Terug",
+    "close": "Sluiten",
+    "done": "Klaar"
   }
 }

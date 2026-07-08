@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Polski",
   "welcome": {
-    "greeting": "Witamy"
+    "greeting": "Witamy",
+    "subtitle": "Twój lokalny przyjaciel w nowym mieście",
+    "countryLabel": "Kraj",
+    "cityLabel": "Miasto",
+    "languageLabel": "Język",
+    "countryPlaceholder": "Wybierz kraj",
+    "cityPlaceholder": "Wybierz miasto",
+    "soon": "(wkrótce)",
+    "continue": "Dalej",
+    "loading": "Ładowanie…",
+    "loadError": "Nie udało się załadować kierunków. Sprawdź połączenie i spróbuj ponownie."
   },
   "home": {
     "tagline": "Twój lokalny przyjaciel w nowym mieście.",
@@ -26,18 +36,40 @@
         "showers": "Przelotne opady",
         "thunderstorm": "Burza"
       },
-      "feelsLike": "Odczuwalna"
+      "feelsLike": "Odczuwalna",
+      "uv": "UV",
+      "wind": "Wiatr",
+      "humidity": "Wilgotność",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Kurs walut",
       "unavailable": "Kursy niedostępne",
-      "all": "Wszystkie kursy"
+      "all": "Wszystkie kursy",
+      "customize": "Wybierz waluty",
+      "pickerTitle": "Waluty",
+      "pickerSubtitle": "Wybierz do {{max}}, aby pokazać względem liry (₺).",
+      "limitHint": "Możesz pokazać do {{max}} walut. Usuń jedną, aby dodać inną.",
+      "names": {
+        "USD": "Dolar amerykański",
+        "EUR": "Euro",
+        "RUB": "Rubel rosyjski",
+        "GBP": "Funt brytyjski",
+        "UAH": "Hrywna ukraińska",
+        "PLN": "Złoty polski",
+        "CZK": "Korona czeska",
+        "SEK": "Korona szwedzka",
+        "NOK": "Korona norweska",
+        "DKK": "Korona duńska"
+      }
     },
     "news": {
       "title": "Wiadomości dziś"
     },
     "markets": {
-      "title": "Targi dziś"
+      "title": "Targi dziś",
+      "none": "Dziś nie ma targu."
     },
     "events": {
       "title": "Co się dzieje dziś"
@@ -58,6 +90,10 @@
       "shops": "Gdzie kupię artykuły spożywcze i do domu?",
       "rent": "Jak wynająć mieszkanie w Alanyi?",
       "transport": "Jaki transport jest w Alanyi i jak z niego korzystać?"
+    },
+    "cityPicker": {
+      "title": "Wybierz miasto",
+      "subtitle": "Miasta w Twoim obecnym kraju."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Wszystkie miasta",
       "label": "Miasto",
       "aria": "Filtruj wydarzenia według miasta"
+    },
+    "when": "Data i godzina",
+    "gathering": "Zbiórka o {{time}}",
+    "location": "Lokalizacja",
+    "link": "Strona wydarzenia",
+    "notFound": "Nie znaleziono wydarzenia.",
+    "price": {
+      "label": "Bilety",
+      "free": "Bezpłatne",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "od {{from}} {{symbol}}",
+      "to": "do {{to}} {{symbol}}",
+      "deposit": "Zaliczka {{amount}} {{symbol}} (zaliczana na poczet zamówienia)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Filtruj wydarzenia według daty",
+      "all": "Wszystkie daty",
+      "today": "Dziś",
+      "weekend": "Weekend",
+      "week": "Ten tydzień",
+      "month": "Ten miesiąc",
+      "custom": "Wybierz daty",
+      "from": "Od",
+      "to": "Do",
+      "fromLabel": "Od {{date}}",
+      "toLabel": "Do {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Wyślij",
     "typing": "CityMate pisze…",
     "error": "Nie udało się uzyskać odpowiedzi. Spróbuj ponownie.",
-    "limitReached": "Wykorzystano dzienny limit darmowych wiadomości. Wróć jutro — chętnie pomogę. 🙂"
+    "limitReached": "Wykorzystano dzienny limit darmowych wiadomości. Wróć jutro — chętnie pomogę. 🙂",
+    "clear": "Wyczyść czat"
   },
   "nav": {
     "home": "Główna",
@@ -230,7 +298,35 @@
     "gateFavorites": "Zaloguj się, aby zapisywać miejsca w ulubionych. Przeglądanie miasta pozostaje bezpłatne — konto nie jest potrzebne.",
     "signedInAs": "Zalogowano jako",
     "signOut": "Wyloguj się",
-    "guestNotice": "Przeglądasz jako gość. Zaloguj się, aby zapisywać ulubione i rozmawiać z CityMate."
+    "guestNotice": "Przeglądasz jako gość. Zaloguj się, aby zapisywać ulubione i rozmawiać z CityMate.",
+    "sessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
+    "forgotPassword": "Nie pamiętasz hasła?",
+    "resendConfirmation": "Wyślij ponownie e-mail potwierdzający",
+    "resending": "Wysyłanie…",
+    "resendSent": "E-mail wysłany — sprawdź swoją skrzynkę.",
+    "resetTitle": "Zresetuj hasło",
+    "resetSubtitle": "Podaj swój e-mail, a wyślemy link do ustawienia nowego hasła.",
+    "resetCta": "Wyślij link resetujący",
+    "resetSent": "Wysłaliśmy link do zresetowania hasła na {{email}}. Otwórz go, aby ustawić nowe hasło.",
+    "backToSignIn": "Powrót do logowania",
+    "errors": {
+      "invalidCredentials": "Błędny e-mail lub hasło.",
+      "emailNotConfirmed": "Twój e-mail nie został jeszcze potwierdzony. Sprawdź skrzynkę w poszukiwaniu linku potwierdzającego.",
+      "userExists": "Masz już konto z tym adresem e-mail. Spróbuj się zalogować.",
+      "switchToSignIn": "Przejdź do logowania",
+      "rateLimit": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
+      "weakPassword": "Hasło jest zbyt słabe. Użyj co najmniej 6 znaków.",
+      "invalidEmail": "Podaj prawidłowy adres e-mail.",
+      "sessionMissing": "Ten link resetujący jest nieprawidłowy lub wygasł. Poproś o nowy."
+    },
+    "newPassword": {
+      "title": "Ustaw nowe hasło",
+      "subtitle": "Wybierz nowe hasło do swojego konta.",
+      "placeholder": "Nowe hasło",
+      "submit": "Zapisz nowe hasło",
+      "success": "Twoje hasło zostało zaktualizowane. Jesteś zalogowany.",
+      "continue": "Przejdź do aplikacji"
+    }
   },
   "admin": {
     "link": "Panel administratora",
@@ -349,7 +445,8 @@
     "settingsTitle": "Ustawienia",
     "language": "Język interfejsu",
     "city": "Miasto",
-    "soon": "(wkrótce)"
+    "soon": "(wkrótce)",
+    "country": "Kraj"
   },
   "install": {
     "title": "Zainstaluj CityMate",
@@ -374,6 +471,8 @@
     "cancel": "Anuluj",
     "save": "Zapisz",
     "search": "Szukaj",
-    "back": "Wstecz"
+    "back": "Wstecz",
+    "close": "Zamknij",
+    "done": "Gotowe"
   }
 }

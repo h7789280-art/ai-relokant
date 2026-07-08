@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Čeština",
   "welcome": {
-    "greeting": "Vítejte"
+    "greeting": "Vítejte",
+    "subtitle": "Váš místní přítel v novém městě",
+    "countryLabel": "Země",
+    "cityLabel": "Město",
+    "languageLabel": "Jazyk",
+    "countryPlaceholder": "Vyberte zemi",
+    "cityPlaceholder": "Vyberte město",
+    "soon": "(brzy)",
+    "continue": "Pokračovat",
+    "loading": "Načítání…",
+    "loadError": "Nepodařilo se načíst destinace. Zkontrolujte připojení a zkuste to znovu."
   },
   "home": {
     "tagline": "Váš místní přítel v novém městě.",
@@ -26,18 +36,40 @@
         "showers": "Přeháňky",
         "thunderstorm": "Bouřka"
       },
-      "feelsLike": "Pocitově"
+      "feelsLike": "Pocitově",
+      "uv": "UV",
+      "wind": "Vítr",
+      "humidity": "Vlhkost",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Směnný kurz",
       "unavailable": "Kurzy nejsou dostupné",
-      "all": "Všechny kurzy"
+      "all": "Všechny kurzy",
+      "customize": "Vybrat měny",
+      "pickerTitle": "Měny",
+      "pickerSubtitle": "Vyberte až {{max}} pro zobrazení vůči liře (₺).",
+      "limitHint": "Můžete zobrazit až {{max}} měn. Odeberte jednu, abyste přidali jinou.",
+      "names": {
+        "USD": "Americký dolar",
+        "EUR": "Euro",
+        "RUB": "Ruský rubl",
+        "GBP": "Britská libra",
+        "UAH": "Ukrajinská hřivna",
+        "PLN": "Polský zlotý",
+        "CZK": "Česká koruna",
+        "SEK": "Švédská koruna",
+        "NOK": "Norská koruna",
+        "DKK": "Dánská koruna"
+      }
     },
     "news": {
       "title": "Dnešní zprávy"
     },
     "markets": {
-      "title": "Dnešní trhy"
+      "title": "Dnešní trhy",
+      "none": "Dnes žádný trh."
     },
     "events": {
       "title": "Co se dnes děje"
@@ -58,6 +90,10 @@
       "shops": "Kde nakoupím potraviny a věci do domácnosti?",
       "rent": "Jak si v Alanyi pronajmu bydlení?",
       "transport": "Jaká je v Alanyi doprava a jak ji použiju?"
+    },
+    "cityPicker": {
+      "title": "Vyberte město",
+      "subtitle": "Města ve vaší aktuální zemi."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Všechna města",
       "label": "Město",
       "aria": "Filtrovat akce podle města"
+    },
+    "when": "Datum a čas",
+    "gathering": "Sraz v {{time}}",
+    "location": "Místo",
+    "link": "Stránka akce",
+    "notFound": "Akce nenalezena.",
+    "price": {
+      "label": "Vstupenky",
+      "free": "Zdarma",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "od {{from}} {{symbol}}",
+      "to": "do {{to}} {{symbol}}",
+      "deposit": "Záloha {{amount}} {{symbol}} (započítá se do objednávky)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Filtrovat akce podle data",
+      "all": "Všechna data",
+      "today": "Dnes",
+      "weekend": "Víkend",
+      "week": "Tento týden",
+      "month": "Tento měsíc",
+      "custom": "Vybrat data",
+      "from": "Od",
+      "to": "Do",
+      "fromLabel": "Od {{date}}",
+      "toLabel": "Do {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Odeslat",
     "typing": "CityMate píše…",
     "error": "Nepodařilo se získat odpověď. Zkuste to prosím znovu.",
-    "limitReached": "Dosáhli jste dnešního limitu bezplatných zpráv. Vraťte se zítra — budu tu připraven pomoci. 🙂"
+    "limitReached": "Dosáhli jste dnešního limitu bezplatných zpráv. Vraťte se zítra — budu tu připraven pomoci. 🙂",
+    "clear": "Vymazat chat"
   },
   "nav": {
     "home": "Domů",
@@ -230,7 +298,35 @@
     "gateFavorites": "Přihlaste se a ukládejte si místa do oblíbených. Procházení města zůstává zdarma — účet není potřeba.",
     "signedInAs": "Přihlášen jako",
     "signOut": "Odhlásit se",
-    "guestNotice": "Procházíte jako host. Přihlaste se a ukládejte oblíbená místa a chatujte s CityMate."
+    "guestNotice": "Procházíte jako host. Přihlaste se a ukládejte oblíbená místa a chatujte s CityMate.",
+    "sessionExpired": "Vaše relace vypršela. Přihlaste se prosím znovu.",
+    "forgotPassword": "Zapomněli jste heslo?",
+    "resendConfirmation": "Znovu odeslat potvrzovací e-mail",
+    "resending": "Odesílání…",
+    "resendSent": "E-mail odeslán — zkontrolujte schránku.",
+    "resetTitle": "Obnovit heslo",
+    "resetSubtitle": "Zadejte svůj e-mail a pošleme vám odkaz pro nastavení nového hesla.",
+    "resetCta": "Odeslat odkaz pro obnovení",
+    "resetSent": "Poslali jsme odkaz pro obnovení hesla na {{email}}. Otevřete jej a nastavte nové heslo.",
+    "backToSignIn": "Zpět na přihlášení",
+    "errors": {
+      "invalidCredentials": "Nesprávný e-mail nebo heslo.",
+      "emailNotConfirmed": "Váš e-mail zatím není potvrzen. Zkontrolujte schránku a najděte potvrzovací odkaz.",
+      "userExists": "S tímto e-mailem už máte účet. Zkuste se přihlásit.",
+      "switchToSignIn": "Přejít na přihlášení",
+      "rateLimit": "Příliš mnoho pokusů. Chvíli počkejte a zkuste to znovu.",
+      "weakPassword": "Heslo je příliš slabé. Použijte alespoň 6 znaků.",
+      "invalidEmail": "Zadejte prosím platnou e-mailovou adresu.",
+      "sessionMissing": "Tento odkaz pro obnovení je neplatný nebo vypršel. Vyžádejte si nový."
+    },
+    "newPassword": {
+      "title": "Nastavte nové heslo",
+      "subtitle": "Zvolte nové heslo pro svůj účet.",
+      "placeholder": "Nové heslo",
+      "submit": "Uložit nové heslo",
+      "success": "Vaše heslo bylo aktualizováno. Jste přihlášeni.",
+      "continue": "Pokračovat do aplikace"
+    }
   },
   "admin": {
     "link": "Administrace",
@@ -349,7 +445,8 @@
     "settingsTitle": "Nastavení",
     "language": "Jazyk rozhraní",
     "city": "Město",
-    "soon": "(brzy)"
+    "soon": "(brzy)",
+    "country": "Země"
   },
   "install": {
     "title": "Nainstalovat CityMate",
@@ -374,6 +471,8 @@
     "cancel": "Zrušit",
     "save": "Uložit",
     "search": "Hledat",
-    "back": "Zpět"
+    "back": "Zpět",
+    "close": "Zavřít",
+    "done": "Hotovo"
   }
 }

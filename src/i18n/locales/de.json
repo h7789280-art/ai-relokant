@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Deutsch",
   "welcome": {
-    "greeting": "Willkommen"
+    "greeting": "Willkommen",
+    "subtitle": "Ihr lokaler Freund in einer neuen Stadt",
+    "countryLabel": "Land",
+    "cityLabel": "Stadt",
+    "languageLabel": "Sprache",
+    "countryPlaceholder": "Land auswählen",
+    "cityPlaceholder": "Stadt auswählen",
+    "soon": "(bald)",
+    "continue": "Weiter",
+    "loading": "Wird geladen…",
+    "loadError": "Reiseziele konnten nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
   },
   "home": {
     "tagline": "Ihr lokaler Freund in einer neuen Stadt.",
@@ -26,18 +36,40 @@
         "showers": "Schauer",
         "thunderstorm": "Gewitter"
       },
-      "feelsLike": "Gefühlt"
+      "feelsLike": "Gefühlt",
+      "uv": "UV",
+      "wind": "Wind",
+      "humidity": "Luftfeuchtigkeit",
+      "kmh": "km/h",
+      "percent": "%"
     },
     "currency": {
       "title": "Wechselkurs",
       "unavailable": "Kurse nicht verfügbar",
-      "all": "Alle Kurse"
+      "all": "Alle Kurse",
+      "customize": "Währungen wählen",
+      "pickerTitle": "Währungen",
+      "pickerSubtitle": "Wählen Sie bis zu {{max}} zur Anzeige gegenüber der Lira (₺).",
+      "limitHint": "Sie können bis zu {{max}} Währungen anzeigen. Entfernen Sie eine, um eine andere hinzuzufügen.",
+      "names": {
+        "USD": "US-Dollar",
+        "EUR": "Euro",
+        "RUB": "Russischer Rubel",
+        "GBP": "Britisches Pfund",
+        "UAH": "Ukrainische Hrywnja",
+        "PLN": "Polnischer Zloty",
+        "CZK": "Tschechische Krone",
+        "SEK": "Schwedische Krone",
+        "NOK": "Norwegische Krone",
+        "DKK": "Dänische Krone"
+      }
     },
     "news": {
       "title": "Nachrichten heute"
     },
     "markets": {
-      "title": "Märkte heute"
+      "title": "Märkte heute",
+      "none": "Heute kein Markt."
     },
     "events": {
       "title": "Heute los"
@@ -58,6 +90,10 @@
       "shops": "Wo kann ich Lebensmittel und Haushaltswaren kaufen?",
       "rent": "Wie miete ich eine Wohnung in Alanya?",
       "transport": "Welche Verkehrsmittel gibt es in Alanya und wie nutze ich sie?"
+    },
+    "cityPicker": {
+      "title": "Stadt wählen",
+      "subtitle": "Städte in Ihrem aktuellen Land."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Alle Städte",
       "label": "Stadt",
       "aria": "Veranstaltungen nach Stadt filtern"
+    },
+    "when": "Datum & Uhrzeit",
+    "gathering": "Einlass um {{time}}",
+    "location": "Ort",
+    "link": "Veranstaltungsseite",
+    "notFound": "Veranstaltung nicht gefunden.",
+    "price": {
+      "label": "Tickets",
+      "free": "Kostenlos",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "ab {{from}} {{symbol}}",
+      "to": "bis {{to}} {{symbol}}",
+      "deposit": "Anzahlung {{amount}} {{symbol}} (wird auf Ihre Bestellung angerechnet)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Veranstaltungen nach Datum filtern",
+      "all": "Alle Daten",
+      "today": "Heute",
+      "weekend": "Wochenende",
+      "week": "Diese Woche",
+      "month": "Diesen Monat",
+      "custom": "Daten wählen",
+      "from": "Von",
+      "to": "Bis",
+      "fromLabel": "Ab {{date}}",
+      "toLabel": "Bis {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Senden",
     "typing": "CityMate schreibt…",
     "error": "Es konnte keine Antwort abgerufen werden. Bitte versuchen Sie es erneut.",
-    "limitReached": "Sie haben das heutige kostenlose Nachrichtenlimit erreicht. Kommen Sie morgen wieder — ich bin gleich hier, um zu helfen. 🙂"
+    "limitReached": "Sie haben das heutige kostenlose Nachrichtenlimit erreicht. Kommen Sie morgen wieder — ich bin gleich hier, um zu helfen. 🙂",
+    "clear": "Chat löschen"
   },
   "nav": {
     "home": "Start",
@@ -230,7 +298,35 @@
     "gateFavorites": "Melden Sie sich an, um Orte zu Ihren Favoriten zu speichern. Das Erkunden der Stadt bleibt kostenlos — kein Konto erforderlich.",
     "signedInAs": "Angemeldet als",
     "signOut": "Abmelden",
-    "guestNotice": "Sie surfen als Gast. Melden Sie sich an, um Favoriten zu speichern und mit CityMate zu chatten."
+    "guestNotice": "Sie surfen als Gast. Melden Sie sich an, um Favoriten zu speichern und mit CityMate zu chatten.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "forgotPassword": "Passwort vergessen?",
+    "resendConfirmation": "Bestätigungs-E-Mail erneut senden",
+    "resending": "Wird gesendet…",
+    "resendSent": "E-Mail gesendet — sehen Sie in Ihrem Postfach nach.",
+    "resetTitle": "Passwort zurücksetzen",
+    "resetSubtitle": "Geben Sie Ihre E-Mail ein und wir senden Ihnen einen Link, um ein neues Passwort festzulegen.",
+    "resetCta": "Link zum Zurücksetzen senden",
+    "resetSent": "Wir haben einen Link zum Zurücksetzen des Passworts an {{email}} gesendet. Öffnen Sie ihn, um ein neues Passwort festzulegen.",
+    "backToSignIn": "Zurück zur Anmeldung",
+    "errors": {
+      "invalidCredentials": "Falsche E-Mail oder falsches Passwort.",
+      "emailNotConfirmed": "Ihre E-Mail ist noch nicht bestätigt. Prüfen Sie Ihr Postfach auf den Bestätigungslink.",
+      "userExists": "Sie haben bereits ein Konto mit dieser E-Mail. Versuchen Sie, sich stattdessen anzumelden.",
+      "switchToSignIn": "Zur Anmeldung",
+      "rateLimit": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+      "weakPassword": "Das Passwort ist zu schwach. Verwenden Sie mindestens 6 Zeichen.",
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "sessionMissing": "Dieser Link zum Zurücksetzen ist ungültig oder abgelaufen. Fordern Sie einen neuen an."
+    },
+    "newPassword": {
+      "title": "Neues Passwort festlegen",
+      "subtitle": "Wählen Sie ein neues Passwort für Ihr Konto.",
+      "placeholder": "Neues Passwort",
+      "submit": "Neues Passwort speichern",
+      "success": "Ihr Passwort wurde aktualisiert. Sie sind angemeldet.",
+      "continue": "Weiter zur App"
+    }
   },
   "admin": {
     "link": "Admin-Bereich",
@@ -349,7 +445,8 @@
     "settingsTitle": "Einstellungen",
     "language": "Oberflächensprache",
     "city": "Stadt",
-    "soon": "(bald)"
+    "soon": "(bald)",
+    "country": "Land"
   },
   "install": {
     "title": "CityMate installieren",
@@ -374,6 +471,8 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "search": "Suchen",
-    "back": "Zurück"
+    "back": "Zurück",
+    "close": "Schließen",
+    "done": "Fertig"
   }
 }

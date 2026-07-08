@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Norsk",
   "welcome": {
-    "greeting": "Velkommen"
+    "greeting": "Velkommen",
+    "subtitle": "Din lokale venn i en ny by",
+    "countryLabel": "Land",
+    "cityLabel": "By",
+    "languageLabel": "Språk",
+    "countryPlaceholder": "Velg et land",
+    "cityPlaceholder": "Velg en by",
+    "soon": "(snart)",
+    "continue": "Fortsett",
+    "loading": "Laster…",
+    "loadError": "Kunne ikke laste reisemål. Sjekk tilkoblingen og prøv igjen."
   },
   "home": {
     "tagline": "Din lokale venn i en ny by.",
@@ -26,18 +36,40 @@
         "showers": "Byger",
         "thunderstorm": "Tordenvær"
       },
-      "feelsLike": "Føles som"
+      "feelsLike": "Føles som",
+      "uv": "UV",
+      "wind": "Vind",
+      "humidity": "Luftfuktighet",
+      "kmh": "km/t",
+      "percent": "%"
     },
     "currency": {
       "title": "Vekslingskurs",
       "unavailable": "Kurser utilgjengelig",
-      "all": "Alle kurser"
+      "all": "Alle kurser",
+      "customize": "Velg valutaer",
+      "pickerTitle": "Valutaer",
+      "pickerSubtitle": "Velg opptil {{max}} å vise mot liraen (₺).",
+      "limitHint": "Du kan vise opptil {{max}} valutaer. Fjern én for å legge til en annen.",
+      "names": {
+        "USD": "Amerikansk dollar",
+        "EUR": "Euro",
+        "RUB": "Russisk rubel",
+        "GBP": "Britiske pund",
+        "UAH": "Ukrainsk hryvnia",
+        "PLN": "Polsk zloty",
+        "CZK": "Tsjekkisk koruna",
+        "SEK": "Svensk krone",
+        "NOK": "Norsk krone",
+        "DKK": "Dansk krone"
+      }
     },
     "news": {
       "title": "Nyheter i dag"
     },
     "markets": {
-      "title": "Markeder i dag"
+      "title": "Markeder i dag",
+      "none": "Ingen marked i dag."
     },
     "events": {
       "title": "På programmet i dag"
@@ -58,6 +90,10 @@
       "shops": "Hvor kan jeg kjøpe dagligvarer og husholdningsartikler?",
       "rent": "Hvordan leier jeg en bolig i Alanya?",
       "transport": "Hvilken transport finnes i Alanya og hvordan bruker jeg den?"
+    },
+    "cityPicker": {
+      "title": "Velg by",
+      "subtitle": "Byer i ditt nåværende land."
     }
   },
   "catalog": {
@@ -176,6 +212,37 @@
       "all": "Alle byer",
       "label": "By",
       "aria": "Filtrer arrangementer etter by"
+    },
+    "when": "Dato og tid",
+    "gathering": "Oppmøte kl. {{time}}",
+    "location": "Sted",
+    "link": "Arrangementsside",
+    "notFound": "Fant ikke arrangementet.",
+    "price": {
+      "label": "Billetter",
+      "free": "Gratis",
+      "range": "{{from}}–{{to}} {{symbol}}",
+      "from": "fra {{from}} {{symbol}}",
+      "to": "opptil {{to}} {{symbol}}",
+      "deposit": "Depositum {{amount}} {{symbol}} (trekkes fra bestillingen din)",
+      "currency": {
+        "TRY": "₺",
+        "EUR": "€",
+        "USD": "$"
+      }
+    },
+    "dateFilter": {
+      "aria": "Filtrer arrangementer etter dato",
+      "all": "Alle datoer",
+      "today": "I dag",
+      "weekend": "Helg",
+      "week": "Denne uken",
+      "month": "Denne måneden",
+      "custom": "Velg datoer",
+      "from": "Fra",
+      "to": "Til",
+      "fromLabel": "Fra {{date}}",
+      "toLabel": "Til {{date}}"
     }
   },
   "news": {
@@ -203,7 +270,8 @@
     "send": "Send",
     "typing": "CityMate skriver…",
     "error": "Kunne ikke hente svar. Prøv igjen.",
-    "limitReached": "Du har nådd dagens grense for gratis meldinger. Kom tilbake i morgen — jeg er klar til å hjelpe deg da. 🙂"
+    "limitReached": "Du har nådd dagens grense for gratis meldinger. Kom tilbake i morgen — jeg er klar til å hjelpe deg da. 🙂",
+    "clear": "Tøm chat"
   },
   "nav": {
     "home": "Hjem",
@@ -230,7 +298,35 @@
     "gateFavorites": "Logg inn for å lagre steder i favorittene dine. Å utforske byen er fortsatt gratis — ingen konto kreves.",
     "signedInAs": "Logget inn som",
     "signOut": "Logg ut",
-    "guestNotice": "Du utforsker som gjest. Logg inn for å lagre favoritter og chatte med CityMate."
+    "guestNotice": "Du utforsker som gjest. Logg inn for å lagre favoritter og chatte med CityMate.",
+    "sessionExpired": "Økten din er utløpt. Logg inn på nytt.",
+    "forgotPassword": "Glemt passord?",
+    "resendConfirmation": "Send bekreftelses-e-post på nytt",
+    "resending": "Sender…",
+    "resendSent": "E-post sendt — sjekk innboksen din.",
+    "resetTitle": "Tilbakestill passord",
+    "resetSubtitle": "Skriv inn e-posten din, så sender vi en lenke for å angi et nytt passord.",
+    "resetCta": "Send tilbakestillingslenke",
+    "resetSent": "Vi sendte en lenke for tilbakestilling av passord til {{email}}. Åpne den for å angi et nytt passord.",
+    "backToSignIn": "Tilbake til innlogging",
+    "errors": {
+      "invalidCredentials": "Feil e-post eller passord.",
+      "emailNotConfirmed": "E-posten din er ikke bekreftet ennå. Sjekk innboksen for bekreftelseslenken.",
+      "userExists": "Du har allerede en konto med denne e-posten. Prøv å logge inn i stedet.",
+      "switchToSignIn": "Gå til innlogging",
+      "rateLimit": "For mange forsøk. Vent litt og prøv igjen.",
+      "weakPassword": "Passordet er for svakt. Bruk minst 6 tegn.",
+      "invalidEmail": "Skriv inn en gyldig e-postadresse.",
+      "sessionMissing": "Denne tilbakestillingslenken er ugyldig eller utløpt. Be om en ny."
+    },
+    "newPassword": {
+      "title": "Angi et nytt passord",
+      "subtitle": "Velg et nytt passord for kontoen din.",
+      "placeholder": "Nytt passord",
+      "submit": "Lagre nytt passord",
+      "success": "Passordet ditt er oppdatert. Du er logget inn.",
+      "continue": "Fortsett til appen"
+    }
   },
   "admin": {
     "link": "Adminpanel",
@@ -349,7 +445,8 @@
     "settingsTitle": "Innstillinger",
     "language": "Grensesnittspråk",
     "city": "By",
-    "soon": "(snart)"
+    "soon": "(snart)",
+    "country": "Land"
   },
   "install": {
     "title": "Installer CityMate",
@@ -374,6 +471,8 @@
     "cancel": "Avbryt",
     "save": "Lagre",
     "search": "Søk",
-    "back": "Tilbake"
+    "back": "Tilbake",
+    "close": "Lukk",
+    "done": "Ferdig"
   }
 }

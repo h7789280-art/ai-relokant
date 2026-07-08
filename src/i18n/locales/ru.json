@@ -2,7 +2,17 @@
   "appName": "CityMate",
   "languageName": "Русский",
   "welcome": {
-    "greeting": "Добро пожаловать"
+    "greeting": "Добро пожаловать",
+    "subtitle": "Ваш местный друг в новом городе",
+    "countryLabel": "Страна",
+    "cityLabel": "Город",
+    "languageLabel": "Язык",
+    "countryPlaceholder": "Выберите страну",
+    "cityPlaceholder": "Выберите город",
+    "soon": "(скоро)",
+    "continue": "Продолжить",
+    "loading": "Загрузка…",
+    "loadError": "Не удалось загрузить направления. Проверьте подключение и попробуйте ещё раз."
   },
   "home": {
     "tagline": "Ваш местный друг в новом городе.",
