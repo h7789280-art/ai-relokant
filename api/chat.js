@@ -412,11 +412,25 @@ function selectPlaces(places, tokens) {
   return scored.slice(0, MAX_PLACES).map((s) => s.p)
 }
 
+// Collapse whitespace and truncate free text to a compact snippet (with an
+// ellipsis when clipped), so descriptions/bodies enrich the prompt without
+// blowing up its size (§6). Returns '' for empty/blank input.
+function snippet(text, max) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim()
+  if (!clean) return ''
+  return clean.length > max ? `${clean.slice(0, max)}…` : clean
+}
+
 // Render one place as a compact, unambiguous block for the model.
 function formatPlace(p, n) {
   const lines = [`${n}. ${p.name || 'Unnamed'}`]
   const cat = [p.category?.name, p.subcategory?.name].filter(Boolean).join(' › ')
   if (cat) lines.push(`   Category: ${cat}`)
+  // Short description slice — already SELECT'd in fetchApprovedPlaces; a trimmed
+  // snippet keeps the prompt cheap while giving the model something to say beyond
+  // the bare name (§6).
+  const desc = snippet(p.description, 200)
+  if (desc) lines.push(`   About: ${desc}`)
   if (p.address) lines.push(`   Address: ${p.address}`)
   if (p.phone) lines.push(`   Phone: ${p.phone}`)
   if (p.whatsapp) lines.push(`   WhatsApp: ${p.whatsapp}`)
@@ -460,15 +474,32 @@ function formatEvent(e, n) {
   const dt = turkeyDateTime(e.starts_at)
   if (dt) lines.push(`   When: ${dt.date} ${dt.time} (Turkey time)`)
   else lines.push('   When: date to be announced')
+  // End / range, when the event carries an explicit end instant.
+  const endDt = turkeyDateTime(e.ends_at)
+  if (endDt) lines.push(`   Until: ${endDt.date} ${endDt.time} (Turkey time)`)
+  // Guest gathering time (doors / meetup), through the SAME Turkey-time helper.
+  const gatherDt = turkeyDateTime(e.gathering_at)
+  if (gatherDt) lines.push(`   Guests gather: ${gatherDt.date} ${gatherDt.time} (Turkey time)`)
   // City name comes ONLY from the cities reference table (venue_city_name, latin —
   // Alanya, Ankara, İzmir), matching the §8 rule that place/city names stay latin.
-  // e.location is deliberately NOT concatenated here: owners tend to fill it with
-  // the same city in localized form ("Аланья"), which produced a duplicated
-  // "Аланья, Alanya". One canonical latin form only.
+  // e.location is a SEPARATE "Address:" line — deliberately NOT concatenated with
+  // the venue city: owners tend to fill it with the same city in localized form
+  // ("Аланья"), which produced a duplicated "Аланья, Alanya". One canonical latin
+  // venue name; the raw location stands on its own.
   const venue = e.venue_city_name || null
   if (venue) lines.push(`   Venue: ${venue}`)
+  if (e.location) lines.push(`   Address: ${e.location}`)
+  const desc = snippet(e.description, 240)
+  if (desc) lines.push(`   About: ${desc}`)
   const price = formatPrice(e)
   if (price) lines.push(`   Price: ${price}`)
+  // Official social channels of the event, when set. Handles/URLs pass through
+  // verbatim — proper names/links are not translated (§8).
+  const socials = []
+  if (e.instagram) socials.push(`Instagram ${e.instagram}`)
+  if (e.telegram) socials.push(`Telegram ${e.telegram}`)
+  if (e.whatsapp) socials.push(`WhatsApp ${e.whatsapp}`)
+  if (socials.length) lines.push(`   Social: ${socials.join(', ')}`)
   return lines.join('\n')
 }
 
@@ -476,6 +507,8 @@ function formatEvent(e, n) {
 // affects). Source name is a trust signal, shown when present (§11).
 function formatNews(nw, n) {
   const lines = [`${n}. ${nw.title || 'Untitled'}`]
+  const dt = turkeyDateTime(nw.published_at)
+  if (dt) lines.push(`   Date: ${dt.date}`)
   if (nw.summary) lines.push(`   ${nw.summary}`)
   if (nw.source_name) lines.push(`   Source: ${nw.source_name}`)
   return lines.join('\n')
