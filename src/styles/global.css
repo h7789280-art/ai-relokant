@@ -2694,6 +2694,15 @@ a.event-card__meta-link svg {
   margin: 2px 0;
 }
 
+/* Card links (react-router <Link>) and external links the AI adds to its answer
+   (CLAUDE.md §5.4). Both render as <a> in the DOM. */
+.chat__bubble--bot a {
+  color: var(--color-accent, #007aff);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* The bubble keeps source newlines for plain text; Markdown blocks manage their
    own spacing, so don't double up the whitespace there. */
 .chat__bubble--bot {

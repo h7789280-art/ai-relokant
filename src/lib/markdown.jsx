@@ -1,28 +1,74 @@
 // Tiny, dependency-free Markdown renderer for chat bubbles (CLAUDE.md §9B).
 // Gemini replies come back with Markdown (**bold**, bullet/numbered lists,
-// blank-line paragraphs). Rendering the raw text would leak the asterisks, so we
-// translate the small subset the model actually uses into React elements.
+// blank-line paragraphs, and — since stage 2 — [label](path) card links).
+// Rendering the raw text would leak the markers, so we translate the small
+// subset the model actually uses into React elements.
 //
-// Intentionally minimal — bold, italic, lists, paragraphs and line breaks. No
-// links/tables/code, which the assistant doesn't produce here. Plain text is
-// always rendered as-is (no HTML is ever injected), so this is XSS-safe.
+// Intentionally minimal — bold, italic, links, lists, paragraphs, line breaks.
+// Plain text is always rendered as-is (no HTML is ever injected), so this is
+// XSS-safe; link targets are additionally whitelisted (see below).
 import { Fragment } from 'react'
+import { Link } from 'react-router-dom'
 
-// Inline pass: **bold** and *italic* / _italic_. Splits on the markers and emits
-// <strong>/<em> nodes; everything else stays literal text.
+// HALLUCINATION GUARD for in-app links (CLAUDE.md §5.4): an internal path is only
+// turned into a working <Link> when it exactly matches a known card route AND ends
+// in a real UUID. Anything else (wrong prefix, malformed/invented id, markets —
+// which have no card page) renders as plain text, so a hallucinated path can never
+// become a live, wrong navigation. Routes: /catalog/place/:id, /events/:id,
+// /news/:id, /guides/:id.
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const INTERNAL_CARD_RE = new RegExp(
+  `^/(?:catalog/place|events|news|guides)/${UUID}$`,
+  'i',
+)
+
+// Inline pass: [label](url) links, **bold**, *italic* / _italic_. Splits on the
+// markers and emits <Link>/<a>/<strong>/<em> nodes; everything else stays literal.
 function renderInline(text, keyBase) {
   const nodes = []
-  // Match **bold** first, then *italic* or _italic_.
-  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_/g
+  // Order matters: match a whole [label](url) link first, then bold, then italic.
+  const re = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_/g
   let last = 0
   let m
   let i = 0
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) nodes.push(text.slice(last, m.index))
     if (m[1] !== undefined) {
-      nodes.push(<strong key={`${keyBase}-b${i}`}>{m[1]}</strong>)
+      // Link: m[1] = label, m[2] = url.
+      const label = m[1]
+      const url = m[2]
+      if (url.startsWith('/')) {
+        // Internal path — render a soft react-router <Link> ONLY if it passes the
+        // whitelist+UUID guard, else drop to plain label text (no broken nav).
+        if (INTERNAL_CARD_RE.test(url)) {
+          nodes.push(
+            <Link key={`${keyBase}-a${i}`} to={url}>
+              {label}
+            </Link>,
+          )
+        } else {
+          nodes.push(label)
+        }
+      } else if (/^https?:\/\//i.test(url)) {
+        // External link — open safely in a new tab.
+        nodes.push(
+          <a
+            key={`${keyBase}-a${i}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {label}
+          </a>,
+        )
+      } else {
+        // Unknown scheme (mailto:, javascript:, relative-no-slash…) — not linked.
+        nodes.push(label)
+      }
+    } else if (m[3] !== undefined) {
+      nodes.push(<strong key={`${keyBase}-b${i}`}>{m[3]}</strong>)
     } else {
-      nodes.push(<em key={`${keyBase}-i${i}`}>{m[2] ?? m[3]}</em>)
+      nodes.push(<em key={`${keyBase}-i${i}`}>{m[4] ?? m[5]}</em>)
     }
     last = re.lastIndex
     i += 1

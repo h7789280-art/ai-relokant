@@ -62,7 +62,7 @@ async function fetchApprovedPlaces(cityId) {
   // Embed the category/subcategory names so the model can match a query like
   // "стоматолог" to the Dentists subcategory. Promoted first, then verified.
   const select =
-    'name,description,address,phone,whatsapp,hours,languages,is_promoted,is_verified,' +
+    'id,name,description,address,phone,whatsapp,hours,languages,is_promoted,is_verified,' +
     'category:categories(name,slug),subcategory:subcategories(name,slug)'
   const endpoint =
     `${url.replace(/\/$/, '')}/rest/v1/places` +
@@ -232,7 +232,7 @@ async function fetchUpcomingEvents(cityId) {
 async function fetchCityNews(cityId) {
   const rest = publicRest()
   if (!rest || !cityId) return []
-  const select = 'title,summary,source_name,published_at,news_cities!inner(city_id)'
+  const select = 'id,title,summary,source_name,published_at,news_cities!inner(city_id)'
   const endpoint =
     `${rest.base}/rest/v1/news` +
     `?status=eq.approved` +
@@ -249,7 +249,7 @@ async function fetchCityNews(cityId) {
 async function fetchCityGuides(cityId) {
   const rest = publicRest()
   if (!rest || !cityId) return []
-  const select = 'title,body,disclaimer,guide_cities!inner(city_id)'
+  const select = 'id,title,body,disclaimer,guide_cities!inner(city_id)'
   const endpoint =
     `${rest.base}/rest/v1/guides` +
     `?status=eq.approved` +
@@ -445,6 +445,9 @@ function formatPlace(p, n) {
   if (p.is_promoted) flags.push('PROMOTED (advertised)')
   if (p.is_verified) flags.push('VERIFIED')
   if (flags.length) lines.push(`   Flags: ${flags.join(', ')}`)
+  // In-app card path — the model turns this into a [name](path) link (§5.4). The
+  // path is given ready-made so the model never assembles a URL or an id itself.
+  if (p.id) lines.push(`   Card link: /catalog/place/${p.id}`)
   return lines.join('\n')
 }
 
@@ -500,6 +503,8 @@ function formatEvent(e, n) {
   if (e.telegram) socials.push(`Telegram ${e.telegram}`)
   if (e.whatsapp) socials.push(`WhatsApp ${e.whatsapp}`)
   if (socials.length) lines.push(`   Social: ${socials.join(', ')}`)
+  // In-app card path — ready-made for a [title](path) link (§5.4).
+  if (e.id) lines.push(`   Card link: /events/${e.id}`)
   return lines.join('\n')
 }
 
@@ -511,6 +516,8 @@ function formatNews(nw, n) {
   if (dt) lines.push(`   Date: ${dt.date}`)
   if (nw.summary) lines.push(`   ${nw.summary}`)
   if (nw.source_name) lines.push(`   Source: ${nw.source_name}`)
+  // In-app card path — ready-made for a [title](path) link (§5.4).
+  if (nw.id) lines.push(`   Card link: /news/${nw.id}`)
   return lines.join('\n')
 }
 
@@ -523,6 +530,8 @@ function formatGuide(g, n) {
     if (snippet) lines.push(`   ${snippet}${g.body.length > 240 ? '…' : ''}`)
   }
   if (g.disclaimer) lines.push('   (Has an official disclaimer — remind the user to verify with official sources.)')
+  // In-app card path — ready-made for a [title](path) link (§5.4).
+  if (g.id) lines.push(`   Card link: /guides/${g.id}`)
   return lines.join('\n')
 }
 
@@ -577,6 +586,12 @@ function systemInstruction(lang, places, cityContext, extra = {}) {
     '  user honestly there is no verified information for that yet — do not guess.',
     '- Keep proper names (artists, brands) exactly as written — do not translate or',
     '  transliterate them; only your surrounding text is in the user\'s language.',
+    '- LINKS: when you mention a specific place, event, news item or guide that has a',
+    '  "Card link:" line, turn its name into a Markdown link to that exact path, e.g.',
+    '  [Name](/events/<id>). Copy the path VERBATIM from its "Card link:" line — never',
+    '  invent, alter or guess an id or a path, and never link an item that has no',
+    '  "Card link:" line (markets have none — do not link them). If you are unsure of',
+    '  the path, mention the item without a link rather than making one up.',
     '- Events/news may also be promoted or partner-placed; the same honesty applies',
     '  — never present a paid/promoted item as an organic recommendation.',
     '- For guides on legal/official topics (residence permit, taxes, documents),',
