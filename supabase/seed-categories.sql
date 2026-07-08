@@ -20,7 +20,7 @@
 --    Cascades to their subcategories.
 delete from public.categories
 where slug not in (
-  'health', 'documents', 'home', 'shops', 'markets', 'food',
+  'health', 'documents', 'home', 'shops', 'food',
   'transport', 'kids', 'leisure', 'realestate', 'pets'
 );
 
@@ -30,15 +30,12 @@ insert into public.categories (slug, name, icon, is_active, sort_order) values
   ('documents',  'Documents',     'FileText',    true, 1),
   ('home',       'Home & living', 'Wrench',      true, 2),
   ('shops',      'Shops',         'ShoppingBag', true, 3),
-  -- Markets / bazaars: the home "Markets today" rail filters places by THIS
-  -- category, so tag weekly bazaars & food markets here (not under Shops/Food).
-  ('markets',    'Markets',       'Store',       true, 4),
-  ('food',       'Food',          'Utensils',    true, 5),
-  ('transport',  'Transport',     'Bus',         true, 6),
-  ('kids',       'Kids',          'Baby',        true, 7),
-  ('leisure',    'Leisure',       'Palmtree',    true, 8),
-  ('realestate', 'Real estate',   'Building2',   true, 9),
-  ('pets',       'Pets',          'PawPrint',    true, 10)
+  ('food',       'Food',          'Utensils',    true, 4),
+  ('transport',  'Transport',     'Bus',         true, 5),
+  ('kids',       'Kids',          'Baby',        true, 6),
+  ('leisure',    'Leisure',       'Palmtree',    true, 7),
+  ('realestate', 'Real estate',   'Building2',   true, 8),
+  ('pets',       'Pets',          'PawPrint',    true, 9)
 on conflict (slug) do update
   set name       = excluded.name,
       icon       = excluded.icon,
