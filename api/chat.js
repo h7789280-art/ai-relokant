@@ -84,6 +84,38 @@ async function fetchApprovedPlaces(cityId) {
   }
 }
 
+// Fetch the active city's human-readable name and its country name, so the AI
+// persona introduces itself with the user's ACTUAL city instead of a hardcoded
+// one (CLAUDE.md §5). Reference tables are publicly readable in full (RLS), so
+// we reuse the anon key exactly like fetchApprovedPlaces. Cities/countries carry
+// only their latin `name` (no content_translations for reference data, §5.6),
+// so that's what we return. Returns null on any failure → the persona falls back
+// to a neutral wording (never to "Alanya").
+async function fetchCityContext(cityId) {
+  const url = process.env.VITE_SUPABASE_URL
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !anonKey || !cityId) return null
+
+  const endpoint =
+    `${url.replace(/\/$/, '')}/rest/v1/cities` +
+    `?id=eq.${encodeURIComponent(cityId)}` +
+    `&select=${encodeURIComponent('name,country:countries(name)')}` +
+    `&limit=1`
+
+  try {
+    const res = await fetch(endpoint, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    })
+    if (!res.ok) return null
+    const rows = await res.json().catch(() => null)
+    const row = Array.isArray(rows) ? rows[0] : null
+    if (!row || !row.name) return null
+    return { city: row.name, country: row.country?.name || null }
+  } catch {
+    return null
+  }
+}
+
 // ---- Auth + per-user daily limit (CLAUDE.md §6) -----------------------------
 //
 // The client sends the user's Supabase access token in `Authorization: Bearer`.
@@ -244,12 +276,18 @@ function formatPlace(p, n) {
 
 // Build the grounded system instruction: persona + the strict source-of-truth
 // rules (§6/§11) + the approved place list (or an explicit "empty" marker).
-function systemInstruction(lang, places) {
+function systemInstruction(lang, places, cityContext) {
   const langName = LANGUAGE_NAMES[lang] || lang || 'English'
+
+  // Persona location = the user's ACTUAL active city/country. Neutral fallback if
+  // we couldn't resolve it — never a hardcoded city (CLAUDE.md §5.3).
+  const placeLine = cityContext
+    ? `The current city is ${cityContext.city}${cityContext.country ? `, ${cityContext.country}` : ''}.`
+    : "You are helping in the user's current city."
 
   const rules = [
     'You are CityMate — a warm, knowledgeable local friend who helps people',
-    'live in a new city. The current city is Alanya, Turkey.',
+    `live in a new city. ${placeLine}`,
     '',
     'STRICT GROUNDING RULES — follow them exactly:',
     '- Answer ONLY from the verified CityMate places listed below. This list is',
@@ -356,8 +394,12 @@ export default async function handler(req, res) {
     return
   }
 
-  // Ground the answer on the active city's approved places before calling Gemini.
-  const allPlaces = await fetchApprovedPlaces(cityId)
+  // Ground the answer on the active city's approved places before calling Gemini,
+  // and resolve the city/country names so the persona introduces the right city.
+  const [allPlaces, cityContext] = await Promise.all([
+    fetchApprovedPlaces(cityId),
+    fetchCityContext(cityId),
+  ])
   const places = selectPlaces(allPlaces, queryTokens(messages))
 
   try {
@@ -365,7 +407,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction(lang, places) }] },
+        system_instruction: { parts: [{ text: systemInstruction(lang, places, cityContext) }] },
         contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
       }),
