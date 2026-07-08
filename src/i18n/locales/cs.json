@@ -49,8 +49,12 @@
       "all": "Všechny kurzy",
       "customize": "Vybrat měny",
       "pickerTitle": "Měny",
-      "pickerSubtitle": "Vyberte až {{max}} pro zobrazení vůči liře (₺).",
+      "pickerSubtitle": "Vyberte až {{max}} pro zobrazení vůči {{base}}.",
       "limitHint": "Můžete zobrazit až {{max}} měn. Odeberte jednu, abyste přidali jinou.",
+      "baseNames": {
+        "TRY": "turecké liře (₺)",
+        "AED": "dirhamu SAE (AED)"
+      },
       "names": {
         "USD": "Americký dolar",
         "EUR": "Euro",

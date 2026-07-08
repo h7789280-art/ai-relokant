@@ -49,8 +49,12 @@
       "all": "Tüm kurlar",
       "customize": "Para birimlerini seç",
       "pickerTitle": "Para birimleri",
-      "pickerSubtitle": "Lira (₺) karşısında göstermek için en fazla {{max}} tane seçin.",
+      "pickerSubtitle": "{{base}} karşısında göstermek için en fazla {{max}} tane seçin.",
       "limitHint": "En fazla {{max}} para birimi gösterebilirsiniz. Başka eklemek için birini kaldırın.",
+      "baseNames": {
+        "TRY": "Türk lirası (₺)",
+        "AED": "BAE dirhemi (AED)"
+      },
       "names": {
         "USD": "ABD doları",
         "EUR": "Euro",

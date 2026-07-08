@@ -49,8 +49,12 @@
       "all": "Alle Kurse",
       "customize": "Währungen wählen",
       "pickerTitle": "Währungen",
-      "pickerSubtitle": "Wählen Sie bis zu {{max}} zur Anzeige gegenüber der Lira (₺).",
+      "pickerSubtitle": "Wählen Sie bis zu {{max}} zur Anzeige gegenüber {{base}}.",
       "limitHint": "Sie können bis zu {{max}} Währungen anzeigen. Entfernen Sie eine, um eine andere hinzuzufügen.",
+      "baseNames": {
+        "TRY": "der Türkischen Lira (₺)",
+        "AED": "dem VAE-Dirham (AED)"
+      },
       "names": {
         "USD": "US-Dollar",
         "EUR": "Euro",

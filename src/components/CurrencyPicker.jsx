@@ -7,9 +7,9 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Coins, X } from 'lucide-react'
-import { AVAILABLE_CURRENCIES, MAX_CURRENCIES } from '../lib/currency.js'
+import { AVAILABLE_CURRENCIES, MAX_CURRENCIES, DEFAULT_BASE } from '../lib/currency.js'
 
-export default function CurrencyPicker({ open, selected, onChange, onClose }) {
+export default function CurrencyPicker({ open, selected, onChange, onClose, base = DEFAULT_BASE }) {
   const { t } = useTranslation()
 
   // Escape closes the sheet (mirrors AuthModal).
@@ -61,7 +61,10 @@ export default function CurrencyPicker({ open, selected, onChange, onClose }) {
           </span>
           <h2 className="auth-modal__title">{t('home.currency.pickerTitle')}</h2>
           <p className="auth-modal__subtitle muted">
-            {t('home.currency.pickerSubtitle', { max: MAX_CURRENCIES })}
+            {t('home.currency.pickerSubtitle', {
+              max: MAX_CURRENCIES,
+              base: t(`home.currency.baseNames.${base}`),
+            })}
           </p>
         </div>
 

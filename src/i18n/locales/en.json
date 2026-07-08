@@ -53,8 +53,12 @@
       "all": "All rates",
       "customize": "Choose currencies",
       "pickerTitle": "Currencies",
-      "pickerSubtitle": "Pick up to {{max}} to show against the lira (₺).",
+      "pickerSubtitle": "Pick up to {{max}} to show against the {{base}}.",
       "limitHint": "You can show up to {{max}} currencies. Remove one to add another.",
+      "baseNames": {
+        "TRY": "Turkish lira (₺)",
+        "AED": "UAE dirham (AED)"
+      },
       "names": {
         "USD": "US dollar",
         "EUR": "Euro",

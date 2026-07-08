@@ -49,8 +49,12 @@
       "all": "Wszystkie kursy",
       "customize": "Wybierz waluty",
       "pickerTitle": "Waluty",
-      "pickerSubtitle": "Wybierz do {{max}}, aby pokazać względem liry (₺).",
+      "pickerSubtitle": "Wybierz do {{max}}, aby pokazać względem {{base}}.",
       "limitHint": "Możesz pokazać do {{max}} walut. Usuń jedną, aby dodać inną.",
+      "baseNames": {
+        "TRY": "liry tureckiej (₺)",
+        "AED": "dirhama ZEA (AED)"
+      },
       "names": {
         "USD": "Dolar amerykański",
         "EUR": "Euro",

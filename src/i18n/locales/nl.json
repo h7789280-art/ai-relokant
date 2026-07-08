@@ -49,8 +49,12 @@
       "all": "Alle koersen",
       "customize": "Valuta's kiezen",
       "pickerTitle": "Valuta's",
-      "pickerSubtitle": "Kies er maximaal {{max}} om te tonen tegenover de lira (₺).",
+      "pickerSubtitle": "Kies er maximaal {{max}} om te tonen tegenover {{base}}.",
       "limitHint": "Je kunt maximaal {{max}} valuta's tonen. Verwijder er een om een andere toe te voegen.",
+      "baseNames": {
+        "TRY": "de Turkse lira (₺)",
+        "AED": "de VAE-dirham (AED)"
+      },
       "names": {
         "USD": "Amerikaanse dollar",
         "EUR": "Euro",

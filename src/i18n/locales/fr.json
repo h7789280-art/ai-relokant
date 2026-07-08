@@ -49,8 +49,12 @@
       "all": "Tous les taux",
       "customize": "Choisir les devises",
       "pickerTitle": "Devises",
-      "pickerSubtitle": "Choisissez jusqu'à {{max}} à afficher face à la livre (₺).",
+      "pickerSubtitle": "Choisissez jusqu'à {{max}} à afficher face à {{base}}.",
       "limitHint": "Vous pouvez afficher jusqu'à {{max}} devises. Retirez-en une pour en ajouter une autre.",
+      "baseNames": {
+        "TRY": "la livre turque (₺)",
+        "AED": "le dirham des EAU (AED)"
+      },
       "names": {
         "USD": "Dollar américain",
         "EUR": "Euro",

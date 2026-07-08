@@ -49,8 +49,12 @@
       "all": "Kaikki kurssit",
       "customize": "Valitse valuutat",
       "pickerTitle": "Valuutat",
-      "pickerSubtitle": "Valitse enintään {{max}} näytettäväksi liiraa (₺) vastaan.",
+      "pickerSubtitle": "Valitse enintään {{max}} näytettäväksi {{base}} vastaan.",
       "limitHint": "Voit näyttää enintään {{max}} valuuttaa. Poista yksi lisätäksesi toisen.",
+      "baseNames": {
+        "TRY": "Turkin liiraa (₺)",
+        "AED": "Arabiemiraattien dirhamia (AED)"
+      },
       "names": {
         "USD": "Yhdysvaltain dollari",
         "EUR": "Euro",

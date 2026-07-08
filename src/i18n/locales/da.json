@@ -49,8 +49,12 @@
       "all": "Alle kurser",
       "customize": "Vælg valutaer",
       "pickerTitle": "Valutaer",
-      "pickerSubtitle": "Vælg op til {{max}} at vise over for liraen (₺).",
+      "pickerSubtitle": "Vælg op til {{max}} at vise over for {{base}}.",
       "limitHint": "Du kan vise op til {{max}} valutaer. Fjern én for at tilføje en anden.",
+      "baseNames": {
+        "TRY": "tyrkiske lira (₺)",
+        "AED": "emiratiske dirham (AED)"
+      },
       "names": {
         "USD": "Amerikansk dollar",
         "EUR": "Euro",

@@ -34,7 +34,7 @@ import { useApp } from '../context/appContext.js'
 import { fetchCity, fetchContent, fetchTodayMarkets, fetchRegionalEvents } from '../lib/content.js'
 import { directionsUrl } from '../lib/maps.js'
 import { fetchWeather, fetchSeaTemp, weatherCodeKey } from '../lib/weather.js'
-import { fetchRates } from '../lib/currency.js'
+import { fetchRates, baseForCountry, baseSymbol } from '../lib/currency.js'
 import { useCurrencies } from '../hooks/useCurrencies.js'
 import CurrencyPicker from '../components/CurrencyPicker.jsx'
 import CityPicker from '../components/CityPicker.jsx'
@@ -160,6 +160,10 @@ export default function Home() {
   }, [cityId])
 
   // --- currency rates (user-chosen currencies, stored locally) ---------------
+  // The reference currency follows the active country (Turkey → ₺, UAE → AED),
+  // taken from the app selection rather than hardcoded.
+  const base = baseForCountry(selection?.countryCode)
+  const baseSym = baseSymbol(base)
   const [currencies, setCurrencies] = useCurrencies()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [rates, setRates] = useState({ status: 'loading', rows: [] })
@@ -167,13 +171,13 @@ export default function Home() {
     let active = true
     // Keep any previously shown rows while re-fetching (no loading flicker when
     // the user changes the currency selection); errors fall back to the notice.
-    fetchRates(currencies)
+    fetchRates(currencies, base)
       .then((rows) => active && setRates({ status: 'ready', rows }))
       .catch(() => active && setRates({ status: 'error', rows: [] }))
     return () => {
       active = false
     }
-  }, [currencies])
+  }, [currencies, base])
 
   // --- content feeds ---------------------------------------------------------
   const news = useContentFeed('news', cityId, NEWS_OPTS)
@@ -380,7 +384,7 @@ export default function Home() {
                     <Flag code={r.code} />
                     <span className="currency-card__code">{r.code}</span>
                   </span>
-                  <span className="currency-card__value">{formatRate(r.perTry)} ₺</span>
+                  <span className="currency-card__value">{formatRate(r.perBase)} {baseSym}</span>
                 </li>
               ))}
             </ul>
@@ -452,6 +456,7 @@ export default function Home() {
         selected={currencies}
         onChange={setCurrencies}
         onClose={() => setPickerOpen(false)}
+        base={base}
       />
 
       <CityPicker

@@ -49,8 +49,12 @@
       "all": "Alla kurser",
       "customize": "Välj valutor",
       "pickerTitle": "Valutor",
-      "pickerSubtitle": "Välj upp till {{max}} att visa mot liran (₺).",
+      "pickerSubtitle": "Välj upp till {{max}} att visa mot {{base}}.",
       "limitHint": "Du kan visa upp till {{max}} valutor. Ta bort en för att lägga till en annan.",
+      "baseNames": {
+        "TRY": "turkiska liran (₺)",
+        "AED": "Förenade Arabemiratens dirham (AED)"
+      },
       "names": {
         "USD": "US-dollar",
         "EUR": "Euro",
