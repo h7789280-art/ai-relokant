@@ -460,7 +460,12 @@ function formatEvent(e, n) {
   const dt = turkeyDateTime(e.starts_at)
   if (dt) lines.push(`   When: ${dt.date} ${dt.time} (Turkey time)`)
   else lines.push('   When: date to be announced')
-  const venue = [e.location, e.venue_city_name].filter(Boolean).join(', ')
+  // City name comes ONLY from the cities reference table (venue_city_name, latin —
+  // Alanya, Ankara, İzmir), matching the §8 rule that place/city names stay latin.
+  // e.location is deliberately NOT concatenated here: owners tend to fill it with
+  // the same city in localized form ("Аланья"), which produced a duplicated
+  // "Аланья, Alanya". One canonical latin form only.
+  const venue = e.venue_city_name || null
   if (venue) lines.push(`   Venue: ${venue}`)
   const price = formatPrice(e)
   if (price) lines.push(`   Price: ${price}`)
