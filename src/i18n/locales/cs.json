@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Dnešní trhy",
-      "none": "Dnes žádný trh."
+      "none": "Dnes žádný trh.",
+      "all": "Všechny trhy"
     },
     "events": {
       "title": "Co se dnes děje"
@@ -485,5 +486,9 @@
     "back": "Zpět",
     "close": "Zavřít",
     "done": "Hotovo"
+  },
+  "markets": {
+    "title": "Všechny trhy",
+    "weekEmpty": "Tento týden nejsou naplánovány žádné trhy."
   }
 }

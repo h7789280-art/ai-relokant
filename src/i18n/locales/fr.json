@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Marchés du jour",
-      "none": "Pas de marché aujourd'hui."
+      "none": "Pas de marché aujourd'hui.",
+      "all": "Tous les marchés"
     },
     "events": {
       "title": "À l'affiche aujourd'hui"
@@ -485,5 +486,9 @@
     "back": "Retour",
     "close": "Fermer",
     "done": "Terminé"
+  },
+  "markets": {
+    "title": "Tous les marchés",
+    "weekEmpty": "Aucun marché prévu cette semaine."
   }
 }

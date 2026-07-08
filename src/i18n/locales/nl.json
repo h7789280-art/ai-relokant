@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Markten vandaag",
-      "none": "Vandaag geen markt."
+      "none": "Vandaag geen markt.",
+      "all": "Alle markten"
     },
     "events": {
       "title": "Vandaag te doen"
@@ -485,5 +486,9 @@
     "back": "Terug",
     "close": "Sluiten",
     "done": "Klaar"
+  },
+  "markets": {
+    "title": "Alle markten",
+    "weekEmpty": "Deze week zijn er geen markten gepland."
   }
 }

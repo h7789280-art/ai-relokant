@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Torit tänään",
-      "none": "Ei toria tänään."
+      "none": "Ei toria tänään.",
+      "all": "Kaikki torit"
     },
     "events": {
       "title": "Mitä tapahtuu tänään"
@@ -485,5 +486,9 @@
     "back": "Takaisin",
     "close": "Sulje",
     "done": "Valmis"
+  },
+  "markets": {
+    "title": "Kaikki torit",
+    "weekEmpty": "Tällä viikolla ei ole toreja."
   }
 }

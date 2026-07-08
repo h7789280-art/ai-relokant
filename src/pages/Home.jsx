@@ -429,6 +429,9 @@ export default function Home() {
         title={t('home.markets.title')}
         feed={markets}
         empty={t('home.markets.none')}
+        onSeeAll={() => navigate('/markets')}
+        seeAllAlways
+        seeAllLabel={t('home.markets.all')}
         renderItem={(row) => (
           <FeedCard
             key={row.id}
@@ -484,19 +487,21 @@ export default function Home() {
 
 // One "today" feed section: titled header (+ "See all") and a horizontal card
 // rail, or a tidy placeholder when empty.
-function Feed({ icon, title, feed, empty, onSeeAll, renderItem }) {
+function Feed({ icon, title, feed, empty, onSeeAll, seeAllAlways, seeAllLabel, renderItem }) {
   const { t } = useTranslation()
   // Local (not a destructured arg) so the uppercase varsIgnorePattern covers it
   // — JSX-only usage isn't tracked by the lint config (see TabBar).
   const Icon = icon
+  // The markets block links to the full weekly schedule even on a market-less day
+  // (seeAllAlways), so the "All markets" way in stays reachable on e.g. Sunday.
   return (
     <section className="feed">
       <div className="feed__head">
         <Icon className="feed__icon" size={18} strokeWidth={2} aria-hidden="true" />
         <h2 className="feed__title">{title}</h2>
-        {onSeeAll && feed.rows.length > 0 && (
+        {onSeeAll && (seeAllAlways || feed.rows.length > 0) && (
           <button type="button" className="feed__all" onClick={onSeeAll}>
-            {t('home.seeAll')}
+            {seeAllLabel || t('home.seeAll')}
             <ChevronRight size={15} aria-hidden="true" />
           </button>
         )}

@@ -4885,6 +4885,219 @@ a.event-card__meta-link svg {
   }
 }
 
+/* ==========================================================================
+   All-markets screen (§4 screen 1 / §5.7) — the weekly market schedule, grouped
+   by weekday. Same airy language as the weather screen: a soft full-bleed wash
+   behind rounded photo cards, serif day headings, generous breathing room.
+   ========================================================================== */
+.mk {
+  position: relative;
+  padding-top: 0;
+  padding-bottom: var(--space-7);
+}
+
+/* Soft warm wash behind the cards so the page never reads as flat grey (a warm
+   market tone, distinct from the weather screen's sea-blue). Fixed + feathered. */
+.mk::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #fff2e0 0%,
+    #fff7ee 32%,
+    #fffaf4 60%,
+    var(--color-bg) 100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Header band: back button + city eyebrow + big serif title. Full-bleed so it
+   meets the screen edges, then melts into the page below (like the wx hero). */
+.mk-hero {
+  position: relative;
+  margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
+    calc(-1 * var(--space-4)) var(--space-3);
+  padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-4)
+    var(--space-5);
+  background: linear-gradient(160deg, #ffe6c2 0%, #ffd9b0 100%);
+}
+
+.mk-hero__back {
+  position: absolute;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  left: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.mk-hero__text {
+  margin-top: var(--space-6);
+}
+
+.mk-hero__eyebrow {
+  margin: 0 0 2px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #a9631c;
+}
+
+.mk-hero__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: #6b3d0a;
+}
+
+.mk__empty {
+  margin: var(--space-5) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+}
+
+.mk-day {
+  margin-top: var(--space-5);
+}
+
+.mk-day__title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: #7a4a12;
+  text-transform: capitalize;
+}
+
+/* One column on phones; fills to two on roomier widths without ever stretching a
+   single card across the whole row. */
+.mk-day__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.mk-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: 0 10px 26px rgba(120, 74, 18, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.mk-card__photo {
+  width: 100%;
+  height: 150px;
+  background: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.mk-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mk-card__photo--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+  background: linear-gradient(150deg, #fff1df 0%, #ffe6c8 100%);
+}
+
+.mk-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.mk-card__name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.mk-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.mk-card__row svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-text-subtle);
+}
+
+.mk-card__route {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: box-shadow 150ms ease;
+}
+
+.mk-card__route:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.mk-card--skeleton {
+  height: 260px;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-separator) 37%,
+    var(--color-surface-alt) 63%
+  );
+  background-size: 400% 100%;
+  animation: feed-shimmer 1.4s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-card--skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .mk-hero__title {
+    font-size: 32px;
+  }
+}
+
 .reset-card__title {
   margin: 0;
 }

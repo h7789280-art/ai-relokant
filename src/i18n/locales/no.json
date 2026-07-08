@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Markeder i dag",
-      "none": "Ingen marked i dag."
+      "none": "Ingen marked i dag.",
+      "all": "Alle markeder"
     },
     "events": {
       "title": "På programmet i dag"
@@ -485,5 +486,9 @@
     "back": "Tilbake",
     "close": "Lukk",
     "done": "Ferdig"
+  },
+  "markets": {
+    "title": "Alle markeder",
+    "weekEmpty": "Ingen markeder denne uken."
   }
 }

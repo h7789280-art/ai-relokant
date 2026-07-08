@@ -491,6 +491,34 @@ export async function fetchTodayMarkets(cityId, lang, { columns = '*' } = {}) {
 }
 
 /**
+ * The whole weekly market schedule for a city (the "All markets" screen, §4/§5.7).
+ *
+ * Same source as fetchTodayMarkets — public.market_schedule, active rows only,
+ * strictly scoped to the active city (like the catalog). Returns EVERY active row
+ * for the city across all weekdays, ordered by ISO weekday (1 = Mon … 7 = Sun)
+ * then name, with `name` localized into `lang`. The screen groups the flat list
+ * by `day_of_week` for display; days with no rows are simply not rendered.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {string} [lang]  UI language to localize the district names into
+ * @param {{ columns?: string }} [opts]
+ * @returns {Promise<Array>} active market rows for the city (localized)
+ */
+export async function fetchCityMarkets(cityId, lang, { columns = '*' } = {}) {
+  if (!cityId) return []
+  const { data, error } = await supabase
+    .from('market_schedule')
+    .select(columns)
+    .eq('city_id', cityId)
+    .eq('is_active', true)
+    .order('day_of_week', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  if (!data?.length) return []
+  return withTranslations('market_schedule', data, lang)
+}
+
+/**
  * A single approved place by id (for the place card). The approved filter is
  * also enforced by RLS, but we keep it explicit. Returns null when not found.
  */

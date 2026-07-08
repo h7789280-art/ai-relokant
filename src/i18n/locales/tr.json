@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Bugünkü pazarlar",
-      "none": "Bugün pazar yok."
+      "none": "Bugün pazar yok.",
+      "all": "Tüm pazarlar"
     },
     "events": {
       "title": "Bugün neler var"
@@ -485,5 +486,9 @@
     "back": "Geri",
     "close": "Kapat",
     "done": "Tamam"
+  },
+  "markets": {
+    "title": "Tüm pazarlar",
+    "weekEmpty": "Bu hafta için planlanmış pazar yok."
   }
 }

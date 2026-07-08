@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Targi dziś",
-      "none": "Dziś nie ma targu."
+      "none": "Dziś nie ma targu.",
+      "all": "Wszystkie targi"
     },
     "events": {
       "title": "Co się dzieje dziś"
@@ -485,5 +486,9 @@
     "back": "Wstecz",
     "close": "Zamknij",
     "done": "Gotowe"
+  },
+  "markets": {
+    "title": "Wszystkie targi",
+    "weekEmpty": "W tym tygodniu nie zaplanowano targów."
   }
 }

@@ -84,7 +84,8 @@
     },
     "markets": {
       "title": "Markets today",
-      "none": "No market today."
+      "none": "No market today.",
+      "all": "All markets"
     },
     "events": {
       "title": "What's on today"
@@ -555,5 +556,9 @@
     "back": "Back",
     "close": "Close",
     "done": "Done"
+  },
+  "markets": {
+    "title": "All markets",
+    "weekEmpty": "No markets scheduled this week."
   }
 }

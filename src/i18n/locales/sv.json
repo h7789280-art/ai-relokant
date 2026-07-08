@@ -80,7 +80,8 @@
     },
     "markets": {
       "title": "Marknader idag",
-      "none": "Ingen marknad idag."
+      "none": "Ingen marknad idag.",
+      "all": "Alla marknader"
     },
     "events": {
       "title": "På gång idag"
@@ -485,5 +486,9 @@
     "back": "Tillbaka",
     "close": "Stäng",
     "done": "Klar"
+  },
+  "markets": {
+    "title": "Alla marknader",
+    "weekEmpty": "Inga marknader planerade denna vecka."
   }
 }
