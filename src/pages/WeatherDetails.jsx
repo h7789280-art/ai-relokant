@@ -98,7 +98,6 @@ export default function WeatherDetails() {
       </button>
       <div className="wx-hero__text">
         <h1 className="wx-hero__city">{cityName}</h1>
-        <p className="wx-hero__subtitle">{t('home.weather.subtitle', { city: cityName })}</p>
       </div>
     </div>
   )

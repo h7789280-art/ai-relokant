@@ -4623,7 +4623,7 @@ a.event-card__meta-link svg {
   min-height: 210px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   background-position: center 34%;
   background-size: cover;
   background-repeat: no-repeat;
@@ -4637,10 +4637,12 @@ a.event-card__meta-link svg {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(8, 26, 46, 0.34) 0%,
-    rgba(8, 26, 46, 0.05) 32%,
-    rgba(207, 233, 255, 0) 60%,
-    rgba(207, 233, 255, 0.55) 88%,
+    rgba(8, 26, 46, 0.4) 0%,
+    rgba(8, 26, 46, 0.22) 30%,
+    rgba(8, 26, 46, 0.3) 52%,
+    rgba(8, 26, 46, 0.1) 66%,
+    rgba(207, 233, 255, 0) 78%,
+    rgba(207, 233, 255, 0.55) 90%,
     #cfe9ff 100%
   );
   z-index: -1;
@@ -4676,15 +4678,9 @@ a.event-card__meta-link svg {
   font-weight: 600;
   line-height: 1.05;
   color: #fff;
-  text-shadow: 0 2px 16px rgba(8, 22, 40, 0.5);
-}
-
-.wx-hero__subtitle {
-  margin: 4px 0 0;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1px 8px rgba(8, 22, 40, 0.45);
+  /* Two-layer shade — a tight dark halo for light photos (sea/sky) plus a soft
+     wide glow — so white reads on ANY background without a heavy black plate. */
+  text-shadow: 0 1px 3px rgba(8, 22, 40, 0.45), 0 2px 22px rgba(8, 22, 40, 0.55);
 }
 
 .wx__section {
