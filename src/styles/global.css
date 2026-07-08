@@ -1178,6 +1178,7 @@ button {
 /* Keep the top content above the wash. */
 .catalog__header,
 .catalog__search,
+.catalog__filters,
 .catalog__grid,
 .catalog__results {
   position: relative;
@@ -1487,6 +1488,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .catalog__filter {
