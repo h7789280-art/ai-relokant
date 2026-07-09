@@ -18,10 +18,12 @@
 //
 // GET /api/cron/ingest-news
 //   Authorization: Bearer <CRON_SECRET>   ← Vercel Cron sends this automatically
-//   200: { ok, feeds: [{ url, status, contentType, rawItems, kept, sampleTitles,
-//         error }], candidates, uniqueLinks, inserted, skipped, translated,
+//   200: { ok, feeds: [{ url, status, contentType, rawItems, kept, noLink,
+//         sampleTitles, error }], candidates, uniqueLinks, inserted,
+//         insertedByFeed: {<source_name>: N}, noLink, skipped, translated,
 //         translateErrors, cityResolved, feedErrors: [...], insertErrors: [...] }
-//         (also console.log'd for Vercel logs)
+//         (also console.log'd for Vercel logs). MAX_NEW_PER_RUN is split fairly
+//         (round-robin) across feeds; insertedByFeed shows the per-feed landing.
 //   401: { error }  when the bearer token doesn't match CRON_SECRET
 //
 // Only the ≤MAX_NEW_PER_RUN items actually being inserted are translated — never
@@ -305,20 +307,33 @@ export default async function handler(req, res) {
   const feedErrors = []
   const feedReports = [] // per-feed detail for the final JSON summary
   const candidates = [] // normalised items, in feed order
+  let noLink = 0 // run-wide count of items dropped for a missing source_url (§11)
   for (const src of NEWS_SOURCES) {
     const { items, status, contentType, error } = await fetchFeed(parser, src.url)
     let kept = 0
+    let feedNoLink = 0 // items THIS feed lost because they carry no link (§11)
     const sampleTitles = []
     for (const entry of items) {
       const item = normaliseItem(entry, src.source_name)
-      if (!item) continue
+      if (!item) {
+        // Distinguish the "has a title but no usable link" case: source_url is
+        // required (§11), so such items are dropped. Count them per feed so the
+        // logs show whether a specific feed is losing items this way.
+        const hasTitle = String(entry.title || '').trim()
+        const hasLink = String(entry.link || entry.guid || '').trim()
+        if (hasTitle && !hasLink) {
+          feedNoLink += 1
+          noLink += 1
+        }
+        continue
+      }
       if (sampleTitles.length < 2) sampleTitles.push(item.title)
       candidates.push(item)
       kept += 1
     }
     console.log(
       `[ingest-news] feed ${src.url} -> status=${status} ct="${contentType}" ` +
-        `rawItems=${items.length} kept=${kept} error=${error || 'none'} ` +
+        `rawItems=${items.length} kept=${kept} noLink=${feedNoLink} error=${error || 'none'} ` +
         `sample=${JSON.stringify(sampleTitles)}`,
     )
     feedReports.push({
@@ -328,6 +343,7 @@ export default async function handler(req, res) {
       contentType,
       rawItems: items.length,
       kept,
+      noLink: feedNoLink,
       sampleTitles,
       error: error || null,
     })
@@ -342,10 +358,36 @@ export default async function handler(req, res) {
   const allUrls = [...uniqueByUrl.keys()]
   const alreadyStored = await existingSourceUrls(rest, allUrls)
 
-  const fresh = []
+  // ---- 2a) FAIR SPLIT of MAX_NEW_PER_RUN across feeds (round-robin). ----------
+  // Group the genuinely-new (post-dedup) items by feed, preserving feed order and
+  // within-feed order, then pick one item from each feed in turn until the limit
+  // is hit or every feed is exhausted. This shares the budget evenly (limit 5, two
+  // feeds → up to 3 + 2) instead of letting the first, larger feed grab all slots;
+  // a feed with fewer new items than its share simply yields its unused slots to
+  // the others, so the total is still exactly ≤ MAX_NEW_PER_RUN, never wasted.
+  const freshByFeed = new Map() // source_name -> item[] (feed order via NEWS_SOURCES)
+  for (const src of NEWS_SOURCES) freshByFeed.set(src.source_name, [])
   for (const item of uniqueByUrl.values()) {
-    if (!alreadyStored.has(item.source_url)) fresh.push(item)
-    if (fresh.length >= MAX_NEW_PER_RUN) break
+    if (alreadyStored.has(item.source_url)) continue
+    const bucket = freshByFeed.get(item.source_name)
+    if (bucket) bucket.push(item)
+    else freshByFeed.set(item.source_name, [item]) // safety: unknown feed name
+  }
+
+  const fresh = []
+  const cursors = new Map([...freshByFeed.keys()].map((name) => [name, 0]))
+  let progressed = true
+  while (fresh.length < MAX_NEW_PER_RUN && progressed) {
+    progressed = false
+    for (const [name, bucket] of freshByFeed) {
+      if (fresh.length >= MAX_NEW_PER_RUN) break
+      const i = cursors.get(name)
+      if (i < bucket.length) {
+        fresh.push(bucket[i])
+        cursors.set(name, i + 1)
+        progressed = true
+      }
+    }
   }
 
   // ---- 3) Translate (TR->RU, literal) + insert the fresh rows + Alanya link. --
@@ -358,6 +400,10 @@ export default async function handler(req, res) {
   let translated = 0
   let translateErrors = 0
   const insertErrors = []
+  // How many rows actually made it into `news` from each feed this run — so the
+  // logs show the fair split really landed items from every source, not just one.
+  const insertedByFeed = {}
+  for (const src of NEWS_SOURCES) insertedByFeed[src.source_name] = 0
   for (const item of fresh) {
     const ru = await translateItemToRussian(item, geminiKey)
     if (ru.translated) translated += 1
@@ -372,6 +418,7 @@ export default async function handler(req, res) {
     const linked = await linkNewsCity(rest, newsId, cityId)
     if (!linked) insertErrors.push({ source_url: item.source_url, detail: 'link failed' })
     inserted += 1
+    insertedByFeed[item.source_name] = (insertedByFeed[item.source_name] || 0) + 1
   }
 
   const skipped = allUrls.length - fresh.length
@@ -382,7 +429,9 @@ export default async function handler(req, res) {
     candidates: candidates.length,
     uniqueLinks: allUrls.length,
     inserted,
-    skipped, // duplicates + anything over MAX_NEW_PER_RUN this run
+    insertedByFeed, // rows actually written per feed this run (fair-split diagnostics)
+    noLink, // items dropped for a missing source_url (required, §11) — per feed in feeds[]
+    skipped, // duplicates + anything over the fair per-feed share this run
     translated, // items whose TR->RU translation succeeded (§7.2 stage 1)
     translateErrors, // items inserted with Turkish text after a fail-soft translation
     cityResolved: cityId,
