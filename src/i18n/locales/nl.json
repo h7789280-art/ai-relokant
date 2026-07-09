@@ -191,7 +191,8 @@
       "vet-clinics": "Dierenklinieken",
       "pet-supplies": "Dierenbenodigdheden",
       "pet-insurance": "Verzekeringen"
-    }
+    },
+    "districtOther": "Overige"
   },
   "place": {
     "call": "Bellen",

@@ -191,7 +191,8 @@
       "vet-clinics": "Ветклиники",
       "pet-supplies": "Зоотовары",
       "pet-insurance": "Страховка"
-    }
+    },
+    "districtOther": "Другие"
   },
   "place": {
     "call": "Позвонить",
@@ -442,7 +443,10 @@
       "country": "Страна",
       "city": "Город",
       "soon": "(скоро)",
-      "verifiedAt": "Дата проверки"
+      "verifiedAt": "Дата проверки",
+      "district": "Район",
+      "districtPlaceholder": "напр. Махмутлар, Оба",
+      "districtHint": "Район/квартал — по нему группируются продуктовые в каталоге."
     },
     "list": {
       "title": "Места города",

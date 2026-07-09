@@ -191,7 +191,8 @@
       "vet-clinics": "Tierkliniken",
       "pet-supplies": "Tierbedarf",
       "pet-insurance": "Versicherung"
-    }
+    },
+    "districtOther": "Andere"
   },
   "place": {
     "call": "Anrufen",

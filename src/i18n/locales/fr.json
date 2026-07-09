@@ -191,7 +191,8 @@
       "vet-clinics": "Cliniques vétérinaires",
       "pet-supplies": "Accessoires pour animaux",
       "pet-insurance": "Assurance"
-    }
+    },
+    "districtOther": "Autres"
   },
   "place": {
     "call": "Appeler",

@@ -191,7 +191,8 @@
       "vet-clinics": "Ветклініки",
       "pet-supplies": "Зоотовари",
       "pet-insurance": "Страхування"
-    }
+    },
+    "districtOther": "Інші"
   },
   "place": {
     "call": "Подзвонити",

@@ -191,7 +191,8 @@
       "vet-clinics": "Vet clinics",
       "pet-supplies": "Pet supplies",
       "pet-insurance": "Insurance"
-    }
+    },
+    "districtOther": "Other"
   },
   "place": {
     "call": "Call",
@@ -442,7 +443,10 @@
       "country": "Country",
       "city": "City",
       "soon": "(soon)",
-      "verifiedAt": "Last checked"
+      "verifiedAt": "Last checked",
+      "district": "District",
+      "districtPlaceholder": "e.g. Mahmutlar, Oba",
+      "districtHint": "Neighbourhood — groceries are grouped by it in the catalog."
     },
     "list": {
       "title": "City places",

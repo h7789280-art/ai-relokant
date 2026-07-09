@@ -191,7 +191,8 @@
       "vet-clinics": "Veterinární kliniky",
       "pet-supplies": "Potřeby pro mazlíčky",
       "pet-insurance": "Pojištění"
-    }
+    },
+    "districtOther": "Ostatní"
   },
   "place": {
     "call": "Zavolat",

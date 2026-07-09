@@ -191,7 +191,8 @@
       "vet-clinics": "Eläinklinikat",
       "pet-supplies": "Lemmikkitarvikkeet",
       "pet-insurance": "Vakuutus"
-    }
+    },
+    "districtOther": "Muut"
   },
   "place": {
     "call": "Soita",

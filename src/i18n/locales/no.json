@@ -191,7 +191,8 @@
       "vet-clinics": "Veterinærklinikker",
       "pet-supplies": "Dyreutstyr",
       "pet-insurance": "Forsikring"
-    }
+    },
+    "districtOther": "Andre"
   },
   "place": {
     "call": "Ring",

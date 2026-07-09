@@ -1,0 +1,28 @@
+-- ============================================================================
+-- CityMate — DISTRICT (neighbourhood) field for catalog places
+-- (CLAUDE.md §4, §5.2 — the catalog "places" card).
+-- ============================================================================
+-- Run this file manually in the Supabase SQL editor. Idempotent and safe to
+-- re-run (ADD COLUMN IF NOT EXISTS). Touches no existing data.
+--
+-- WHY
+--   A city like Alanya has dozens of grocery chains (A101, BIM, Migros, …) whose
+--   flat list of near-identical names tells the user nothing about which one is
+--   NEAR them. The owner tags each place with its district (Mahmutlar, Oba, …),
+--   and the "Groceries" (groceries) subcategory then groups its places BY
+--   district — the same "block per group" feel as the weekly markets screen — so
+--   a user sees their own neighbourhood's shops together. Other categories keep
+--   the flat list; grouping is scoped to the groceries subcategory only.
+--
+-- WHAT THIS ADDS
+--   A nullable `district` text column on `places`. OPTIONAL — existing rows keep
+--   NULL and simply fall into the "Other" group until the owner fills them in.
+--
+-- SECURITY / RLS — UNCHANGED
+--   The existing policies on `places` are ROW-level (public.is_admin() for writes,
+--   status = 'approved' for public reads). A new nullable column is covered
+--   automatically — no policy change needed. `district` is a plain place-name;
+--   like address it is NOT translated (§8).
+-- ============================================================================
+
+alter table public.places add column if not exists district text;

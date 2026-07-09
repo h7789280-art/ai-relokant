@@ -191,7 +191,8 @@
       "vet-clinics": "Veterinärkliniker",
       "pet-supplies": "Djurtillbehör",
       "pet-insurance": "Försäkring"
-    }
+    },
+    "districtOther": "Övriga"
   },
   "place": {
     "call": "Ring",

@@ -770,6 +770,7 @@ const emptyPlace = (cityId = '') => ({
   name: '',
   description: '',
   address: '',
+  district: '',
   maps_url: '',
   phone: '',
   whatsapp: '',
@@ -793,6 +794,7 @@ function formFromPlace(p) {
     name: p.name ?? '',
     description: p.description ?? '',
     address: p.address ?? '',
+    district: p.district ?? '',
     maps_url: p.maps_url ?? '',
     phone: p.phone ?? '',
     whatsapp: p.whatsapp ?? '',
@@ -934,6 +936,7 @@ function PlacesSection({ geo }) {
       name,
       description: form.description.trim() || null,
       address: form.address.trim() || null,
+      district: form.district.trim() || null,
       maps_url: form.maps_url.trim() || null,
       phone: form.phone.trim() || null,
       whatsapp: form.whatsapp.trim() || null,
@@ -1048,6 +1051,18 @@ function PlacesSection({ geo }) {
               value={form.address}
               onChange={(e) => setField('address', e.target.value)}
             />
+          </label>
+
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.district')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.district}
+              onChange={(e) => setField('district', e.target.value)}
+              placeholder={t('admin.form.districtPlaceholder')}
+            />
+            <span className="admin-field__hint">{t('admin.form.districtHint')}</span>
           </label>
 
           <label className="admin-field">

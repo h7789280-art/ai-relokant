@@ -191,7 +191,8 @@
       "vet-clinics": "Veteriner klinikleri",
       "pet-supplies": "Evcil hayvan ürünleri",
       "pet-insurance": "Sigorta"
-    }
+    },
+    "districtOther": "Diğer"
   },
   "place": {
     "call": "Ara",

@@ -16,6 +16,37 @@ import {
   withTranslations,
 } from '../lib/content.js'
 
+// The one subcategory that groups its places BY district instead of a flat list
+// (CLAUDE.md §5.2 — "Groceries"). Dozens of near-identical chain names (A101,
+// BIM, Migros) are useless as a flat list; grouping by neighbourhood lets a user
+// find the shops near them. Matched by the subcategory SLUG, so it's scoped to
+// exactly groceries — every other category/subcategory keeps the flat list.
+const GROUPED_SUB_SLUG = 'groceries'
+
+/**
+ * Group approved places by their `district`, districts A→Z, places with no
+ * district collected last into their own bucket (district: null → "Other" header
+ * so they never get lost). Within a district the incoming order is preserved
+ * (fetchPlaces already sorts promoted-first, then by name).
+ */
+function groupByDistrict(rows) {
+  const byDistrict = new Map()
+  for (const place of rows) {
+    const key = place.district?.trim() || ''
+    if (!byDistrict.has(key)) byDistrict.set(key, [])
+    byDistrict.get(key).push(place)
+  }
+  const named = [...byDistrict.entries()]
+    .filter(([district]) => district)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([district, places]) => ({ key: district, district, places }))
+  const undistricted = byDistrict.get('')
+  if (undistricted?.length) {
+    named.push({ key: '__other', district: null, places: undistricted })
+  }
+  return named
+}
+
 export default function CatalogCategory() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -68,6 +99,15 @@ export default function CatalogCategory() {
     ? t(`catalog.categories.${category.slug}`, category.name)
     : t('nav.catalog')
 
+  // Group by district ONLY when the active subcategory is "Groceries" (matched by
+  // slug). Any other filter — including "All" — keeps the plain flat list.
+  const groupByDistrictActive =
+    subcategories.find((s) => s.id === activeSub)?.slug === GROUPED_SUB_SLUG
+  const districtGroups =
+    groupByDistrictActive && places.status === 'ready'
+      ? groupByDistrict(places.rows)
+      : null
+
   return (
     <main className="app-shell catalog">
       <header className="catalog__header">
@@ -111,6 +151,22 @@ export default function CatalogCategory() {
         </div>
       ) : places.rows.length === 0 ? (
         <p className="catalog__empty">{t('catalog.empty')}</p>
+      ) : districtGroups ? (
+        // "Groceries": a block per district (like the markets screen groups days).
+        districtGroups.map(({ key, district, places: groupPlaces }) => (
+          <section className="catalog__group" key={key}>
+            <h2 className="catalog__group-title">
+              {district ?? t('catalog.districtOther')}
+            </h2>
+            <ul className="place-list">
+              {groupPlaces.map((place) => (
+                <li key={place.id}>
+                  <PlaceRow place={place} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       ) : (
         <ul className="place-list">
           {places.rows.map((place) => (

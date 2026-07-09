@@ -1268,6 +1268,26 @@ button {
   font-size: var(--text-sm);
 }
 
+/* Groceries grouped by district — a block per neighbourhood, headed like the
+   weekly-markets day groups: airy, readable, serif title (§5.2). */
+.catalog__group {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-5);
+}
+
+.catalog__group:first-of-type {
+  margin-top: var(--space-2);
+}
+
+.catalog__group-title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* --- Favorites empty state (§4) --- */
 .favorites__empty {
   display: flex;
