@@ -25,6 +25,7 @@ import {
   Plus,
   ShieldCheck,
   Languages,
+  Search,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
@@ -52,6 +53,7 @@ import {
   fetchMarketSchedule,
   saveMarketScheduleRow,
   deleteMarketScheduleDay,
+  searchGooglePlaces,
 } from '../lib/admin.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 import { EVENT_CURRENCIES, currencySymbol } from '../lib/eventPrice.js'
@@ -772,6 +774,8 @@ const emptyPlace = (cityId = '') => ({
   address: '',
   district: '',
   maps_url: '',
+  latitude: '',
+  longitude: '',
   phone: '',
   whatsapp: '',
   instagram: '',
@@ -796,6 +800,8 @@ function formFromPlace(p) {
     address: p.address ?? '',
     district: p.district ?? '',
     maps_url: p.maps_url ?? '',
+    latitude: p.latitude != null ? String(p.latitude) : '',
+    longitude: p.longitude != null ? String(p.longitude) : '',
     phone: p.phone ?? '',
     whatsapp: p.whatsapp ?? '',
     instagram: p.instagram ?? '',
@@ -813,7 +819,7 @@ function formFromPlace(p) {
 }
 
 function PlacesSection({ geo }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { cityId } = useApp()
 
   const [cats, setCats] = useState([])
@@ -825,6 +831,13 @@ function PlacesSection({ geo }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [uploading, setUploading] = useState(false)
+
+  // Google Places search (CLAUDE.md §7) — an OPTIONAL helper to speed up seeding.
+  // `results` is null before the first search, [] when Google found nothing.
+  const [placeQuery, setPlaceQuery] = useState('')
+  const [placeResults, setPlaceResults] = useState(null)
+  const [placeSearching, setPlaceSearching] = useState(false)
+  const [placeSearchError, setPlaceSearchError] = useState('')
 
   // Reference data for the category/subcategory selects.
   useEffect(() => {
@@ -887,6 +900,46 @@ function PlacesSection({ geo }) {
     setError('')
   }
 
+  // Run a Google Places search (§7). Optional — the owner can always fill the
+  // form by hand and ignore this block entirely. languageCode = the current UI
+  // language (2-letter), so addresses/hours come back localized.
+  async function runPlaceSearch() {
+    const q = placeQuery.trim()
+    if (!q || placeSearching) return
+    setPlaceSearching(true)
+    setPlaceSearchError('')
+    setPlaceResults(null)
+    try {
+      const lang = (i18n.language || 'en').slice(0, 2)
+      setPlaceResults(await searchGooglePlaces(q, lang))
+    } catch (err) {
+      setPlaceSearchError(err?.message || t('admin.form.places.error'))
+    } finally {
+      setPlaceSearching(false)
+    }
+  }
+
+  // Fill the TEXT fields from a chosen Google result (§7). Only auto-fills fields
+  // Google gives us a value for (so it never wipes something with a blank), and
+  // deliberately does NOT touch photo, district, description, category, verified/
+  // promoted or service languages — the owner sets those by hand. Every filled
+  // field stays editable afterwards.
+  function applyGooglePlace(r) {
+    setForm((f) => ({
+      ...f,
+      name: r.name || f.name,
+      address: r.address || f.address,
+      latitude: r.lat != null ? String(r.lat) : f.latitude,
+      longitude: r.lng != null ? String(r.lng) : f.longitude,
+      hours: r.hours || f.hours,
+      phone: r.phone || f.phone,
+      website: r.website || f.website,
+      maps_url: r.mapsUrl || f.maps_url,
+    }))
+    setSuccess(t('admin.form.places.applied', { name: r.name }))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   async function handlePhotoFile(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -938,6 +991,8 @@ function PlacesSection({ geo }) {
       address: form.address.trim() || null,
       district: form.district.trim() || null,
       maps_url: form.maps_url.trim() || null,
+      latitude: toNum(form.latitude),
+      longitude: toNum(form.longitude),
       phone: form.phone.trim() || null,
       whatsapp: form.whatsapp.trim() || null,
       instagram: form.instagram.trim() || null,
@@ -1014,6 +1069,65 @@ function PlacesSection({ geo }) {
             ? t('admin.form.editTitle', { name: form.name || t('admin.form.untitled') })
             : t('admin.form.addTitle')}
         </h2>
+
+        {/* Google Places search — an OPTIONAL shortcut to auto-fill the text
+            fields below (§7). NOT a nested <form>: it sits above the place form
+            so an Enter here searches Google instead of submitting the place. */}
+        <div className="admin-places-search">
+          <span className="admin-field__label">{t('admin.form.places.title')}</span>
+          <div className="admin-places-search__row">
+            <input
+              className="admin-field__input"
+              type="text"
+              value={placeQuery}
+              onChange={(e) => setPlaceQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  runPlaceSearch()
+                }
+              }}
+              placeholder={t('admin.form.places.placeholder')}
+            />
+            <button
+              type="button"
+              className="admin-btn admin-btn--ghost"
+              onClick={runPlaceSearch}
+              disabled={placeSearching || !placeQuery.trim()}
+            >
+              <Search size={16} aria-hidden="true" />
+              {placeSearching ? t('admin.form.places.searching') : t('admin.form.places.search')}
+            </button>
+          </div>
+          <span className="admin-field__hint muted">{t('admin.form.places.hint')}</span>
+
+          {placeSearchError && <p className="admin-form__error">{placeSearchError}</p>}
+          {placeResults && placeResults.length === 0 && !placeSearchError && (
+            <p className="muted">{t('admin.form.places.empty')}</p>
+          )}
+          {placeResults && placeResults.length > 0 && (
+            <ul className="admin-places-search__results">
+              {placeResults.map((r) => (
+                <li key={r.id || r.name} className="admin-places-search__result">
+                  <div className="admin-places-search__result-info">
+                    <span className="admin-places-search__result-name">{r.name}</span>
+                    {r.address && (
+                      <span className="admin-places-search__result-address">{r.address}</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--ghost"
+                    onClick={() => applyGooglePlace(r)}
+                  >
+                    {t('admin.form.places.use')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <form className="admin-form" onSubmit={handleSubmit}>
           <label className="admin-field">
             <span className="admin-field__label">{t('admin.form.name')}</span>
@@ -1076,6 +1190,31 @@ function PlacesSection({ geo }) {
             />
             <span className="admin-field__hint">{t('admin.form.mapsUrlHint')}</span>
           </label>
+
+          <div className="admin-form__row">
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.latitude')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                inputMode="decimal"
+                value={form.latitude}
+                onChange={(e) => setField('latitude', e.target.value)}
+                placeholder="36.5443"
+              />
+            </label>
+            <label className="admin-field">
+              <span className="admin-field__label">{t('admin.form.longitude')}</span>
+              <input
+                className="admin-field__input"
+                type="text"
+                inputMode="decimal"
+                value={form.longitude}
+                onChange={(e) => setField('longitude', e.target.value)}
+                placeholder="31.9959"
+              />
+            </label>
+          </div>
 
           <div className="admin-form__row">
             <label className="admin-field">

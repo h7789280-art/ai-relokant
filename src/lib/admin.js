@@ -418,6 +418,35 @@ export async function requestTranslation(fields, sourceLang) {
 }
 
 /**
+ * Search Google Places via the server proxy (api/places-search.js) to speed up
+ * catalog seeding (CLAUDE.md §7). Sends the admin's access token so the closed,
+ * paid endpoint can authorise the caller (§9); the Google key never touches the
+ * client. Returns a list of { id, name, address, lat, lng, hours, phone,
+ * website, mapsUrl } the owner picks from — an empty list is a normal "nothing
+ * found", not an error. Only TEXT facts come back; photos are added by hand.
+ *
+ * @param {string} query         free-text search, e.g. "A101 Mahmutlar Alanya"
+ * @param {string} [languageCode] UI language, localizes address / hours
+ */
+export async function searchGooglePlaces(query, languageCode) {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  const res = await fetch('/api/places-search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ query, languageCode }),
+  })
+  const json = await res.json().catch(() => null)
+  if (!res.ok || !Array.isArray(json?.results)) {
+    throw new Error(json?.detail || json?.error || 'Places search failed.')
+  }
+  return json.results
+}
+
+/**
  * Existing translations for one row, shaped as { <lang>: { <field>: value } }
  * so the editor can preload them. Admins can read these for rows in any status
  * (supabase/translations.sql). Returns {} when there are none.
