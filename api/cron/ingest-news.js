@@ -55,8 +55,9 @@ const FEED_USER_AGENT =
   'Mozilla/5.0 (compatible; CityMateBot/1.0; +https://citymate.app)'
 
 // Max NEW rows inserted per run. Whatever doesn't fit is picked up tomorrow —
-// keeps the moderation queue digestible and the run cheap.
-const MAX_NEW_PER_RUN = 5
+// keeps the moderation queue digestible and the run cheap. Raised 5→15 so the
+// daily cron drains almost the whole day's flow instead of accruing a backlog.
+const MAX_NEW_PER_RUN = 15
 
 // ISO-3166 alpha-2 of the country whose city slugs above belong to (Turkey).
 const COUNTRY_CODE = 'TR'
@@ -361,8 +362,8 @@ export default async function handler(req, res) {
   // ---- 2a) FAIR SPLIT of MAX_NEW_PER_RUN across feeds (round-robin). ----------
   // Group the genuinely-new (post-dedup) items by feed, preserving feed order and
   // within-feed order, then pick one item from each feed in turn until the limit
-  // is hit or every feed is exhausted. This shares the budget evenly (limit 5, two
-  // feeds → up to 3 + 2) instead of letting the first, larger feed grab all slots;
+  // is hit or every feed is exhausted. This shares the budget evenly (limit 15, two
+  // feeds → up to 8 + 7) instead of letting the first, larger feed grab all slots;
   // a feed with fewer new items than its share simply yields its unused slots to
   // the others, so the total is still exactly ≤ MAX_NEW_PER_RUN, never wasted.
   const freshByFeed = new Map() // source_name -> item[] (feed order via NEWS_SOURCES)
