@@ -1,23 +1,34 @@
 // CityMate daily RSS news ingest (CLAUDE.md §7, §11) — Vercel Cron serverless.
-// STAGE 0 (MVP): collect only. We pull a few curated Turkish RSS feeds, insert
-// the freshest items into `news` as status='pending', source='ai_parse', and
-// link them to Alanya via news_cities — so they land straight in the admin
-// moderation queue. NO Gemini and NO translation here: the base row is the
-// Turkish headline VERBATIM from the feed (0 invention, §11). The owner presses
-// "Save & translate" on approval, which fans it out to the other 12 languages.
+// STAGE 1: collect + literal TR->RU translation. We pull a few curated Turkish
+// RSS feeds, dedup, pick the freshest ≤MAX_NEW_PER_RUN NEW items, translate each
+// item's headline + snippet LITERALLY into Russian (via the shared translate core,
+// same Gemini model + proper-name-safe prompt as api/translate.js), and insert
+// them into `news` as status='pending', source='ai_parse', linked to Alanya via
+// news_cities — so they land in the admin moderation queue ALREADY in Russian.
+//
+// Trust (§11): the translation is LITERAL only — no summarising, no paraphrase,
+// no invention; proper names / brands / addresses are left untranslated (§8). We
+// do NOT keep the Turkish original (title/summary hold the Russian text).
+//
+// FAIL-SOFT (§7.2): translation is best-effort per item. If Gemini fails/times
+// out/returns nothing for a given item, we DO NOT drop it and DO NOT fail the run
+// — we insert that item with its Turkish text (exactly as stage 0 did) so the
+// owner can finish the translation from the admin. The robot must still deliver
+// data when Gemini is down. Such items are counted in `translateErrors`.
 //
 // GET /api/cron/ingest-news
 //   Authorization: Bearer <CRON_SECRET>   ← Vercel Cron sends this automatically
 //   200: { ok, feeds: [{ url, status, contentType, rawItems, kept, sampleTitles,
-//         error }], candidates, uniqueLinks, inserted, skipped, cityResolved,
-//         feedErrors: [...], insertErrors: [...] }  (also console.log'd for Vercel logs)
+//         error }], candidates, uniqueLinks, inserted, skipped, translated,
+//         translateErrors, cityResolved, feedErrors: [...], insertErrors: [...] }
+//         (also console.log'd for Vercel logs)
 //   401: { error }  when the bearer token doesn't match CRON_SECRET
 //
-// Trust rules (§11): title and source_url are stored EXACTLY as the feed gives
-// them (no rewriting, no summarising); a link to the primary source is required
-// on every row (items without a link are skipped).
+// Only the ≤MAX_NEW_PER_RUN items actually being inserted are translated — never
+// the full candidate set — so we don't burn Gemini quota on items the dedup drops.
 
 import Parser from 'rss-parser'
+import { translateFields } from '../_lib/translate-core.js'
 
 // Curated feeds. Hardcoded for stage 0 (a `news_sources` table comes later).
 // Each item lands in the city named by `city_slug` (Turkey). Antalya-province
@@ -112,16 +123,17 @@ async function existingSourceUrls(rest, urls) {
   return seen
 }
 
-// Insert one news row (Turkish base, pending, ai_parse) and return its new id, or
-// null on failure. We request the created row back (Prefer: return=representation)
-// so we can immediately link it to the city.
+// Insert one news row (pending, ai_parse) and return its new id, or null on
+// failure. `item.title`/`item.summary` are already the Russian translation (or,
+// after a fail-soft, the Turkish text — §7.2). We request the created row back
+// (Prefer: return=representation) so we can immediately link it to the city.
 async function insertNews(rest, item) {
   try {
     const res = await fetch(`${rest.base}/news`, {
       method: 'POST',
       headers: { ...rest.headers, Prefer: 'return=representation' },
       body: JSON.stringify({
-        title: item.title, // Turkish headline, VERBATIM from the feed (§11)
+        title: item.title, // Russian (literal TR->RU); Turkish on fail-soft (§7.2)
         summary: item.summary,
         source_url: item.source_url, // primary source, required (§11)
         source_name: item.source_name,
@@ -175,6 +187,49 @@ function normaliseItem(entry, sourceName) {
     source_url: link,
     source_name: sourceName,
     published_at: published ? new Date(published).toISOString() : null,
+  }
+}
+
+// Literal TR->RU translation of one item's title + snippet, via the shared
+// translate core (same Gemini model + proper-name-safe prompt as api/translate.js).
+// Returns { title, summary, translated }:
+//   * translated=true  -> Russian title/summary from Gemini (§7.2 stage 1)
+//   * translated=false -> FAIL-SOFT: the original Turkish title/summary, so the
+//     item is still inserted and the owner can finish it in the admin (§7.2).
+// `apiKey` may be '' (missing config) — then we fail-soft without calling Gemini.
+async function translateItemToRussian(item, apiKey) {
+  // Build the fields to translate. summary may be empty — only translate what's
+  // present (mirrors cleanFields: blanks are dropped).
+  const fields = {}
+  if (item.title && item.title.trim()) fields.title = item.title.trim()
+  if (item.summary && item.summary.trim()) fields.summary = item.summary.trim()
+  const fieldNames = Object.keys(fields)
+  if (!apiKey || fieldNames.length === 0) {
+    return { title: item.title, summary: item.summary, translated: false }
+  }
+  const result = await translateFields({
+    fields,
+    fieldNames,
+    sourceLang: 'tr',
+    targetLangs: ['ru'],
+    apiKey,
+  })
+  if (!result.ok) {
+    console.log(`[ingest-news] translate FAIL-SOFT (TR kept) url=${item.source_url} detail=${result.detail || result.error}`)
+    return { title: item.title, summary: item.summary, translated: false }
+  }
+  const ru = result.translations?.ru
+  // Guard the shape: a valid translation must at least give us a Russian title.
+  if (!ru || typeof ru.title !== 'string' || !ru.title.trim()) {
+    console.log(`[ingest-news] translate FAIL-SOFT (TR kept, bad shape) url=${item.source_url}`)
+    return { title: item.title, summary: item.summary, translated: false }
+  }
+  return {
+    // Russian title (required). Summary: use the Russian one when the model
+    // returned it, otherwise keep whatever the base item had (possibly '').
+    title: ru.title.trim(),
+    summary: typeof ru.summary === 'string' ? ru.summary.trim() : item.summary,
+    translated: true,
   }
 }
 
@@ -293,11 +348,23 @@ export default async function handler(req, res) {
     if (fresh.length >= MAX_NEW_PER_RUN) break
   }
 
-  // ---- 3) Insert the fresh rows + their Alanya link. -------------------------
+  // ---- 3) Translate (TR->RU, literal) + insert the fresh rows + Alanya link. --
+  // Only these ≤MAX_NEW_PER_RUN items are translated — never the full candidate
+  // set — so dedup-dropped items never cost Gemini quota (§7.2). Translation is
+  // fail-soft per item: a failure keeps the Turkish text and still inserts.
+  const geminiKey = process.env.GEMINI_API_KEY || ''
+  if (!geminiKey) console.log('[ingest-news] GEMINI_API_KEY missing — inserting Turkish text (fail-soft) for all items')
   let inserted = 0
+  let translated = 0
+  let translateErrors = 0
   const insertErrors = []
   for (const item of fresh) {
-    const newsId = await insertNews(rest, item)
+    const ru = await translateItemToRussian(item, geminiKey)
+    if (ru.translated) translated += 1
+    else translateErrors += 1
+    const row = { ...item, title: ru.title, summary: ru.summary }
+
+    const newsId = await insertNews(rest, row)
     if (!newsId) {
       insertErrors.push({ source_url: item.source_url, detail: 'insert failed' })
       continue
@@ -316,6 +383,8 @@ export default async function handler(req, res) {
     uniqueLinks: allUrls.length,
     inserted,
     skipped, // duplicates + anything over MAX_NEW_PER_RUN this run
+    translated, // items whose TR->RU translation succeeded (§7.2 stage 1)
+    translateErrors, // items inserted with Turkish text after a fail-soft translation
     cityResolved: cityId,
     feedErrors,
     insertErrors,

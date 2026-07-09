@@ -16,33 +16,12 @@
 //     This keeps the translation quota from being drained by anyone signed in.
 //   * This call does NOT touch the ai_usage table — the §6 daily chat limit and
 //     translation are deliberately separate budgets.
+//
+// The Gemini model, the proper-name-safe prompt and the strict JSON schema now
+// live in api/_lib/translate-core.js, so the RSS news cron (§7.2) reuses the exact
+// same translation core. This handler's request/response contract is unchanged.
 
-// Same Flash tier + endpoint shape as api/chat.js (one constant to bump later).
-const GEMINI_MODEL = 'gemini-2.5-flash'
-const GEMINI_ENDPOINT = (model, key) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
-
-// The 13 start languages (§8). Keep in sync with src/i18n/index.js and chat.js.
-const LANGUAGE_NAMES = {
-  ru: 'Russian',
-  en: 'English',
-  tr: 'Turkish',
-  de: 'German',
-  uk: 'Ukrainian',
-  pl: 'Polish',
-  nl: 'Dutch',
-  cs: 'Czech',
-  fr: 'French',
-  fi: 'Finnish',
-  sv: 'Swedish',
-  no: 'Norwegian',
-  da: 'Danish',
-}
-const ALL_LANGS = Object.keys(LANGUAGE_NAMES)
-
-// Defensive cap: a content field is short prose; refuse anything absurd so a bad
-// caller can't push a huge prompt through. (Bodies/guides are well under this.)
-const MAX_FIELD_CHARS = 8000
+import { ALL_LANGS, cleanFields, translateFields } from './_lib/translate-core.js'
 
 // ---- Auth: trusted user id from the Supabase access token (mirrors chat.js) --
 async function authenticatedUserId(req) {
@@ -98,59 +77,6 @@ async function readJsonBody(req) {
   return raw ? JSON.parse(raw) : {}
 }
 
-// Keep only non-empty string fields, trimmed and length-capped. Returns the
-// cleaned { field: text } map (drops blanks — nothing to translate there).
-function cleanFields(fields) {
-  if (!fields || typeof fields !== 'object') return {}
-  const out = {}
-  for (const [key, val] of Object.entries(fields)) {
-    if (typeof val !== 'string') continue
-    const text = val.trim()
-    if (!text) continue
-    out[key] = text.slice(0, MAX_FIELD_CHARS)
-  }
-  return out
-}
-
-// ---- Gemini prompt + strict JSON schema ------------------------------------
-// We force structured JSON via responseSchema so the model can't wrap the answer
-// in markdown or drop a language: object of <lang> -> object of <field> -> string.
-function buildResponseSchema(targetLangs, fieldNames) {
-  const fieldProps = {}
-  for (const f of fieldNames) fieldProps[f] = { type: 'string' }
-  const langProps = {}
-  for (const l of targetLangs) {
-    langProps[l] = { type: 'object', properties: fieldProps, required: fieldNames }
-  }
-  return { type: 'object', properties: langProps, required: targetLangs }
-}
-
-function buildPrompt(fields, sourceLang, targetLangs) {
-  const sourceName = LANGUAGE_NAMES[sourceLang] || sourceLang
-  const targets = targetLangs.map((l) => `${l} (${LANGUAGE_NAMES[l]})`).join(', ')
-  return [
-    'You are a professional localization translator for CityMate, a city-life',
-    'assistant app for tourists and expats.',
-    `Translate the content fields below from ${sourceName} into EACH target`,
-    `language: ${targets}.`,
-    '',
-    'RULES:',
-    '- Do NOT translate proper names or brands: keep "CityMate", "WhatsApp",',
-    '  "Instagram", "Telegram", and any business / brand / product names as-is.',
-    '- Do NOT translate addresses or place names literally — leave address-like',
-    '  text unchanged.',
-    '- Preserve any markdown, line breaks and formatting exactly.',
-    '- Keep the tone natural, warm and concise — the same register as the source.',
-    '- Translate every field for every target language. If a value is a proper',
-    '  name with nothing to translate, return it unchanged (never leave it empty).',
-    '- Return ONLY the JSON object required by the schema. No markdown, no fences,',
-    '  no commentary.',
-    '',
-    'SOURCE FIELDS (JSON):',
-    JSON.stringify(fields),
-  ].join('\n')
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed. Use POST.' })
@@ -198,49 +124,10 @@ export default async function handler(req, res) {
   // The 12 others — never re-emit the source language (its text IS the base row).
   const targetLangs = ALL_LANGS.filter((l) => l !== sourceLang)
 
-  try {
-    const geminiRes = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL, apiKey), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(fields, sourceLang, targetLangs) }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 4096,
-          responseMimeType: 'application/json',
-          responseSchema: buildResponseSchema(targetLangs, fieldNames),
-        },
-      }),
-    })
-
-    const data = await geminiRes.json().catch(() => null)
-
-    if (!geminiRes.ok) {
-      const detail = data?.error?.message || `Gemini HTTP ${geminiRes.status}`
-      res.status(502).json({ error: 'The translation service returned an error.', detail })
-      return
-    }
-
-    const raw = data?.candidates?.[0]?.content?.parts?.map((p) => p?.text || '').join('').trim()
-    if (!raw) {
-      const detail =
-        data?.promptFeedback?.blockReason ||
-        data?.candidates?.[0]?.finishReason ||
-        'No content returned.'
-      res.status(502).json({ error: 'The translator returned no answer.', detail })
-      return
-    }
-
-    let translations
-    try {
-      translations = JSON.parse(raw)
-    } catch {
-      res.status(502).json({ error: 'The translator returned malformed JSON.', detail: raw.slice(0, 300) })
-      return
-    }
-
-    res.status(200).json({ translations })
-  } catch (err) {
-    res.status(502).json({ error: 'Could not reach the translation service.', detail: String(err?.message || err) })
+  const result = await translateFields({ fields, fieldNames, sourceLang, targetLangs, apiKey })
+  if (!result.ok) {
+    res.status(result.status).json({ error: result.error, detail: result.detail })
+    return
   }
+  res.status(200).json({ translations: result.translations })
 }
