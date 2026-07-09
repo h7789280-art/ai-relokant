@@ -8,7 +8,9 @@
 //
 // GET /api/cron/ingest-news
 //   Authorization: Bearer <CRON_SECRET>   ← Vercel Cron sends this automatically
-//   200: { ok, feeds, inserted, skipped, cityResolved, feedErrors: [...] }
+//   200: { ok, feeds: [{ url, status, contentType, rawItems, kept, sampleTitles,
+//         error }], candidates, uniqueLinks, inserted, skipped, cityResolved,
+//         feedErrors: [...], insertErrors: [...] }  (also console.log'd for Vercel logs)
 //   401: { error }  when the bearer token doesn't match CRON_SECRET
 //
 // Trust rules (§11): title and source_url are stored EXACTLY as the feed gives
@@ -20,11 +22,24 @@ import Parser from 'rss-parser'
 // Curated feeds. Hardcoded for stage 0 (a `news_sources` table comes later).
 // Each item lands in the city named by `city_slug` (Turkey). Antalya-province
 // feeds cover Alanya, so they all map to Alanya for now.
+//
+// ⚠️ Feed-URL history (why these exact URLs) — checked 9 July 2026:
+//  - haberler.com: the old `www.haberler.com/rss/antalya/` 301-redirects to
+//    `rss.haberler.com/` which serves an HTML landing page (0 items). The real
+//    RSS lives at `rss.haberler.com/rss.asp?kategori=<slug>` (valid RSS 2.0).
+//  - haberantalya.com: BOTH old feeds (`/rss/type/news`, `/rss/category/…`) now
+//    sit behind a Cloudflare "Just a moment…" JS challenge and return HTTP 403
+//    to any server-side fetch — unusable from a serverless cron. Dropped.
+//    Replaced with gazetealanya.com/rss, an Alanya-specific feed (no CF gate).
 const NEWS_SOURCES = [
-  { url: 'https://www.haberler.com/rss/antalya/', source_name: 'Haberler — Antalya', city_slug: 'alanya' },
-  { url: 'https://www.haberantalya.com/rss/type/news', source_name: 'Haber Antalya', city_slug: 'alanya' },
-  { url: 'https://www.haberantalya.com/rss/category/kultur-sanat', source_name: 'Haber Antalya — Kültür', city_slug: 'alanya' },
+  { url: 'https://rss.haberler.com/rss.asp?kategori=antalya', source_name: 'Haberler — Antalya', city_slug: 'alanya' },
+  { url: 'https://www.gazetealanya.com/rss', source_name: 'Gazete Alanya', city_slug: 'alanya' },
 ]
+
+// Browser-ish User-Agent for feed fetches. Some Turkish sites answer 403 / an
+// empty body to a default/no User-Agent, so we always send one.
+const FEED_USER_AGENT =
+  'Mozilla/5.0 (compatible; CityMateBot/1.0; +https://citymate.app)'
 
 // Max NEW rows inserted per run. Whatever doesn't fit is picked up tomorrow —
 // keeps the moderation queue digestible and the run cheap.
@@ -163,6 +178,41 @@ function normaliseItem(entry, sourceName) {
   }
 }
 
+// Fetch a feed ourselves (so we control redirects, User-Agent and can SEE the
+// HTTP status + content-type) and hand the raw text to rss-parser. This is more
+// robust than parser.parseURL, which hides the response and, for a feed that
+// 301s to an HTML page, fails deep inside the XML parser with an opaque error.
+// Returns { items, status, contentType, error } — never throws.
+async function fetchFeed(parser, url) {
+  let status = 0
+  let contentType = ''
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': FEED_USER_AGENT,
+        Accept: 'application/rss+xml, application/xml, text/xml, application/atom+xml, */*',
+      },
+    })
+    status = res.status
+    contentType = res.headers.get('content-type') || ''
+    if (!res.ok) {
+      return { items: [], status, contentType, error: `HTTP ${status}` }
+    }
+    const text = await res.text()
+    // A feed that redirected to an HTML landing page (haberler.com's old URL did
+    // exactly this) parses to zero items — flag it clearly instead of silently
+    // returning nothing.
+    if (/^\s*<!doctype html|<html[\s>]/i.test(text)) {
+      return { items: [], status, contentType, error: 'response is HTML, not RSS/XML' }
+    }
+    const feed = await parser.parseString(text)
+    return { items: feed.items || [], status, contentType, error: null }
+  } catch (err) {
+    return { items: [], status, contentType, error: String(err?.message || err) }
+  }
+}
+
 export default async function handler(req, res) {
   // ---- Auth: only Vercel Cron (or a caller holding CRON_SECRET) may run this.
   const secret = process.env.CRON_SECRET
@@ -185,6 +235,7 @@ export default async function handler(req, res) {
 
   // Resolve Alanya's id once for the whole run (all stage-0 feeds map to it).
   const cityId = await resolveCityId(rest, 'alanya', COUNTRY_CODE)
+  console.log(`[ingest-news] cityResolved(alanya, ${COUNTRY_CODE}) = ${cityId || 'NOT FOUND'}`)
   if (!cityId) {
     res.status(500).json({ error: 'Could not resolve the Alanya city id.' })
     return
@@ -192,19 +243,40 @@ export default async function handler(req, res) {
 
   const parser = new Parser({ timeout: 15000 })
 
-  // ---- 1) Fetch + parse every feed (fail-soft: a broken feed is skipped). ----
+  // ---- 1) Fetch + parse every feed (fail-soft: a broken feed can't stop the
+  // others — each is wrapped, and fetchFeed never throws). Log per feed so the
+  // Vercel logs show, for EACH feed: URL, HTTP status, content-type, item count,
+  // the first couple of titles, and any error.
   const feedErrors = []
+  const feedReports = [] // per-feed detail for the final JSON summary
   const candidates = [] // normalised items, in feed order
   for (const src of NEWS_SOURCES) {
-    try {
-      const feed = await parser.parseURL(src.url)
-      for (const entry of feed.items || []) {
-        const item = normaliseItem(entry, src.source_name)
-        if (item) candidates.push(item)
-      }
-    } catch (err) {
-      feedErrors.push({ url: src.url, detail: String(err?.message || err) })
+    const { items, status, contentType, error } = await fetchFeed(parser, src.url)
+    let kept = 0
+    const sampleTitles = []
+    for (const entry of items) {
+      const item = normaliseItem(entry, src.source_name)
+      if (!item) continue
+      if (sampleTitles.length < 2) sampleTitles.push(item.title)
+      candidates.push(item)
+      kept += 1
     }
+    console.log(
+      `[ingest-news] feed ${src.url} -> status=${status} ct="${contentType}" ` +
+        `rawItems=${items.length} kept=${kept} error=${error || 'none'} ` +
+        `sample=${JSON.stringify(sampleTitles)}`,
+    )
+    feedReports.push({
+      url: src.url,
+      source_name: src.source_name,
+      status,
+      contentType,
+      rawItems: items.length,
+      kept,
+      sampleTitles,
+      error: error || null,
+    })
+    if (error) feedErrors.push({ url: src.url, detail: error })
   }
 
   // ---- 2) Dedup in ONE batched select over all candidate links. --------------
@@ -237,9 +309,9 @@ export default async function handler(req, res) {
 
   const skipped = allUrls.length - fresh.length
 
-  res.status(200).json({
+  const summary = {
     ok: true,
-    feeds: NEWS_SOURCES.length,
+    feeds: feedReports, // per-feed detail: url, status, contentType, rawItems, kept, sampleTitles, error
     candidates: candidates.length,
     uniqueLinks: allUrls.length,
     inserted,
@@ -247,5 +319,9 @@ export default async function handler(req, res) {
     cityResolved: cityId,
     feedErrors,
     insertErrors,
-  })
+  }
+  // Emit the whole summary to the Vercel logs too, so the numbers are visible
+  // even without inspecting the HTTP response body.
+  console.log('[ingest-news] summary', JSON.stringify(summary))
+  res.status(200).json(summary)
 }
