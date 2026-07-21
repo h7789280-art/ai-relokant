@@ -29,6 +29,7 @@ import {
   KeyRound,
   Bus,
   SlidersHorizontal,
+  ShieldAlert,
 } from 'lucide-react'
 import { useApp } from '../context/appContext.js'
 import { fetchCity, fetchContent, fetchTodayMarkets, fetchRegionalEvents } from '../lib/content.js'
@@ -245,9 +246,26 @@ export default function Home() {
               )}
             </div>
           </div>
-          <button type="button" className="home__bell" aria-label={t('home.notifications')}>
-            <Bell size={22} strokeWidth={1.9} aria-hidden="true" />
-          </button>
+          {/* Emergency way-in (§4 SOS). It lives in the HEADER, not among the
+              chips: the chip row scrolls horizontally and the feeds scroll
+              vertically, so anything down there can be off-screen exactly when
+              it's needed. Here it is pinned at the top of the first screen,
+              red against the hero photo — visible in the first second, one tap
+              from anywhere the user starts. */}
+          <div className="home__header-actions">
+            <button
+              type="button"
+              className="home__sos"
+              onClick={() => navigate('/sos')}
+              aria-label={t('sos.title')}
+            >
+              <ShieldAlert size={16} strokeWidth={2.2} aria-hidden="true" />
+              {t('sos.short')}
+            </button>
+            <button type="button" className="home__bell" aria-label={t('home.notifications')}>
+              <Bell size={22} strokeWidth={1.9} aria-hidden="true" />
+            </button>
+          </div>
         </header>
       </div>
 

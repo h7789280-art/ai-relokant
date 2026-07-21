@@ -3,6 +3,7 @@ import Layout from './components/Layout.jsx'
 import Home from './pages/Home.jsx'
 import WeatherDetails from './pages/WeatherDetails.jsx'
 import Markets from './pages/Markets.jsx'
+import Sos from './pages/Sos.jsx'
 import Catalog from './pages/Catalog.jsx'
 import CatalogCategory from './pages/CatalogCategory.jsx'
 import Place from './pages/Place.jsx'
@@ -60,6 +61,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/weather" element={<WeatherDetails />} />
           <Route path="/markets" element={<Markets />} />
+          {/* Emergency help (§4). An ordinary screen inside the tab shell — no
+              tab of its own; the red SOS button in the Home header leads here. */}
+          <Route path="/sos" element={<Sos />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/catalog/place/:placeId" element={<Place />} />
           <Route path="/catalog/:categorySlug" element={<CatalogCategory />} />

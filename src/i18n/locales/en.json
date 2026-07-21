@@ -361,7 +361,32 @@
       "news": "News",
       "events": "Events",
       "guides": "Guides",
-      "marketSchedule": "Market schedule"
+      "marketSchedule": "Market schedule",
+      "consulates": "Consulates"
+    },
+    "consulates": {
+      "title": "Consulates (SOS screen)",
+      "hint": "Enter every mission BY HAND from its official website — never from memory or a search snippet. A wrong emergency number on the SOS screen does real harm. Record the check date in “Last checked”.",
+      "hostCountry": "Country it operates in",
+      "hostCountryHint": "The app country the user is in. A user in Turkey only sees missions located in Turkey.",
+      "hostCountryRequired": "Please choose the country it operates in.",
+      "citizenship": "Citizens it serves",
+      "citizenshipHint": "The user's citizenship this mission matches — not the country it stands in.",
+      "citizenshipRequired": "Please choose whose citizens it serves.",
+      "name": "Official name",
+      "namePlaceholder": "e.g. Consulate General of the Russian Federation",
+      "cityLabel": "City",
+      "cityLabelPlaceholder": "e.g. Antalya",
+      "emergencyPhone": "24/7 emergency phone",
+      "emergencyPhoneHint": "The main field of this record — the round-the-clock line, shown largest on the SOS screen.",
+      "phone": "Ordinary phone",
+      "hours": "Opening hours",
+      "sortOrder": "Order",
+      "verifiedAtHint": "The day you last checked these numbers against the official site.",
+      "active": "Active",
+      "add": "Add consulate",
+      "removeDraft": "Remove",
+      "empty": "No consulates for this country yet."
     },
     "marketSchedule": {
       "title": "Weekly market schedule",
@@ -543,7 +568,10 @@
     "language": "Interface language",
     "country": "Country",
     "city": "City",
-    "soon": "(soon)"
+    "soon": "(soon)",
+    "citizenship": "Citizenship",
+    "citizenshipNone": "Not set",
+    "citizenshipHint": "Used only on the SOS screen, to show your own consulate."
   },
   "install": {
     "title": "Install CityMate",
@@ -575,5 +603,64 @@
   "markets": {
     "title": "All markets",
     "weekEmpty": "No markets scheduled this week."
+  },
+  "sos": {
+    "title": "Emergency help",
+    "short": "SOS",
+    "subtitle": "Everything you might need right now, in one place. No searching.",
+    "call": {
+      "action": "Call {{number}}",
+      "unified": "One number for ambulance, police and fire"
+    },
+    "services": {
+      "police": "Police",
+      "ambulance": "Ambulance",
+      "fire": "Fire brigade"
+    },
+    "location": {
+      "title": "Send my location",
+      "hint": "Send someone close a link with exactly where you are. Nothing is saved anywhere — the link is built on your phone.",
+      "action": "Share my location",
+      "locating": "Finding you…",
+      "denied": "Couldn't get your location. Allow location access and try again.",
+      "unsupported": "This device can't share a location.",
+      "copied": "Link copied — paste it into any messenger.",
+      "sent": "Link sent.",
+      "shareTitle": "My location",
+      "shareText": "I'm here:"
+    },
+    "hospitals": {
+      "title": "Nearest hospital",
+      "sortByDistance": "Show the closest to me",
+      "km": "{{km}} km"
+    },
+    "pharmacy": {
+      "title": "Duty pharmacy",
+      "hint": "At night and on holidays pharmacies take turns staying open. The official roster is published by the chamber of pharmacists.",
+      "action": "Open the duty roster",
+      "source": "Source: {{source}}"
+    },
+    "consulate": {
+      "title": "My consulate",
+      "in": "Consulate in {{city}}",
+      "emergency": "24/7 emergency line",
+      "website": "Official website",
+      "askCitizenship": "Tell us your citizenship and your own consulate will be right here.",
+      "setCitizenship": "Set citizenship",
+      "allTitle": "All consulates in {{country}}",
+      "noData": "We don't have a consulate of {{citizenship}} in {{country}} on file yet.",
+      "embassyHint": "Look for your country's embassy in {{capital}} — every country keeps one there."
+    },
+    "phrasesTitle": "Ready-made phrases",
+    "phrasesHint": "Tap a phrase and show the screen — the Turkish text is the part that matters.",
+    "phrases": {
+      "ambulance": "I need an ambulance",
+      "childFever": "My child has a high fever",
+      "police": "Call the police",
+      "lostDocuments": "I've lost my documents",
+      "allergy": "I have an allergy",
+      "noTurkish": "I don't speak Turkish",
+      "interpreter": "I need an interpreter"
+    }
   }
 }

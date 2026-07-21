@@ -54,7 +54,11 @@ import {
   saveMarketScheduleRow,
   deleteMarketScheduleDay,
   searchGooglePlaces,
+  fetchAdminConsulates,
+  saveConsulate,
+  deleteConsulate,
 } from '../lib/admin.js'
+import { CITIZENSHIP_COUNTRIES, countryName } from '../lib/sosConfig.js'
 import { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 import { EVENT_CURRENCIES, currencySymbol } from '../lib/eventPrice.js'
 
@@ -62,7 +66,7 @@ import { EVENT_CURRENCIES, currencySymbol } from '../lib/eventPrice.js'
 // its own config, but failing fast here gives a friendlier message).
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024 // 5 MB
 
-const TABS = ['places', 'news', 'events', 'guides', 'marketSchedule']
+const TABS = ['places', 'news', 'events', 'guides', 'marketSchedule', 'consulates']
 
 // Content types shown in SEVERAL cities of one country — the form uses a
 // city-checkbox picker and writes a link table instead of a single city_id.
@@ -102,6 +106,7 @@ function AdminPanel() {
     events: <EventsSection geo={geo} />,
     guides: <GuidesSection geo={geo} />,
     marketSchedule: <MarketScheduleSection geo={geo} />,
+    consulates: <ConsulatesSection geo={geo} />,
   }
 
   return (
@@ -2930,6 +2935,437 @@ function MarketCard({ dow, row, cityId, geo, onSaved, onDeleted }) {
           >
             <Trash2 size={15} aria-hidden="true" />
             {form.id ? t('admin.actions.delete') : t('admin.marketSchedule.removeDraft')}
+          </button>
+          <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
+            <Plus size={16} aria-hidden="true" />
+            {saving ? t('admin.form.saving') : t('admin.form.submitSave')}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+// ============================================================================
+// Consulates (CLAUDE.md §4 SOS screen, §11) — the "my consulate" directory.
+// ============================================================================
+// Owner-maintained reference data, built exactly like the market schedule: a
+// list of cards, each its own form with an active toggle and a confirmed
+// delete. NOTHING here is seeded or imported — every number is typed in from
+// the mission's OFFICIAL site, because this is the one screen where a wrong
+// phone number does real harm (§11). `verified_at` records when the owner last
+// checked it against that site.
+//
+// TWO COUNTRIES, don't mix them up:
+//   • citizenship — whose citizens the mission serves (any country on earth,
+//     an ISO code matched against the user's profile setting);
+//   • host country — the app country it operates IN (the hard boundary, §5.4).
+// The section is scoped by HOST country, so the owner works one country at a
+// time, the way the SOS screen reads it.
+
+function formFromConsulate(row, hostCountryId = '') {
+  return {
+    id: row?.id ?? null,
+    citizenship_country_code: row?.citizenship_country_code ?? '',
+    host_country_id: row?.host_country_id ?? hostCountryId,
+    name: row?.name ?? '',
+    city_label: row?.city_label ?? '',
+    emergency_phone: row?.emergency_phone ?? '',
+    phone: row?.phone ?? '',
+    hours: row?.hours ?? '',
+    address: row?.address ?? '',
+    maps_url: row?.maps_url ?? '',
+    latitude: row?.latitude != null ? String(row.latitude) : '',
+    longitude: row?.longitude != null ? String(row.longitude) : '',
+    website: row?.website ?? '',
+    // <input type="date"> speaks YYYY-MM-DD; the column is timestamptz.
+    verified_at: row?.verified_at ? String(row.verified_at).slice(0, 10) : '',
+    is_active: row ? Boolean(row.is_active) : true,
+    sort_order: row?.sort_order != null ? String(row.sort_order) : '0',
+  }
+}
+
+function ConsulatesSection({ geo }) {
+  const { t, i18n } = useTranslation()
+  const { selection } = useApp()
+  // Which host country's directory we're editing. Left EMPTY until the owner
+  // picks one; the effective value is derived (active country → first loaded
+  // country) rather than synced into state by an effect, so there's no
+  // cascading render while `geo` is still loading.
+  const [picked, setPicked] = useState('')
+  const [state, setState] = useState({ status: 'loading', rows: [] })
+  const [drafts, setDrafts] = useState([])
+  const hostCountryId = picked || selection?.countryId || geo.countries[0]?.id || ''
+  const setHostCountryId = setPicked
+
+  const reload = useCallback(() => {
+    if (!hostCountryId) return
+    fetchAdminConsulates(hostCountryId)
+      .then((rows) => setState({ status: 'ready', rows }))
+      .catch(() => setState({ status: 'error', rows: [] }))
+  }, [hostCountryId])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
+  const addDraft = () => setDrafts((d) => [...d, { key: crypto.randomUUID() }])
+  const removeDraft = (key) => setDrafts((d) => d.filter((x) => x.key !== key))
+  const onDraftSaved = (key) => {
+    removeDraft(key)
+    reload()
+  }
+
+  return (
+    <>
+      <section className="card admin__form-card">
+        <h2 className="admin__section-title">{t('admin.consulates.title')}</h2>
+        <p className="admin-field__hint muted">{t('admin.consulates.hint')}</p>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.consulates.hostCountry')}</span>
+          <select
+            className="admin-field__input"
+            value={hostCountryId}
+            onChange={(e) => setHostCountryId(e.target.value)}
+          >
+            {geo.countries.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <span className="admin-field__hint">{t('admin.consulates.hostCountryHint')}</span>
+        </label>
+
+        <div className="admin-form__actions">
+          <button type="button" className="admin-btn admin-btn--ghost" onClick={addDraft}>
+            <Plus size={15} aria-hidden="true" />
+            {t('admin.consulates.add')}
+          </button>
+        </div>
+      </section>
+
+      {state.status === 'loading' ? (
+        <p className="muted">{t('admin.list.loading')}</p>
+      ) : state.status === 'error' ? (
+        <p className="admin-form__error">{t('admin.list.error')}</p>
+      ) : (
+        <>
+          {state.rows.length === 0 && drafts.length === 0 && (
+            <p className="muted">{t('admin.consulates.empty')}</p>
+          )}
+          {state.rows.map((row) => (
+            <ConsulateCard
+              key={row.id}
+              row={row}
+              geo={geo}
+              lang={i18n.language}
+              hostCountryId={hostCountryId}
+              onSaved={reload}
+              onDeleted={reload}
+            />
+          ))}
+          {drafts.map((draft) => (
+            <ConsulateCard
+              key={draft.key}
+              row={null}
+              geo={geo}
+              lang={i18n.language}
+              hostCountryId={hostCountryId}
+              onSaved={() => onDraftSaved(draft.key)}
+              onDeleted={() => removeDraft(draft.key)}
+            />
+          ))}
+        </>
+      )}
+    </>
+  )
+}
+
+// One consulate: editable card with its own save / delete. `row` is null for a
+// not-yet-saved draft the owner just added. No translations panel — every field
+// is a proper noun, a phone, an address or a URL, none of which we translate (§8).
+function ConsulateCard({ row, geo, lang, hostCountryId, onSaved, onDeleted }) {
+  const { t } = useTranslation()
+  const [form, setForm] = useState(() => formFromConsulate(row, hostCountryId))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    setForm(formFromConsulate(row, hostCountryId))
+  }, [row, hostCountryId])
+
+  const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }))
+
+  // Citizenship options sorted by their localized name — the SAME list the
+  // profile selector offers, so what the owner files a mission under is exactly
+  // what a user can pick, and the SOS lookup can never miss on a spelling.
+  const citizenshipOptions = useMemo(
+    () =>
+      CITIZENSHIP_COUNTRIES.map((code) => ({ code, name: countryName(code, lang) })).sort((a, b) =>
+        a.name.localeCompare(b.name, lang),
+      ),
+    [lang],
+  )
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (saving) return
+    const name = form.name.trim()
+    if (!name) {
+      setError(t('admin.form.nameRequired'))
+      return
+    }
+    if (!form.citizenship_country_code) {
+      setError(t('admin.consulates.citizenshipRequired'))
+      return
+    }
+    if (!form.host_country_id) {
+      setError(t('admin.consulates.hostCountryRequired'))
+      return
+    }
+    setSaving(true)
+    setError('')
+    setSuccess('')
+    try {
+      await saveConsulate({
+        ...(form.id ? { id: form.id } : {}),
+        citizenship_country_code: form.citizenship_country_code,
+        host_country_id: form.host_country_id,
+        name,
+        city_label: form.city_label.trim() || null,
+        emergency_phone: form.emergency_phone.trim() || null,
+        phone: form.phone.trim() || null,
+        hours: form.hours.trim() || null,
+        address: form.address.trim() || null,
+        maps_url: form.maps_url.trim() || null,
+        latitude: toNum(form.latitude),
+        longitude: toNum(form.longitude),
+        website: form.website.trim() || null,
+        verified_at: form.verified_at || null,
+        is_active: form.is_active,
+        sort_order: Number(form.sort_order) || 0,
+      })
+      setSuccess(t('admin.form.savedEdit', { name }))
+      onSaved()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!form.id) {
+      onDeleted()
+      return
+    }
+    if (!window.confirm(t('admin.actions.deleteConfirm'))) return
+    setError('')
+    setSuccess('')
+    try {
+      await deleteConsulate(form.id)
+      onDeleted()
+    } catch (err) {
+      setError(describeError(err) || t('admin.form.error'))
+    }
+  }
+
+  return (
+    <div className="admin-market-card">
+      <form className="admin-form" onSubmit={handleSubmit}>
+        <div className="admin-row__title-line">
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => setField('is_active', e.target.checked)}
+            />
+            <span>{t('admin.consulates.active')}</span>
+          </label>
+        </div>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.citizenship')}</span>
+            <select
+              className="admin-field__input"
+              value={form.citizenship_country_code}
+              onChange={(e) => setField('citizenship_country_code', e.target.value)}
+            >
+              <option value="">{t('admin.form.none')}</option>
+              {citizenshipOptions.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+            <span className="admin-field__hint">{t('admin.consulates.citizenshipHint')}</span>
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.hostCountry')}</span>
+            <select
+              className="admin-field__input"
+              value={form.host_country_id}
+              onChange={(e) => setField('host_country_id', e.target.value)}
+            >
+              {geo.countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.consulates.name')}</span>
+          <input
+            className="admin-field__input"
+            type="text"
+            value={form.name}
+            onChange={(e) => setField('name', e.target.value)}
+            placeholder={t('admin.consulates.namePlaceholder')}
+          />
+        </label>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.cityLabel')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.city_label}
+              onChange={(e) => setField('city_label', e.target.value)}
+              placeholder={t('admin.consulates.cityLabelPlaceholder')}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.sortOrder')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              inputMode="numeric"
+              value={form.sort_order}
+              onChange={(e) => setField('sort_order', e.target.value)}
+            />
+          </label>
+        </div>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.consulates.emergencyPhone')}</span>
+          <input
+            className="admin-field__input"
+            type="tel"
+            value={form.emergency_phone}
+            onChange={(e) => setField('emergency_phone', e.target.value)}
+            placeholder="+90 …"
+          />
+          <span className="admin-field__hint">{t('admin.consulates.emergencyPhoneHint')}</span>
+        </label>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.phone')}</span>
+            <input
+              className="admin-field__input"
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setField('phone', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.consulates.hours')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              value={form.hours}
+              onChange={(e) => setField('hours', e.target.value)}
+              placeholder={t('admin.form.hoursPlaceholder')}
+            />
+          </label>
+        </div>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.form.address')}</span>
+          <input
+            className="admin-field__input"
+            type="text"
+            value={form.address}
+            onChange={(e) => setField('address', e.target.value)}
+          />
+        </label>
+
+        <label className="admin-field">
+          <span className="admin-field__label">{t('admin.form.mapsUrl')}</span>
+          <input
+            className="admin-field__input"
+            type="url"
+            value={form.maps_url}
+            onChange={(e) => setField('maps_url', e.target.value)}
+            placeholder="https://maps.app.goo.gl/…"
+          />
+          <span className="admin-field__hint">{t('admin.form.mapsUrlHint')}</span>
+        </label>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.latitude')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              inputMode="decimal"
+              value={form.latitude}
+              onChange={(e) => setField('latitude', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.longitude')}</span>
+            <input
+              className="admin-field__input"
+              type="text"
+              inputMode="decimal"
+              value={form.longitude}
+              onChange={(e) => setField('longitude', e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="admin-form__row">
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.website')}</span>
+            <input
+              className="admin-field__input"
+              type="url"
+              value={form.website}
+              onChange={(e) => setField('website', e.target.value)}
+              placeholder={t('admin.form.websitePlaceholder')}
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field__label">{t('admin.form.verifiedAt')}</span>
+            <input
+              className="admin-field__input"
+              type="date"
+              value={form.verified_at}
+              onChange={(e) => setField('verified_at', e.target.value)}
+            />
+            <span className="admin-field__hint">{t('admin.consulates.verifiedAtHint')}</span>
+          </label>
+        </div>
+
+        <FormBanners error={error} success={success} />
+
+        <div className="admin-form__actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn--ghost admin-action--delete"
+            onClick={handleDelete}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            {form.id ? t('admin.actions.delete') : t('admin.consulates.removeDraft')}
           </button>
           <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
             <Plus size={16} aria-hidden="true" />

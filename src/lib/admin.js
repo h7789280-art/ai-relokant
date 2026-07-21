@@ -372,6 +372,61 @@ export async function deleteMarketScheduleDay(id) {
   await deleteContentTranslations('market_schedule', id)
 }
 
+// ---- Consulates (CLAUDE.md §4 SOS screen, §11) -----------------------------
+// Owner-maintained reference data, exactly like the market schedule: an
+// `is_active` flag rather than a moderation status, and every row typed in by
+// hand from the mission's OFFICIAL site. No seeds, no imports, no placeholder
+// numbers — an invented emergency phone is the worst possible failure here.
+// RLS (supabase/consulates.sql) gates inactive rows and all writes to admins.
+
+/**
+ * All consulate rows for a host country, ANY active state (admins only — RLS
+ * returns active-only to everyone else). Owner's order, then name.
+ *
+ * @param {string} hostCountryId  countries.id the missions operate in
+ */
+export async function fetchAdminConsulates(hostCountryId) {
+  if (!hostCountryId) return []
+  const { data, error } = await supabase
+    .from('consulates')
+    .select('*')
+    .eq('host_country_id', hostCountryId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Save one consulate: INSERT when the payload carries no id, UPDATE by id when
+ * it does (same shape as saveMarketScheduleRow). `citizenship_country_code` and
+ * `host_country_id` are required — they are the pair the SOS lookup keys on.
+ * Returns the saved row.
+ */
+export async function saveConsulate(payload) {
+  if (!payload?.host_country_id || !payload?.citizenship_country_code) {
+    throw new Error('saveConsulate: host_country_id and citizenship_country_code are required')
+  }
+  const { id, ...fields } = payload
+  const query = id
+    ? supabase.from('consulates').update(fields).eq('id', id)
+    : supabase.from('consulates').insert(fields)
+  const { data, error } = await query.select('*').single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Permanently delete a consulate row (physical delete). Admin-only via RLS.
+ * No translations to clean up — consulate fields are proper nouns, phones and
+ * addresses, none of which are translated (§8). Irreversible; confirm first.
+ */
+export async function deleteConsulate(id) {
+  if (!id) throw new Error('deleteConsulate: id is required')
+  const { error } = await supabase.from('consulates').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---- Content translations (CLAUDE.md §8) — Stage 11D -----------------------
 // The owner translates a row's TEXT fields into the other 12 start languages and
 // stores them in `content_translations` (key: entity_type / entity_id / lang /

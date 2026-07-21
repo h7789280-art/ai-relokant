@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { Building2, ChevronRight, Globe, LogOut, Mail, UserPlus, ShieldCheck } from 'lucide-react'
+import {
+  Building2,
+  ChevronRight,
+  Globe,
+  LogOut,
+  Mail,
+  UserPlus,
+  ShieldCheck,
+  BookUser,
+} from 'lucide-react'
 import i18n, { SUPPORTED_LANGUAGES } from '../i18n/index.js'
 import { fetchCountries, fetchCities } from '../lib/content.js'
+import { CITIZENSHIP_COUNTRIES, countryName } from '../lib/sosConfig.js'
 import { useApp } from '../context/appContext.js'
 import { useAuth } from '../context/authContext.js'
 import { useIsAdmin } from '../hooks/useIsAdmin.js'
@@ -17,7 +27,20 @@ export default function Profile() {
   const { t } = useTranslation()
   const { isAuthed, user, loading, openAuth, signOut } = useAuth()
   const { isAdmin } = useIsAdmin()
-  const { selection, confirmSelection } = useApp()
+  const { selection, confirmSelection, citizenship, setCitizenship } = useApp()
+
+  // Citizenship options, sorted by their name in the ACTIVE language (the names
+  // come from Intl, so the order has to be computed per language, not baked in).
+  // useTranslation re-renders this component on every language change, so
+  // reading resolvedLanguage here keeps the memo key honest.
+  const lang = i18n.resolvedLanguage
+  const citizenshipOptions = useMemo(
+    () =>
+      CITIZENSHIP_COUNTRIES.map((code) => ({ code, name: countryName(code, lang) })).sort((a, b) =>
+        a.name.localeCompare(b.name, lang),
+      ),
+    [lang],
+  )
 
   // Country switching (Stage A). The country the selector shows is local state so
   // it can lead the persisted selection while cities load; it follows `selection`
@@ -231,6 +254,35 @@ export default function Profile() {
               <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
             </label>
           )}
+
+          {/* Citizenship — used ONLY by the SOS screen, to show the right
+              consulate (§4 SOS). Deliberately a separate setting from the
+              interface language and the active country: a Russian-speaking
+              Kazakh citizen living in Turkey needs the KAZAKH consulate.
+              Optional — left empty, SOS shows the full local directory. */}
+          <label className="welcome__field">
+            <span className="welcome__field-icon" aria-hidden="true">
+              <BookUser size={22} strokeWidth={1.75} />
+            </span>
+            <span className="welcome__field-body">
+              <span className="welcome__label">{t('profile.citizenship')}</span>
+              <select
+                className="welcome__select"
+                value={citizenship}
+                onChange={(e) => setCitizenship(e.target.value)}
+                aria-label={t('profile.citizenship')}
+              >
+                <option value="">{t('profile.citizenshipNone')}</option>
+                {citizenshipOptions.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <ChevronRight className="welcome__field-chevron" size={20} aria-hidden="true" />
+          </label>
+          <p className="profile__hint muted">{t('profile.citizenshipHint')}</p>
         </div>
       </section>
     </main>

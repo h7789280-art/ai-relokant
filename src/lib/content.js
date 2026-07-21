@@ -5,6 +5,7 @@
 // but we also apply it here so the intent is explicit and queries stay cheap.
 // Use these helpers instead of calling `supabase.from(...)` directly for content.
 import { supabase } from './supabase'
+import { HOSPITAL_SUBCATEGORY_SLUG } from './sosConfig.js'
 
 // Content tables that are city-scoped AND moderated.
 export const CONTENT_TABLES = ['places', 'events', 'guides', 'news', 'ads']
@@ -516,6 +517,79 @@ export async function fetchCityMarkets(cityId, lang, { columns = '*' } = {}) {
   if (error) throw error
   if (!data?.length) return []
   return withTranslations('market_schedule', data, lang)
+}
+
+// ---- SOS screen readers (§4 — emergency help) ------------------------------
+// The SOS screen is static and AI-free: every read here is a plain, cheap,
+// city/country-scoped query so the screen paints immediately.
+
+/**
+ * Approved HOSPITALS of the active city, for the SOS "nearest hospital" block.
+ *
+ * Same source and scoping as the catalog (approved + this city only, §5.3) —
+ * these are ordinary place cards, so tapping one opens /catalog/place/<id> as
+ * usual. Resolution is by subcategory SLUG (`hospitals`, seed-categories.sql):
+ * subcategory ids differ per environment, and slug is unique per category, so we
+ * look the ids up first and match on them.
+ *
+ * Ordering is by name here; the SCREEN re-sorts by distance from the user's GPS
+ * position when they grant it (haversineKm, src/lib/geo.js) — that sort can't
+ * happen server-side because the user's coordinates never leave the device.
+ *
+ * @param {string} cityId  active city id (required)
+ * @param {string} [lang]  UI language to localize names/descriptions into
+ * @returns {Promise<Array>} approved hospitals (localized), or [] when none
+ */
+export async function fetchHospitals(cityId, lang) {
+  if (!cityId) return []
+  const { data: subs, error: subErr } = await supabase
+    .from('subcategories')
+    .select('id')
+    .eq('slug', HOSPITAL_SUBCATEGORY_SLUG)
+  if (subErr) throw subErr
+  const subIds = (subs ?? []).map((s) => s.id)
+  if (!subIds.length) return []
+  const { data, error } = await publicContentQuery('places', cityId)
+    .in('subcategory_id', subIds)
+    .order('name', { ascending: true })
+  if (error) throw error
+  if (!data?.length) return []
+  return withTranslations('places', data, lang)
+}
+
+/**
+ * ACTIVE consulates operating in a host country (supabase/consulates.sql).
+ *
+ * Two different countries are in play (see the SQL header): `host_country_id` is
+ * the app country the user is currently in — the hard boundary (§5.4), a user in
+ * Turkey never sees a mission in the UAE — while `citizenship_country_code` is
+ * the country whose citizens the mission serves, a free ISO code matched against
+ * the user's own profile setting.
+ *
+ * Passing `citizenshipCode` narrows to the user's own mission(s); omitting it
+ * returns the full directory for the host country, which is what the screen
+ * shows when the user hasn't told us their citizenship yet. Owner-maintained
+ * reference data: RLS returns active rows only.
+ *
+ * @param {string} hostCountryId        countries.id of the ACTIVE country
+ * @param {{ citizenshipCode?: string }} [opts]
+ * @returns {Promise<Array>} active consulates, owner's order then name
+ */
+export async function fetchConsulates(hostCountryId, { citizenshipCode } = {}) {
+  if (!hostCountryId) return []
+  let query = supabase
+    .from('consulates')
+    .select('*')
+    .eq('host_country_id', hostCountryId)
+    .eq('is_active', true)
+  if (citizenshipCode) {
+    query = query.eq('citizenship_country_code', String(citizenshipCode).toUpperCase())
+  }
+  const { data, error } = await query
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
 }
 
 /**

@@ -5181,3 +5181,501 @@ a.event-card__meta-link svg {
 .reset-card__title {
   margin: 0;
 }
+
+/* ==========================================================================
+   SOS — emergency help (§4). Same airy card language as the rest of the app,
+   but with a calm red accent: red enough to find in a panic, never a shouting
+   full-red screen (that reads as an error page and slows people down). The
+   header band owns the red; below it the page stays white and legible.
+   ========================================================================== */
+
+/* --- The way in: red pill in the Home header, beside the bell --- */
+.home__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.home__sos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-pill);
+  background: var(--color-danger);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 59, 48, 0.36);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.home__sos:hover {
+  box-shadow: 0 8px 22px rgba(255, 59, 48, 0.46);
+}
+
+.home__sos:active {
+  transform: scale(0.96);
+}
+
+/* --- Screen shell --- */
+.sos {
+  position: relative;
+  padding-top: 0;
+  padding-bottom: var(--space-7);
+}
+
+.sos::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #ffe9e7 0%, #fff3f1 30%, #fffafa 58%, var(--color-bg) 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sos-hero {
+  position: relative;
+  margin: calc(-1 * (var(--space-5) + env(safe-area-inset-top, 0px)))
+    calc(-1 * var(--space-4)) var(--space-4);
+  padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-4) var(--space-5);
+  background: linear-gradient(160deg, #ffd5d1 0%, #ffc4bf 100%);
+}
+
+.sos-hero__back {
+  position: absolute;
+  top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+  left: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.sos-hero__text {
+  margin-top: var(--space-6);
+}
+
+.sos-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 2px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #a3352c;
+}
+
+.sos-hero__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: #7a2a22;
+}
+
+.sos-hero__subtitle {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: #94433b;
+}
+
+/* --- A block per urgency step --- */
+.sos-block {
+  margin-top: var(--space-5);
+}
+
+.sos-block__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sos-block__title svg {
+  color: var(--color-danger);
+}
+
+.sos-block__hint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+  color: var(--color-text-muted);
+}
+
+.sos-block__hint--spaced {
+  margin-top: var(--space-4);
+}
+
+.sos-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sos-note--ok {
+  color: #1c8b3d;
+}
+
+.sos-link {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  word-break: break-all;
+}
+
+/* --- a) The call button: the largest thing on the screen --- */
+.sos-call {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, #ff4b40 0%, #e8241a 100%);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 14px 32px rgba(232, 36, 26, 0.32);
+}
+
+.sos-call__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sos-call__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sos-call__label {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.sos-call__hint {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.3;
+}
+
+/* Secondary services — rendered only where the primary number is NOT unified. */
+.sos-call__extra {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.sos-call__small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.sos-call__small svg {
+  color: var(--color-danger);
+}
+
+.sos-call__small-label {
+  flex: 1 1 auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.sos-call__small-number {
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+/* --- Buttons shared by the blocks --- */
+.sos-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.sos-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sos-btn--primary {
+  border-color: transparent;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* --- c) Hospital list --- */
+.sos-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sos-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.sos-item__main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sos-item__name {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sos-item__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sos-item__badge {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.sos-item__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.sos-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  color: var(--color-accent);
+}
+
+/* --- e) Consulate cards --- */
+.sos-consulates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sos-consulate {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.sos-consulate__name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sos-consulate__for,
+.sos-consulate__city {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* The 24/7 line — the reason this card exists, so it gets the loud treatment. */
+.sos-consulate__emergency {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: #fff0ee;
+  color: #c02015;
+  text-decoration: none;
+}
+
+.sos-consulate__emergency-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sos-consulate__emergency-number {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.sos-consulate__emergency-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: #9c3229;
+}
+
+.sos-consulate__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.sos-consulate__row svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-text-subtle);
+}
+
+.sos-consulate__row--link {
+  color: var(--color-accent);
+}
+
+.sos-consulate__row--link svg {
+  color: var(--color-accent);
+}
+
+/* --- f) Phrasebook --- */
+.sos-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The Turkish line is always visible and always the biggest thing on the card —
+   the card exists to be SHOWN to a Turkish speaker, not read by the user. */
+.sos-phrase {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 150ms ease;
+}
+
+.sos-phrase__meaning {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.sos-phrase__tr {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.sos-phrase__translit {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--color-text-subtle);
+}
+
+/* Tapped: blow the Turkish up to fill the card, so it reads across a counter. */
+.sos-phrase.is-open {
+  border-color: transparent;
+  background: #fff6f5;
+  box-shadow: var(--shadow-md);
+}
+
+.sos-phrase.is-open .sos-phrase__tr {
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+/* Profile: the one-line note under the citizenship selector. */
+.profile__hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 360px) {
+  .sos-hero__title {
+    font-size: 32px;
+  }
+
+  .sos-call__label {
+    font-size: var(--text-lg);
+  }
+}
